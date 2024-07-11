@@ -1,0 +1,16 @@
+Linux:
+    Type: ArchLinux
+    Apps:
+        - fish
+        - vim
+    Users:
+        - user1:
+            Admin: Yes
+            Shell: fish
+        - user2:
+            Admin: Yes
+            Shell: fish
+            Comment: Other user
+    Hosts:
+        127.0.0.1:
+            - example.org

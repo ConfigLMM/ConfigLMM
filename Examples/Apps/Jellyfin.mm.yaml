@@ -1,0 +1,3 @@
+Jellyfin:
+    Type: Jellyfin
+    Domain: jellyfin.example.org

@@ -1,0 +1,11 @@
+Computer:
+    Type: Windows
+    Managed: yes
+    Apps:
+        - Steam
+        - Fortnite
+        - Roblox
+        - Minecraft
+        - Firefox
+    Remove:
+        - Chrome

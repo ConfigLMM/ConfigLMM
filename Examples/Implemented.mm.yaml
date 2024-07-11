@@ -1,0 +1,155 @@
+
+# https://porkbun.com/
+Porkbun:
+    Type: PorkbunDNS
+    DNS:
+        example.org:
+            '@': A=@me # `@me` means use current hosts external IP
+
+# https://www.tonic.to/
+Tonic:
+    Type: TonicDNS
+    Domain: example.to
+    Nameservers:
+        ns.example.org: 192.168.5.5
+
+# https://www.powerdns.com/
+PowerDNS:
+    Type: PowerDNS
+    # Location: pdns://dns.example.org:8081/
+    # Location: ssh://server/?host=localhost&port=8081
+    Location: ssh://server/
+    Settings:
+        version-string: anonymous
+        api: yes
+        expand-alias: yes
+        resolver: 127.0.0.53
+        default-soa-content: ns.example.org. contact.example.org. 0 10800 3600 604800 3600
+    DNS:
+        example.org:
+            '@': A=@me
+            ns: A=192.168.5.5
+
+# https://www.godaddy.com/
+GoDaddy:
+    Type: GoDaddyDNS
+    DNS:
+        example.org:
+            '@': A=@me
+            Wiki: CNAME=@ # `@` means point it to the domain root (ie. example.org)
+            ipv6:
+                - AAAA=2606:2800:21f:cb07:6820:80da:af6b:8b2c
+                - AAAA=2606:2800:21f:cb07:6820:80da:af6b:0153
+
+Linux:
+    Type: Linux
+    Hosts:
+        127.0.0.1:
+            - example.org
+
+# https://www.arubanetworks.com/
+ArubaInstant:
+    Type: ArubaInstant
+    Location: user@aruba.example.org
+    CertificateName: Aruba
+
+# https://github.com/JustArchiNET/ArchiSteamFarm
+ArchiSteamFarm:
+    Type: ArchiSteamFarm
+    Domain: ASF.example.org
+
+# https://bitmagnet.io/
+Bitmagnet:
+    Type: Bitmagnet
+    Domain: bitmagnet.example.org
+
+# https://github.com/gollum/gollum
+Gollum:
+    Type: Gollum
+    Domain: gollum.example.org
+
+# https://grafana.com/
+Grafana:
+    Type: NginxProxy
+    Domain: grafana.example.org
+    Proxy: unix:/run/grafana/grafana.sock
+    Private: yes
+
+# https://ipfs.tech/
+IPFS:
+    Type: IPFS
+    Domain: IPFS.example.org
+
+# https://www.influxdata.com/
+InfluxDB:
+    Type: InfluxDB
+    Domain: influx.example.org
+
+# https://github.com/Jackett/Jackett/
+Jackett:
+    Type: Jackett
+    Domain: jackett.example.org
+
+# https://jellyfin.org/
+Jellyfin:
+    Type: Jellyfin
+    Domain: jellyfin.example.org
+
+# https://github.com/mastodon/mastodon
+Mastodon:
+    Type: Mastodon
+    Domain: mastodon.example.org
+
+# https://matrix.org/
+Matrix:
+    Type: Matrix
+    Domain: matrix.example.org
+
+# https://www.netdata.cloud/
+Netdata:
+    Type: Netdata
+    Domain: netdata.example.org
+
+# https://nextcloud.com/
+Nextcloud:
+    Type: Nextcloud
+    Domain: nextcloud.example.org
+
+# https://www.odoo.com/
+Odoo:
+    Type: Odoo
+    Domain: odoo.example.org
+
+# https://pterodactyl.io/
+Pterodactyl:
+    Type: Pterodactyl
+    Domain: pterodactyl.example.org
+
+# https://pterodactyl.io/
+Wings:
+    Type: Wings
+    Domain: wings.example.org
+
+# https://www.qbittorrent.org/
+qBittorrent:
+    Type: NginxProxy
+    Domain: qBittorrent.example.org
+    Proxy: http://127.0.0.1:7777
+    Private: yes
+
+# https://github.com/AnalogJ/scrutiny
+Scrutiny:
+    Type: NginxProxy
+    Domain: scrutiny.example.org
+    Proxy: http://127.0.0.1:7080
+    Private: yes
+
+# https://app.lizardbyte.dev/Sunshine/
+Sunshine:
+    Type: Sunshine
+    Domain: sunshine.example.org
+
+# https://github.com/dani-garcia/vaultwarden
+Vaultwarden:
+    Type: Vaultwarden
+    Domain: vaultwarden.example.org

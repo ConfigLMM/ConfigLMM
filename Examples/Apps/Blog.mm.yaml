@@ -1,0 +1,7 @@
+_CONTEXT_:
+    Dislikes:
+        - Big Tech
+
+Blog:
+    Type: CloudBlog
+    Feature: User Management

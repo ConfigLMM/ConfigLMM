@@ -1,0 +1,8 @@
+Phone:
+    Type: Android
+    Settings:
+        HomeScreen: With App drawer
+    Apps:
+        - Duolingo
+    Remove:
+        - CandyCrush
