@@ -1,0 +1,59 @@
+
+
+upstream jellyfin {
+    server 127.0.0.1:8096;
+}
+
+server {
+    <% if !config['TLS'] %>
+        listen       <%= config['Port'] %>;
+        listen  [::]:<%= config['Port'] %>;
+    <% else %>
+        listen       <%= config['Port'] %> ssl;
+        listen  [::]:<%= config['Port'] %> ssl;
+        http2 on;
+        include config-lmm/ssl.conf;
+    <% end %>
+
+    server_name <%= config['Domain'] %>;
+
+    access_log  /var/log/nginx/jellyfin.access.log;
+    error_log   /var/log/nginx/jellyfin.error.log;
+
+    include config-lmm/errors.conf;
+    include config-lmm/ssl.conf;
+
+    location = / {
+        return 302 /web/;
+    }
+
+    # Don't expose this publicly
+    location = /Startup/ {
+        return 401;
+    }
+
+    location / {
+        # Proxy main Jellyfin traffic
+        proxy_pass http://jellyfin;
+
+        include config-lmm/proxy.conf;
+
+        # Disable buffering when the nginx proxy gets very resource heavy upon streaming
+        proxy_buffering off;
+    }
+
+    location = /web/ {
+        proxy_pass http://jellyfin/web/index.html;
+        include config-lmm/proxy.conf;
+    }
+
+    location /socket {
+        # Proxy Jellyfin Websockets traffic
+        proxy_pass http://jellyfin;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        include config-lmm/proxy.conf;
+    }
+
+}

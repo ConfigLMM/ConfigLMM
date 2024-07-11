@@ -1,0 +1,38 @@
+
+upstream jackett {
+    server 127.0.0.1:9117;
+}
+
+server {
+    <% if !config['TLS'] %>
+        listen       <%= config['Port'] %>;
+        listen  [::]:<%= config['Port'] %>;
+    <% else %>
+        listen       <%= config['Port'] %> ssl;
+        listen  [::]:<%= config['Port'] %> ssl;
+        http2 on;
+        include config-lmm/ssl.conf;
+    <% end %>
+
+    server_name <%= config['Domain'] %>;
+
+    access_log  /var/log/nginx/jackett.access.log;
+    error_log   /var/log/nginx/jackett.error.log;
+
+    include config-lmm/private.conf;
+    include config-lmm/errors.conf;
+
+    location / {
+        proxy_pass http://jackett;
+
+        include config-lmm/proxy.conf;
+    }
+
+    location /api/v2.0/ {
+        proxy_read_timeout 10m;
+        proxy_pass http://jackett;
+
+        include config/proxy.conf;
+    }
+
+}

@@ -1,0 +1,44 @@
+
+upstream odoo {
+    server 127.0.0.1:8069;
+}
+
+server {
+
+    <% if !config['TLS'] %>
+        listen       <%= config['Port'] %>;
+        listen  [::]:<%= config['Port'] %>;
+    <% else %>
+        listen       <%= config['Port'] %> ssl;
+        listen  [::]:<%= config['Port'] %> ssl;
+        http2 on;
+        include config/ssl.conf;
+    <% end %>
+
+    server_name <%= config['Domain'] %>;
+
+    root        /usr/share/nginx/html;
+    index       index.html index.htm;
+    access_log  /var/log/nginx/odoo.access.log;
+    error_log   /var/log/nginx/odoo.error.log;
+
+    include config/private.conf;
+    include config/errors.conf;
+
+    location / {
+        proxy_pass  http://odoo;
+        # force timeouts if the backend dies
+        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+        proxy_redirect off;
+
+        include config/proxy.conf;
+    }
+
+    # cache some static data in memory for 60mins
+    location ~* /web/static/ {
+        proxy_cache_valid 200 60m;
+        proxy_buffering on;
+        expires 864000;
+        proxy_pass http://odoo;
+    }
+}

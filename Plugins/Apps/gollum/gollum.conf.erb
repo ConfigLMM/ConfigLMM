@@ -1,0 +1,41 @@
+
+server {
+
+    <% if !config['TLS'] %>
+        listen       <%= config['Port'] %>;
+        listen  [::]:<%= config['Port'] %>;
+    <% else %>
+        listen       <%= config['Port'] %> ssl;
+        listen  [::]:<%= config['Port'] %> ssl;
+        http2 on;
+        include config-lmm/ssl.conf;
+    <% end %>
+
+    server_name <%= config['Domain'] %>;
+
+    root               <%= config['Root'] %>;
+    passenger_app_root /srv/gollum;
+
+    try_files    $uri @Passenger;
+
+    access_log  /var/log/nginx/gollum.access.log;
+    error_log   /var/log/nginx/gollum.error.log;
+
+    include config-lmm/private.conf;
+    include config-lmm/errors.conf;
+
+    <% if config['CertName'] %>
+        ssl_certificate "/etc/letsencrypt/live/<%= config['CertName'] %>/fullchain.pem";
+        ssl_certificate_key "/etc/letsencrypt/live/<%= config['CertName'] %>/privkey.pem";
+        ssl_trusted_certificate "/etc/letsencrypt/live/<%= config['CertName'] %>/chain.pem";
+    <% end %>
+
+    location @Passenger {
+        passenger_enabled on;
+        passenger_min_instances 1;
+        rails_env production;
+
+        #passenger_set_cgi_param HTTP_X_FORWARDED_PROTO https;
+        #limit_req zone=one burst=5;
+    }
+}

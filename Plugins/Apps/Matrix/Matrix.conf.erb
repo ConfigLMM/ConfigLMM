@@ -1,0 +1,36 @@
+
+server {
+    <% if !config['TLS'] %>
+        listen       <%= config['Port'] %>;
+        listen  [::]:<%= config['Port'] %>;
+    <% else %>
+        listen       <%= config['Port'] %> ssl;
+        listen  [::]:<%= config['Port'] %> ssl;
+        http2 on;
+        include config-lmm/ssl.conf;
+    <% end %>
+
+    # For the federation port
+    #listen 8448 ssl http2 default_server;
+    #listen [::]:8448 ssl http2 default_server;
+
+    server_name <%= config['Domain'] %>;
+
+    access_log  /var/log/nginx/matrix.access.log;
+    error_log   /var/log/nginx/matrix.error.log;
+
+    include config-lmm/private.conf;
+    include config-lmm/errors.conf;
+
+    location ~ ^(/_matrix|/_synapse/client) {
+        # note: do not add a path (even a single /) after the port in `proxy_pass`,
+        # otherwise nginx will canonicalise the URI and cause signature verification
+        # errors.
+        proxy_pass http://localhost:8008;
+        include config-lmm/proxy.conf;
+
+        # Nginx by default only allows file uploads up to 1M in size
+        # Increase client_max_body_size to match max_upload_size defined in homeserver.yaml
+        client_max_body_size 50M;
+    }
+}

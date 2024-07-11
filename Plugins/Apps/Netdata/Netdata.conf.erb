@@ -1,0 +1,37 @@
+
+upstream netdata {
+    server 127.0.0.1:19999;
+}
+
+server {
+    <% if !config['TLS'] %>
+        listen       <%= config['Port'] %>;
+        listen  [::]:<%= config['Port'] %>;
+    <% else %>
+        listen       <%= config['Port'] %> ssl;
+        listen  [::]:<%= config['Port'] %> ssl;
+        http2 on;
+        include config-lmm/ssl.conf;
+    <% end %>
+
+    server_name <%= config['Domain'] %>;
+
+    access_log  /var/log/nginx/netdata.access.log;
+    error_log   /var/log/nginx/netdata.error.log;
+
+    include config-lmm/private.conf;
+    include config-lmm/errors.conf;
+
+    location /stub_status {
+        stub_status;
+        allow 127.0.0.0/8;
+        allow ::1/128;
+        include config-lmm/private.conf;
+    }
+
+    location / {
+        root /usr/share/nginx/html;
+        include config-lmm/proxy.conf;
+        proxy_pass http://netdata;
+    }
+}

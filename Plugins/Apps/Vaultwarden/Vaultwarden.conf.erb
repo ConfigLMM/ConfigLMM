@@ -1,0 +1,48 @@
+
+upstream vaultwarden {
+    server 127.0.0.1:8000;
+}
+
+upstream vaultwarden-websocket {
+    server 127.0.0.1:3012;
+}
+
+server {
+
+    <% if !config['TLS'] %>
+        listen       <%= config['Port'] %>;
+        listen  [::]:<%= config['Port'] %>;
+    <% else %>
+        listen       <%= config['Port'] %> ssl;
+        listen  [::]:<%= config['Port'] %> ssl;
+        http2 on;
+        include config-lmm/ssl.conf;
+    <% end %>
+
+    server_name <%= config['Domain'] %>;
+
+    <% if config['Private'] %>
+        include config-lmm/private.conf;
+    <% end %>
+
+    access_log  /var/log/nginx/vaultwarden.access.log;
+    error_log   /var/log/nginx/vaultwarden.error.log;
+
+    client_max_body_size 200M;
+
+    include config-lmm/errors.conf;
+
+    location / {
+        proxy_pass http://vaultwarden;
+        include config-lmm/proxy.conf;
+    }
+
+    location /notifications/ {
+        proxy_pass http://vaultwarden-websocket/;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        include config-lmm/proxy.conf;
+    }
+
+}

@@ -1,0 +1,38 @@
+
+upstream wings {
+    server 127.0.0.1:1200;
+}
+
+server {
+
+    <% if !config['TLS'] %>
+        listen       <%= config['Port'] %>;
+        listen  [::]:<%= config['Port'] %>;
+    <% else %>
+        listen       <%= config['Port'] %> ssl;
+        listen  [::]:<%= config['Port'] %> ssl;
+        http2 on;
+        include config-lmm/ssl.conf;
+    <% end %>
+
+    server_name <%= config['Domain'] %>;
+
+    access_log  /var/log/nginx/wings.access.log;
+    error_log   /var/log/nginx/wings.error.log;
+
+    include config-lmm/private.conf;
+    include config-lmm/errors.conf;
+
+    location / {
+        proxy_pass http://wings;
+
+        include config/proxy.conf;
+    }
+
+    location ~ \/ws$ {
+        proxy_pass http://wings;
+
+        include config/proxy.conf;
+    }
+
+}

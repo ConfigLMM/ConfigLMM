@@ -1,0 +1,38 @@
+
+upstream archi_steam_farm {
+    server 127.0.0.1:1242;
+}
+
+server {
+    <% if !config['TLS'] %>
+        listen       <%= config['Port'] %>;
+        listen  [::]:<%= config['Port'] %>;
+    <% else %>
+        listen       <%= config['Port'] %> ssl;
+        listen  [::]:<%= config['Port'] %> ssl;
+        http2 on;
+        include config-lmm/ssl.conf;
+    <% end %>
+
+    server_name <%= config['Domain'] %>;
+
+    root        /opt/ArchiSteamFarm-bin/www;
+
+    access_log  /var/log/nginx/ArchiSteamFarm.access.log;
+    error_log   /var/log/nginx/ArchiSteamFarm.error.log;
+
+    include config-lmm/private.conf;
+    include config-lmm/errors.conf;
+
+    location ~* /Api/NLog {
+        proxy_pass http://archi_steam_farm;
+
+        include config/proxy.conf;
+    }
+
+    location / {
+        proxy_pass http://archi_steam_farm;
+
+        include config/proxy.conf;
+    }
+}

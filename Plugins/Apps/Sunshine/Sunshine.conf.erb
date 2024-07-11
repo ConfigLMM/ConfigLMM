@@ -1,0 +1,31 @@
+
+upstream sunshine {
+    server 127.0.0.1:47990 fail_timeout=0;
+}
+
+server {
+
+    <% if !config['TLS'] %>
+        listen       <%= config['Port'] %>;
+        listen  [::]:<%= config['Port'] %>;
+    <% else %>
+        listen       <%= config['Port'] %> ssl;
+        listen  [::]:<%= config['Port'] %> ssl;
+        http2 on;
+        include config-lmm/ssl.conf;
+    <% end %>
+
+    server_name <%= config['Domain'] %>;
+
+    access_log  /var/log/nginx/sunshine.access.log;
+    error_log   /var/log/nginx/sunshine.error.log;
+
+    include config-lmm/private.conf;
+    include config-lmm/errors.conf;
+
+    location / {
+        proxy_pass https://sunshine;
+        include config-lmm/proxy.conf;
+    }
+
+}

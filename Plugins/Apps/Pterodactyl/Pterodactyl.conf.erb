@@ -1,0 +1,50 @@
+
+
+server {
+
+    <% if !config['TLS'] %>
+        listen       <%= config['Port'] %>;
+        listen  [::]:<%= config['Port'] %>;
+    <% else %>
+        listen       <%= config['Port'] %> ssl;
+        listen  [::]:<%= config['Port'] %> ssl;
+        http2 on;
+        include config-lmm/ssl.conf;
+    <% end %>
+
+    server_name <%= config['Domain'] %>;
+
+    access_log  /var/log/nginx/pterodactyl.access.log;
+    error_log   /var/log/nginx/pterodactyl.error.log;
+
+    include config-lmm/private.conf;
+    include config-lmm/errors.conf;
+
+    root /usr/share/webapps/pterodactyl/public/;
+    index index.php;
+
+    # allow larger file uploads and longer script runtimes
+    client_max_body_size 100m;
+    client_body_timeout 120s;
+
+    sendfile off;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+     location ~ \.php$ {
+         fastcgi_pass   unix:/run/php-fpm/php-fpm-pterodactyl.sock;
+         include        fastcgi.conf;
+         fastcgi_param HTTP_PROXY "";
+         fastcgi_buffer_size 16k;
+         fastcgi_buffers 4 16k;
+
+         fastcgi_send_timeout 300;
+         fastcgi_read_timeout 300;
+    }
+
+    location ~ /\.ht {
+        include config-lmm/private.conf;
+    }
+}

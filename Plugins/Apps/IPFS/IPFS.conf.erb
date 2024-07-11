@@ -1,0 +1,44 @@
+
+upstream ipfs_api {
+    server 127.0.0.1:5001;
+}
+
+upstream ipfs_gateway {
+    server 127.0.0.1:5080;
+}
+
+server {
+    <% if !config['TLS'] %>
+        listen       <%= config['Port'] %>;
+        listen  [::]:<%= config['Port'] %>;
+    <% else %>
+        listen       <%= config['Port'] %> ssl;
+        listen  [::]:<%= config['Port'] %> ssl;
+        http2 on;
+        include config-lmm/ssl.conf;
+    <% end %>
+
+    server_name <%= config['Domain'] %>;
+
+    access_log  /var/log/nginx/ipfs.access.log;
+    error_log   /var/log/nginx/ipfs.error.log;
+
+    include config-lmm/private.conf;
+    include config-lmm/errors.conf;
+
+    rewrite ^/$ /webui/ last;
+
+    location / {
+        proxy_pass http://ipfs_gateway;
+        proxy_read_timeout 180s;
+
+        include config-lmm/proxy.conf;
+    }
+
+    location ~ ^/(webui|api)/ {
+        proxy_pass http://ipfs_api;
+
+        include config-lmm/proxy.conf;
+    }
+
+}

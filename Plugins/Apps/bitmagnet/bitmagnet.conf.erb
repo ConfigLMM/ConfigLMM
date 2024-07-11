@@ -1,0 +1,35 @@
+
+upstream bitmagnet {
+    server 127.0.0.1:3333;
+}
+
+server {
+    <% if !config['TLS'] %>
+        listen       <%= config['Port'] %>;
+        listen  [::]:<%= config['Port'] %>;
+    <% else %>
+        listen       <%= config['Port'] %> ssl;
+        listen  [::]:<%= config['Port'] %> ssl;
+        http2 on;
+        include config-lmm/ssl.conf;
+    <% end %>
+
+    server_name <%= config['Domain'] %>;
+
+    access_log  /var/log/nginx/bitmagnet.access.log;
+    error_log   /var/log/nginx/bitmagnet.error.log;
+
+    include config-lmm/private.conf;
+    include config-lmm/errors.conf;
+
+    location / {
+        proxy_pass http://bitmagnet;
+        include config-lmm/proxy.conf;
+    }
+
+    location = /graphql {
+        proxy_read_timeout 10m;
+        proxy_pass http://bitmagnet;
+        include config-lmm/proxy.conf;
+    }
+}
