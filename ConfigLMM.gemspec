@@ -39,6 +39,7 @@ Gem::Specification.new do |spec|
     spec.add_dependency 'http', '~> 5.1.1'
     spec.add_dependency 'net-ssh'
     spec.add_dependency 'nokogiri'
+    spec.add_dependency 'octokit'
     spec.add_dependency 'porkbun'
     spec.add_dependency 'public_suffix'
     spec.add_dependency 'xdg'
