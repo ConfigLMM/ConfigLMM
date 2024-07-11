@@ -1,6 +1,7 @@
 
 # frozen_string_literal: true
 
+require_relative 'plugin'
 require_relative 'errors'
 require_relative 'store'
 require 'addressable/idna'
