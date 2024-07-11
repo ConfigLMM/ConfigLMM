@@ -207,7 +207,7 @@ And this is why I'm proposing this to be a community driven project where all of
 
 When thinking about all of us together then it will save a lot of time for many of us. Especially as new Apps we want to host and configure just keeps growing.
 
-Also maybe things you want to configure are already implemented so take a look at [Examples/Implemented.mm.yaml](/ConfigLMM/ConfigLMM/blob/master/Implemented.mm.yaml) and see what we already have! :)
+Also maybe things you want to configure are already implemented so take a look at [Examples/Implemented.mm.yaml](/Examples/Implemented.mm.yaml) and see what we already have! :)
 
 So I ask you to try it out (you can run `confilmm types` to see what is implemented), submit your issues and Pull Requests. I definitely need your and everyone's help to achieve this project's goal.
 
@@ -215,7 +215,7 @@ So I ask you to try it out (you can run `confilmm types` to see what is implemen
 
 First you need to have Ruby and RubyGems. Then you can install it with:
 
-    $ gem install *ConfigLMM*
+    $ gem install ConfigLMM
 
 ## Usage
 
@@ -330,6 +330,8 @@ I highly recommend looking at existing plugins. Also you can copy and rename `po
 ### Model Configuration for App/Service/System
 
 Try to model your existing infrastructure with high level YAML and submit those under Examples folder.
+
 This will allow us to come up with best design for configuration file format even before we start implementing such configuration.
+
 And you never know, maybe someone will love it so much he'll implement necessary Plugins so then others and you will be able to use *configlmm* to deploy such infrastructure.
 
