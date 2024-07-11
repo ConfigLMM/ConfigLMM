@@ -1,5 +1,7 @@
 # ConfigLMM - Large Configuration Management Manager
 
+![Yo Dawg I Heard you like config so I put a config in your Config](/Images/configINconfig.png)
+
 ## Manage The Management with ease!
 
 You define how you want your applications/systems/containers/services/servers
