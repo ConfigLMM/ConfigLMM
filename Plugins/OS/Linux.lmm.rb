@@ -8,6 +8,18 @@ module ConfigLMM
             HOSTS_SECTION_END   = "# -----END CONFIGLMM-----\n"
 
             def actionLinuxBuild(id, target, activeState, context, options)
+                buildHostsFile(target, options)
+            end
+
+            def actionLinuxDeploy(id, target, activeState, context, options)
+                if target['Location'] && target['Location'] != '@me'
+                    # TODO
+                else
+                    deployLocalHostsFile(target, options)
+                end
+            end
+
+            def buildHostsFile(target, options)
                 if target['Hosts']
                     hosts  = "#\n"
                     hosts += "# /etc/hosts: static lookup table for host names\n"
@@ -26,36 +38,34 @@ module ConfigLMM
                 end
             end
 
-            def actionLinuxDeploy(id, target, activeState, context, options)
-                if !target['Location'] || target['Location'] == '@me'
-                    if target['Hosts']
-                        hostsLines = File.read(HOSTS_FILE).lines
-                        sectionBeginIndex = hostsLines.index(HOSTS_SECTION_BEGIN)
-                        sectionEndIndex = hostsLines.index(HOSTS_SECTION_END)
-                        if sectionBeginIndex.nil?
-                            linesBefore = hostsLines
-                            linesBefore << "\n"
-                            linesBefore << HOSTS_SECTION_BEGIN
+            def deployLocalHostsFile(target, options)
+                if target['Hosts']
+                    hostsLines = File.read(HOSTS_FILE).lines
+                    sectionBeginIndex = hostsLines.index(HOSTS_SECTION_BEGIN)
+                    sectionEndIndex = hostsLines.index(HOSTS_SECTION_END)
+                    if sectionBeginIndex.nil?
+                        linesBefore = hostsLines
+                        linesBefore << "\n"
+                        linesBefore << HOSTS_SECTION_BEGIN
+                        linesAfter = [HOSTS_SECTION_END]
+                        linesAfter << "\n"
+                    else
+                        linesBefore = hostsLines[0..sectionBeginIndex]
+                        if sectionEndIndex.nil?
                             linesAfter = [HOSTS_SECTION_END]
                             linesAfter << "\n"
                         else
-                            linesBefore = hostsLines[0..sectionBeginIndex]
-                            if sectionEndIndex.nil?
-                                linesAfter = [HOSTS_SECTION_END]
-                                linesAfter << "\n"
-                            else
-                                linesAfter = hostsLines[sectionEndIndex..hostsLines.length]
-                            end
+                            linesAfter = hostsLines[sectionEndIndex..hostsLines.length]
                         end
-
-                        hostsLines = linesBefore
-                        target['Hosts'].each do |ip, entries|
-                            hostsLines << ip.ljust(16) + entries.join(' ') + "\n"
-                        end
-                        hostsLines += linesAfter
-
-                        fileWrite(HOSTS_FILE, hostsLines.join(), options[:dry])
                     end
+
+                    hostsLines = linesBefore
+                    target['Hosts'].each do |ip, entries|
+                        hostsLines << ip.ljust(16) + entries.join(' ') + "\n"
+                    end
+                    hostsLines += linesAfter
+
+                    fileWrite(HOSTS_FILE, hostsLines.join(), options[:dry])
                 end
             end
 
