@@ -35,6 +35,8 @@ Gem::Specification.new do |spec|
     spec.add_dependency 'ed25519'
     spec.add_dependency 'faraday-retry'
     spec.add_dependency 'faraday-multipart'
+    spec.add_dependency 'filesize'
+    spec.add_dependency 'fog-libvirt'
     spec.add_dependency 'fog-powerdns'
     spec.add_dependency 'http', '~> 5.1.1'
     spec.add_dependency 'net-ssh'
