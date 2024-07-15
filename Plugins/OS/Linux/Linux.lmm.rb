@@ -8,8 +8,6 @@ module ConfigLMM
 
             ISO_LOCATION = '~/.cache/configlmm/images/'
             HOSTS_FILE = '/etc/hosts'
-            CONFIGLMM_SECTION_BEGIN = "# -----BEGIN CONFIGLMM-----\n"
-            CONFIGLMM_SECTION_END   = "# -----END CONFIGLMM-----\n"
             SUSE_NAME = 'openSUSE Leap'
 
             def actionLinuxBuild(id, target, activeState, context, options)
@@ -65,32 +63,12 @@ module ConfigLMM
 
             def deployLocalHostsFile(target, options)
                 if target['Hosts']
-                    hostsLines = File.read(HOSTS_FILE).lines
-                    sectionBeginIndex = hostsLines.index(CONFIGLMM_SECTION_BEGIN)
-                    sectionEndIndex = hostsLines.index(CONFIGLMM_SECTION_END)
-                    if sectionBeginIndex.nil?
-                        linesBefore = hostsLines
-                        linesBefore << "\n"
-                        linesBefore << CONFIGLMM_SECTION_BEGIN
-                        linesAfter = [CONFIGLMM_SECTION_END]
-                        linesAfter << "\n"
-                    else
-                        linesBefore = hostsLines[0..sectionBeginIndex]
-                        if sectionEndIndex.nil?
-                            linesAfter = [CONFIGLMM_SECTION_END]
-                            linesAfter << "\n"
-                        else
-                            linesAfter = hostsLines[sectionEndIndex..hostsLines.length]
+                    updateLocalFile(HOSTS_FILE, options) do |hostsLines|
+                        target['Hosts'].each do |ip, entries|
+                            hostsLines << ip.ljust(16) + entries.join(' ') + "\n"
                         end
                     end
 
-                    hostsLines = linesBefore
-                    target['Hosts'].each do |ip, entries|
-                        hostsLines << ip.ljust(16) + entries.join(' ') + "\n"
-                    end
-                    hostsLines += linesAfter
-
-                    fileWrite(HOSTS_FILE, hostsLines.join(), options[:dry])
                 end
             end
 

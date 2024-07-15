@@ -143,6 +143,36 @@ module ConfigLMM
                 end
             end
 
+            CONFIGLMM_SECTION_BEGIN = "# -----BEGIN CONFIGLMM-----\n"
+            CONFIGLMM_SECTION_END   = "# -----END CONFIGLMM-----\n"
+
+            def updateLocalFile(file, options)
+                fileLines = File.read(file).lines
+                sectionBeginIndex = fileLines.index(CONFIGLMM_SECTION_BEGIN)
+                sectionEndIndex = fileLines.index(CONFIGLMM_SECTION_END)
+                if sectionBeginIndex.nil?
+                    linesBefore = fileLines
+                    linesBefore << "\n"
+                    linesBefore << CONFIGLMM_SECTION_BEGIN
+                    linesAfter = [CONFIGLMM_SECTION_END]
+                    linesAfter << "\n"
+                else
+                    linesBefore = fileLines[0..sectionBeginIndex]
+                    if sectionEndIndex.nil?
+                        linesAfter = [CONFIGLMM_SECTION_END]
+                        linesAfter << "\n"
+                    else
+                        linesAfter = fileLines[sectionEndIndex..fileLines.length]
+                    end
+                end
+
+                fileLines = linesBefore
+                yield(fileLines)
+                fileLines += linesAfter
+
+                fileWrite(file, fileLines.join(), options[:dry])
+            end
+
             def renderTemplate(template, target, outputPath, options)
                 variables = {
                     config: target,
