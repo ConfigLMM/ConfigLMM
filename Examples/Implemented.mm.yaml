@@ -43,6 +43,11 @@ GoDaddy:
 
 Linux:
     Type: Linux
+    Location: qemu:///session
+    Distro: openSUSE Leap
+    CPU: 2
+    RAM: 4 GiB
+    Storage: 30 GiB
     Hosts:
         127.0.0.1:
             - example.org

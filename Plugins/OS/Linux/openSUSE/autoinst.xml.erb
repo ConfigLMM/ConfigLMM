@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE profile>
+<profile xmlns="http://www.suse.com/1.0/yast2ns" xmlns:config="http://www.suse.com/1.0/configns">
+  <general config:type="map">
+    <mode config:type="map">
+      <confirm config:type="boolean">false</confirm>
+    </mode>
+  </general>
+  <users config:type="list">
+    <% if config['RootPasswordHash'] %>
+      <encrypted config:type="boolean">true</encrypted>
+      <user_password><%= config['RootPasswordHash'] %></user_password>
+      <username>root</username>
+    <% elsif config['RootPassword'] %>
+    <user>
+      <encrypted config:type="boolean">false</encrypted>
+      <user_password><%= config['RootPassword'] %></user_password>
+      <username>root</username>
+    </user>
+    <% end %>
+  </users>
+</profile>
