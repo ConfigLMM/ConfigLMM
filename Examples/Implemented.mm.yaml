@@ -60,6 +60,11 @@ Linux:
             Shell: fish
             AuthorizedKeys:
                 - ~/.ssh/id_ed25519.pub
+    SSH:
+        Config:
+            Example:
+                User: root
+                HostName: example.org
 
 # https://www.arubanetworks.com/
 ArubaInstant:

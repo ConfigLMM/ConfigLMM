@@ -8,14 +8,18 @@ module ConfigLMM
 
             ISO_LOCATION = '~/.cache/configlmm/images/'
             HOSTS_FILE = '/etc/hosts'
+            SSH_CONFIG = '~/.ssh/config'
             SUSE_NAME = 'openSUSE Leap'
 
             def actionLinuxBuild(id, target, activeState, context, options)
+                prepareConfig(target)
                 buildHostsFile(id, target, options)
+                buildSSHConfig(id, target, options)
                 buildAutoYaST(id, target, options)
             end
 
             def actionLinuxDeploy(id, target, activeState, context, options)
+                prepareConfig(target)
                 if target['Location'] && target['Location'] != '@me'
                     uri = Addressable::URI.parse(target['Location'])
                     case uri.scheme
@@ -29,6 +33,7 @@ module ConfigLMM
                     end
                 else
                     deployLocalHostsFile(target, options)
+                    deployLocalSSHConfig(target, options)
                 end
             end
 
@@ -52,8 +57,28 @@ module ConfigLMM
                 end
             end
 
+            def buildSSHConfig(id, target, options)
+                if !target['SSH']['Config'].empty?
+                    sshConfig  = "\n"
+                    sshConfig += CONFIGLMM_SECTION_BEGIN
+                    target['SSH']['Config'].each do |name, info|
+                        sshConfig += "Host " + name + "\n"
+                        sshConfig += "    HostName " + info['HostName'] + "\n" if info['HostName']
+                        sshConfig += "    Port " + info['Port'] + "\n" if info['Port']
+                        sshConfig += "    User " + info['User'] + "\n" if info['User']
+                        sshConfig += "    IdentityFile " + info['IdentityFile'] + "\n" if info['IdentityFile']
+                        sshConfig += "\n"
+                    end
+                    sshConfig += CONFIGLMM_SECTION_END
+                    sshConfig += "\n"
+
+                    configPath = options['output'] + '/' + id
+                    mkdir(configPath + '/root/.ssh', options[:dry])
+                    fileWrite(configPath + SSH_CONFIG.gsub('~', '/root'), sshConfig, options[:dry])
+                end
+            end
+
             def buildAutoYaST(id, target, options)
-                prepareConfig(target)
                 if target['Distro'] == SUSE_NAME
                     outputFolder = options['output'] + '/' + id + '/'
                     template = ERB.new(File.read(__dir__ + '/openSUSE/autoinst.xml.erb'))
@@ -68,7 +93,20 @@ module ConfigLMM
                             hostsLines << ip.ljust(16) + entries.join(' ') + "\n"
                         end
                     end
+                end
+            end
 
+            def deployLocalSSHConfig(target, options)
+                if !target['SSH']['Config'].empty?
+                    updateLocalFile(File.expand_path(SSH_CONFIG), options) do |configLines|
+                        target['SSH']['Config'].each do |name, info|
+                            configLines << "Host " + name + "\n"
+                            configLines << "    HostName " + info['HostName'] + "\n" if info['HostName']
+                            configLines << "    Port " + info['Port'] + "\n" if info['Port']
+                            configLines << "    User " + info['User'] + "\n" if info['User']
+                            configLines << "    IdentityFile " + info['IdentityFile'] + "\n" if info['IdentityFile']
+                        end
+                    end
                 end
             end
 
@@ -121,6 +159,8 @@ module ConfigLMM
             end
 
             def prepareConfig(target)
+                target['SSH'] ||= {}
+                target['SSH']['Config'] ||= {}
                 target['Users'] ||= {}
 
                 if ENV['LINUX_ROOT_PASSWORD_HASH']
