@@ -32,6 +32,9 @@ module ConfigLMM
 
                 # Create Plugin instances
                 Framework::Store.boot(logger, prompt, @Plugins)
+                @Plugins.each do |id, plugin|
+                    plugin.state = @State
+                end
             end
 
             def execute

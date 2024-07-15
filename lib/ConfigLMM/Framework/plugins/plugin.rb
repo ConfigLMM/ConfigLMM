@@ -42,6 +42,8 @@ module ConfigLMM
 
             addMeta :name, :description
 
+            attr_accessor :state
+
             def initialize(logger, prompt, plugins)
                 @Logger = logger
                 @Prompt = prompt
