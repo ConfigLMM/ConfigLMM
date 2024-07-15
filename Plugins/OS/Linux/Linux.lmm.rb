@@ -54,20 +54,10 @@ module ConfigLMM
             end
 
             def buildAutoYaST(id, target, options)
+                prepareConfig(target)
                 if target['Distro'] == SUSE_NAME
                     outputFolder = options['output'] + '/' + id + '/'
                     template = ERB.new(File.read(__dir__ + '/openSUSE/autoinst.xml.erb'))
-                    if ENV['LINUX_ROOT_PASSWORD_HASH']
-                        target['RootPasswordHash'] = ENV['LINUX_ROOT_PASSWORD_HASH']
-                    elsif ENV['LINUX_ROOT_PASSWORD']
-                        target['RootPassword'] = ENV['LINUX_ROOT_PASSWORD']
-                    elsif !target['RootPassword'] && !target['RootPasswordHash']
-                        rootPassword = SecureRandom.urlsafe_base64(12)
-                        prompt.say("Root password: #{rootPassword}", :color => :magenta)
-                        target['RootPasswordHash'] = self.class.linuxPasswordHash(rootPassword)
-                    elsif target['RootPassword'] == 'no'
-                        target.delete('RootPassword')
-                    end
                     renderTemplate(template, target, outputFolder + 'autoinst.xml', options)
                 end
             end
@@ -149,6 +139,56 @@ module ConfigLMM
                 patchedIso = File.dirname(iso) + '/patched.iso'
                 `xorriso -as mkisofs -no-emul-boot -boot-load-size 4 -boot-info-table -iso-level 4 -b boot/x86_64/loader/isolinux.bin -c boot/x86_64/loader/boot.cat -eltorito-alt-boot -e boot/x86_64/efi -no-emul-boot -o #{patchedIso} #{outputFolder} 2>&1 >/dev/null`
                 patchedIso
+            end
+
+            def prepareConfig(target)
+                target['Users'] ||= {}
+
+                if ENV['LINUX_ROOT_PASSWORD_HASH']
+                    target['Users']['root'] ||= {}
+                    target['Users']['root']['PasswordHash'] = ENV['LINUX_ROOT_PASSWORD_HASH']
+                elsif ENV['LINUX_ROOT_PASSWORD']
+                    target['Users']['root'] ||= {}
+                    target['Users']['root']['PasswordHash'] = self.class.linuxPasswordHash(ENV['LINUX_ROOT_PASSWORD'])
+                elsif target['Users'].key?('root')
+                    if !target['Users']['root']['Password'] &&
+                       !target['Users']['root']['PasswordHash']
+                        rootPassword = SecureRandom.urlsafe_base64(12)
+                        prompt.say("Root password: #{rootPassword}", :color => :magenta)
+                        target['Users']['root']['PasswordHash'] = self.class.linuxPasswordHash(rootPassword)
+                    elsif target['Users']['root']['Password'] == 'no'
+                        target['Users']['root'].delete('Password')
+                    end
+                end
+
+                target['Users'].each do |user, info|
+                    newKeys = []
+                    info['AuthorizedKeys'].to_a.each do |key|
+                        if key.start_with?('/') || key.start_with?('~')
+                            newKeys << File.read(File.expand_path(key)).strip
+                        else
+                            newKeys << key
+                        end
+                    end
+                    info['AuthorizedKeys'] = newKeys
+                end
+
+                packages = YAML.load_file(__dir__ + '/Packages.yaml')
+                newApps = []
+                target['Services'] ||= []
+                if target['Apps'].include?('sshd')
+                    target['Services'] << 'sshd'
+                    target['Services'].uniq!
+                end
+                target['Apps'].to_a.each do |app|
+                    appName = packages[target['Distro']][app]
+                    if appName
+                        newApps << appName
+                    else
+                        newApps << app
+                    end
+                end
+                target['Apps'] = newApps
             end
 
             def self.linuxPasswordHash(password)

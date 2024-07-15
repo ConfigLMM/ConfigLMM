@@ -6,17 +6,58 @@
       <confirm config:type="boolean">false</confirm>
     </mode>
   </general>
-  <users config:type="list">
-    <% if config['RootPasswordHash'] %>
-      <encrypted config:type="boolean">true</encrypted>
-      <user_password><%= config['RootPasswordHash'] %></user_password>
-      <username>root</username>
-    <% elsif config['RootPassword'] %>
-    <user>
-      <encrypted config:type="boolean">false</encrypted>
-      <user_password><%= config['RootPassword'] %></user_password>
-      <username>root</username>
-    </user>
+  <bootloader t="map">
+    <global t="map">
+      <append>splash=silent preempt=full mitigations=auto quiet security=apparmor console=ttyS0,115200</append>
+    </global>
+  </bootloader>
+  <software t="map">
+    <% if !config['Apps'].to_a.empty? %>
+      <packages t="list">
+        <% config['Apps'].each do |app| %>
+          <package><%= app %></package>
+        <% end %>
+      </packages>
     <% end %>
-  </users>
+  </software>
+  <services-manager t="map">
+    <services t="map">
+      <% if !config['Services'].to_a.empty? %>
+        <enable t="list">
+          <% config['Services'].each do |service| %>
+            <service><%= service %></service>
+          <% end %>
+        </enable>
+      <% end %>
+    </services>
+  </services-manager>
+  <timezone t="map">
+    <timezone>Etc/UTC</timezone>
+  </timezone>
+  <% if !config['Users'].to_h.empty? %>
+    <users config:type="list">
+      <% config['Users'].each do |user, info| %>
+        <user>
+          <username>root</username>
+          <% if info['PasswordHash'] %>
+            <encrypted config:type="boolean">true</encrypted>
+            <user_password><%= info['PasswordHash'] %></user_password>
+          <% elsif info['Password'] %>
+            <encrypted config:type="boolean">false</encrypted>
+            <user_password><%= info['Password'] %></user_password>
+          <% end %>
+          <% if info['Shell'] %>
+            <shell>/usr/bin/<%= info['Shell'] %></shell>
+          <% end %>
+          <% if !info['AuthorizedKeys'].to_a.empty? %>
+            <authorized_keys config:type="list">
+              <% info['AuthorizedKeys'].each do |entry| %>
+                <listentry><%= entry %></listentry>
+              <% end %>
+            </authorized_keys>
+          <% end %>
+        </user>
+      <% end %>
+    </users>
+  <% end %>
 </profile>

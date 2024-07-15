@@ -51,6 +51,15 @@ Linux:
     Hosts:
         127.0.0.1:
             - example.org
+    Apps:
+        - sshd
+        - fish
+        - vim
+    Users:
+        root:
+            Shell: fish
+            AuthorizedKeys:
+                - ~/.ssh/id_ed25519.pub
 
 # https://www.arubanetworks.com/
 ArubaInstant:

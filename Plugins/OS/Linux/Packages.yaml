@@ -1,0 +1,4 @@
+Arch Linux:
+    sshd: openssh
+openSUSE Leap:
+    sshd: openssh
