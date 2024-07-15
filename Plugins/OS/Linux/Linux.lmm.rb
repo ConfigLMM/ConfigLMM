@@ -176,7 +176,7 @@ module ConfigLMM
                 packages = YAML.load_file(__dir__ + '/Packages.yaml')
                 newApps = []
                 target['Services'] ||= []
-                if target['Apps'].include?('sshd')
+                if target['Apps'].to_a.include?('sshd')
                     target['Services'] << 'sshd'
                     target['Services'].uniq!
                 end
