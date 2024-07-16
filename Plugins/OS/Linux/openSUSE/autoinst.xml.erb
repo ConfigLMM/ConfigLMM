@@ -30,6 +30,9 @@
   <networking t="map">
     <dns t="map">
       <hostname><%= config['HostName'] %></hostname>
+      <% if config['Domain'] %>
+        <domain><%= config['Domain'] %></domain>
+      <% end %>
     </dns>
   </networking>
   <software t="map">

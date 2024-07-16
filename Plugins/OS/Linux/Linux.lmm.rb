@@ -26,10 +26,9 @@ module ConfigLMM
                     uri = Addressable::URI.parse(target['Location'])
                     case uri.scheme
                     when 'qemu'
-                        location = Libvirt.getLocation(target['Location'])
-                        iso = installationISO(target['Distro'], location)
-                        iso = buildISOAutoYaST(id, iso, target, options) if target['Distro'] == SUSE_NAME
-                        plugins[:Libvirt].createVM(target['Name'], target, target['Location'], iso, activeState)
+                        deployOverLibvirt(id, target, activeState, context, options)
+                    when 'ssh'
+                        deployOverSSH(uri, id, target, activeState, context, options)
                     else
                         raise Framework::PluginProcessError.new("#{id}: Unknown protocol: #{uri.scheme}!")
                     end
@@ -37,6 +36,38 @@ module ConfigLMM
                     deployLocalHostsFile(target, options)
                     deployLocalSSHConfig(target, options)
                 end
+                if target['AlternativeLocation']
+                    uri = Addressable::URI.parse(target['AlternativeLocation'])
+                    raise Framework::PluginProcessError.new("#{id}: Unsupported protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
+                    deployOverSSH(uri, id, target, activeState, context, options)
+                end
+            end
+
+            def deployOverSSH(locationUri, id, target, activeState, context, options)
+                if target['Domain'] || target['Hosts']
+                    hostsLines = []
+                    if target['Domain']
+                        self.class.sshStart(locationUri) do |ssh|
+                            envs = self.class.sshExec!(ssh, "env").split("\n")
+                            envVars = Hash[envs.map { |vars| vars.split('=', 2) }]
+                            ipAddr = envVars['SSH_CONNECTION'].split[-2]
+                            hostsLines << ipAddr.ljust(16) + target['Domain'] + ' ' + target['Name'] + "\n"
+                        end
+                    end
+                    target['Hosts'].to_a.each do |ip, entries|
+                            hostsLines << ip.ljust(16) + entries.join(' ') + "\n"
+                    end
+                    updateRemoteFile(locationUri, HOSTS_FILE, options, false) do |fileLines|
+                        fileLines + hostsLines
+                    end
+                end
+            end
+
+            def deployOverLibvirt(id, target, activeState, context, options)
+                location = Libvirt.getLocation(target['Location'])
+                iso = installationISO(target['Distro'], location)
+                iso = buildISOAutoYaST(id, iso, target, options) if target['Distro'] == SUSE_NAME
+                plugins[:Libvirt].createVM(target['Name'], target, target['Location'], iso, activeState)
             end
 
             def buildHostsFile(id, target, options)
