@@ -44,10 +44,12 @@ GoDaddy:
 Linux:
     Type: Linux
     Location: qemu:///session
+    AlternativeLocation: ssh://example.org/
     Distro: openSUSE Leap
     CPU: 2
     RAM: 4 GiB
     Storage: 30 GiB
+    Domain: example.org
     Hosts:
         127.0.0.1:
             - example.org
@@ -138,6 +140,15 @@ Nextcloud:
 Odoo:
     Type: Odoo
     Domain: odoo.example.org
+
+# https://www.postfix.org/
+Postfix:
+    Type: Postfix
+    Location: ssh://example.org/
+    AlternativePort: 2525
+    ForwardAll: example.com
+    Settings:
+        inet_interfaces: $myhostname, localhost
 
 # https://pterodactyl.io/
 Pterodactyl:

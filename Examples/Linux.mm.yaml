@@ -1,5 +1,6 @@
 Linux:
-    Type: ArchLinux
+    Type: Linux
+    Distro: ArchLinux
     Apps:
         - fish
         - vim
@@ -7,10 +8,13 @@ Linux:
         user1:
             Admin: Yes
             Shell: fish
+            AuthorizedKeys:
+                - ~/.ssh/id_ed25519.pub
         user2:
             Admin: Yes
             Shell: fish
             Comment: Other user
+    Domain: example.org
     Hosts:
         127.0.0.1:
             - example.org
