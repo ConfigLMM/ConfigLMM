@@ -1,6 +1,9 @@
 Arch Linux:
     sshd: openssh
     Postfix: postfix
+    Dovecot: dovecot
+
 openSUSE Leap:
     sshd: openssh
     Postfix: postfix
+    Dovecot: dovecot
