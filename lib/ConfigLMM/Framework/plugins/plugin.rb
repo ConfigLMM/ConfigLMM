@@ -2,9 +2,11 @@
 
 require_relative 'errors'
 require_relative 'store'
+require 'addressable/uri'
 require 'http'
 require 'fileutils'
 require 'net/ssh'
+require 'net/scp'
 
 module ConfigLMM
     module Framework
@@ -176,6 +178,19 @@ module ConfigLMM
                 fileWrite(file, fileLines.join(), options[:dry])
             end
 
+            def updateRemoteFile(location, file, options, atTop = false, &block)
+                uri = Addressable::URI.parse(location)
+                raise Framework::PluginProcessError.new("Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
+
+                self.class.sshStart(uri) do |ssh|
+                    localFile = options['output'] + '/' + SecureRandom.alphanumeric(10)
+                    File.write(localFile, '')
+                    ssh.scp.download!(file, localFile)
+                    updateLocalFile(localFile, options, atTop, &block)
+                    ssh.scp.upload!(localFile, file)
+                end
+            end
+
             def self.toSSHparams(locationUri)
                 server = locationUri.hostname
                 params = {}
@@ -185,6 +200,7 @@ module ConfigLMM
             end
 
             def self.sshStart(uri)
+                uri = Addressable::URI.parse(uri) if uri.is_a?(String)
                 server, sshParams = self.toSSHparams(uri)
                 Net::SSH.start(server, nil, sshParams) do |ssh|
                     yield(ssh)
