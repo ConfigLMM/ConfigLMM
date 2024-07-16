@@ -296,9 +296,16 @@ module ConfigLMM
                 names
             end
 
+            def self.distroID
+                `cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2`.strip.gsub('"', '')
+            end
+
+            def self.distroIDfromSSH(ssh)
+                ssh.exec!('cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2').strip.gsub('"', '')
+            end
+
             def self.distroInfoFromSSH(ssh)
-                osID = ssh.exec!('cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2').strip.gsub('"', '')
-                distroInfo = self.distroInfo(osID)
+                distroInfo = self.distroInfo(self.distroIDfromSSH(ssh))
             end
 
             def self.distroInfo(distroID)

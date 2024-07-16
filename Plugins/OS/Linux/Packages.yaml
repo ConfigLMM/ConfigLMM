@@ -2,8 +2,10 @@ Arch Linux:
     sshd: openssh
     Postfix: postfix
     Dovecot: dovecot
+    PostgreSQL: postgresql
 
 openSUSE Leap:
     sshd: openssh
     Postfix: postfix
     Dovecot: dovecot
+    PostgreSQL: postgresql-server
