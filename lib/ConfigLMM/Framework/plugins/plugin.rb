@@ -147,16 +147,18 @@ module ConfigLMM
             CONFIGLMM_SECTION_BEGIN = "# -----BEGIN CONFIGLMM-----\n"
             CONFIGLMM_SECTION_END   = "# -----END CONFIGLMM-----\n"
 
-            def updateLocalFile(file, options)
+            def updateLocalFile(file, options, atTop = false)
                 fileLines = File.read(file).lines
                 sectionBeginIndex = fileLines.index(CONFIGLMM_SECTION_BEGIN)
                 sectionEndIndex = fileLines.index(CONFIGLMM_SECTION_END)
                 if sectionBeginIndex.nil?
-                    linesBefore = fileLines
+                    linesBefore = []
+                    linesBefore = fileLines unless atTop
                     linesBefore << "\n"
                     linesBefore << CONFIGLMM_SECTION_BEGIN
                     linesAfter = [CONFIGLMM_SECTION_END]
                     linesAfter << "\n"
+                    linesAfter += fileLines if atTop
                 else
                     linesBefore = fileLines[0..sectionBeginIndex]
                     if sectionEndIndex.nil?
@@ -168,7 +170,7 @@ module ConfigLMM
                 end
 
                 fileLines = linesBefore
-                yield(fileLines)
+                fileLines = yield(fileLines)
                 fileLines += linesAfter
 
                 fileWrite(file, fileLines.join(), options[:dry])
