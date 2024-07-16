@@ -195,6 +195,7 @@ module ConfigLMM
                 target['SSH'] ||= {}
                 target['SSH']['Config'] ||= {}
                 target['Users'] ||= {}
+                target['HostName'] = target['Name'] unless target['HostName']
 
                 if ENV['LINUX_ROOT_PASSWORD_HASH']
                     target['Users']['root'] ||= {}

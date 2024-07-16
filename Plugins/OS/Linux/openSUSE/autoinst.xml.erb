@@ -11,6 +11,27 @@
       <append>splash=silent preempt=full mitigations=auto quiet security=apparmor console=ttyS0,115200</append>
     </global>
   </bootloader>
+  <host t="map">
+    <% if !config['Hosts'].to_a.empty? %>
+      <hosts t="list">
+        <% config['Hosts'].each do |address, names| %>
+          <hosts_entry t="map">
+            <host_address><%= address %></host_address>
+            <names t="list">
+              <% names.each do |name| %>
+                <name><%= name %></name>
+              <% end %>
+            </names>
+          </hosts_entry>
+        <% end %>
+      </hosts>
+    <% end %>
+  </host>
+  <networking t="map">
+    <dns t="map">
+      <hostname><%= config['HostName'] %></hostname>
+    </dns>
+  </networking>
   <software t="map">
     <% if !config['Apps'].to_a.empty? %>
       <packages t="list">
