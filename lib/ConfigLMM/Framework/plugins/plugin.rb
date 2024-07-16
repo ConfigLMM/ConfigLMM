@@ -4,6 +4,7 @@ require_relative 'errors'
 require_relative 'store'
 require 'http'
 require 'fileutils'
+require 'net/ssh'
 
 module ConfigLMM
     module Framework
@@ -171,6 +172,35 @@ module ConfigLMM
                 fileLines += linesAfter
 
                 fileWrite(file, fileLines.join(), options[:dry])
+            end
+
+            def self.toSSHparams(locationUri)
+                server = locationUri.hostname
+                params = {}
+                params[:port] = locationUri.port if locationUri.port
+                params[:user] = locationUri.user if locationUri.user
+                [server, params]
+            end
+
+            def self.sshStart(uri)
+                server, sshParams = self.toSSHparams(uri)
+                Net::SSH.start(server, nil, sshParams) do |ssh|
+                    yield(ssh)
+                end
+            end
+
+            def self.sshExec!(ssh, command)
+                status = {}
+                output = ''
+                channel = ssh.exec(command, status: status) do |channel, stream, data|
+                    output += data
+                end
+                channel.wait
+                if !status[:exit_code].zero?
+                    puts output
+                    raise Framework::PluginProcessError.new("Failed '#{command}'")
+                end
+                output
             end
 
             def renderTemplate(template, target, outputPath, options)

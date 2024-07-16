@@ -1,4 +1,6 @@
 Arch Linux:
     sshd: openssh
+    Postfix: postfix
 openSUSE Leap:
     sshd: openssh
+    Postfix: postfix

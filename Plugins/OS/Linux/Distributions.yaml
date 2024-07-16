@@ -1,0 +1,5 @@
+
+opensuse-leap:
+    Name: openSUSE Leap
+    InstallPackage: zypper install --no-confirm
+    AutoStartService: systemctl enable
