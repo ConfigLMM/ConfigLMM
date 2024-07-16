@@ -143,6 +143,21 @@ module ConfigLMM
                 end
             end
 
+            def startService(name, location)
+                if location && location != '@me'
+                    uri = Addressable::URI.parse(location)
+                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
+                    self.class.sshStart(uri) do |ssh|
+                        distroInfo = self.class.distroInfoFromSSH(ssh)
+
+                        command = distroInfo['StartService'] + ' ' + name.shellescape
+                        self.class.sshExec!(ssh, command)
+                    end
+                else
+                    # TODO
+                end
+            end
+
             def installationISO(distro, location)
                 url = nil
                 case distro
