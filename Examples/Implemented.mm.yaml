@@ -150,6 +150,11 @@ Postfix:
     Settings:
         inet_interfaces: $myhostname, localhost
 
+PostgreSQL:
+    Type: PostgreSQL
+    Location: ssh://example.org/
+    ListenAll: yes
+
 # https://pterodactyl.io/
 Pterodactyl:
     Type: Pterodactyl
