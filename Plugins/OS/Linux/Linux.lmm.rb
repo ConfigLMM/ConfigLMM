@@ -103,7 +103,7 @@ module ConfigLMM
                     sshConfig  = "\n"
                     sshConfig += CONFIGLMM_SECTION_BEGIN
                     target['SSH']['Config'].each do |name, info|
-                        sshConfig += "Host " + name + "\n"
+                        sshConfig += "Host #{name} #{info['HostName']}\n"
                         sshConfig += "    HostName " + info['HostName'] + "\n" if info['HostName']
                         sshConfig += "    Port " + info['Port'] + "\n" if info['Port']
                         sshConfig += "    User " + info['User'] + "\n" if info['User']
@@ -133,6 +133,7 @@ module ConfigLMM
                         target['Hosts'].each do |ip, entries|
                             hostsLines << ip.ljust(16) + entries.join(' ') + "\n"
                         end
+                        hostsLines
                     end
                 end
             end
@@ -141,12 +142,13 @@ module ConfigLMM
                 if !target['SSH']['Config'].empty?
                     updateLocalFile(File.expand_path(SSH_CONFIG), options) do |configLines|
                         target['SSH']['Config'].each do |name, info|
-                            configLines << "Host " + name + "\n"
+                            configLines << "Host #{name} #{info['HostName']}\n"
                             configLines << "    HostName " + info['HostName'] + "\n" if info['HostName']
                             configLines << "    Port " + info['Port'] + "\n" if info['Port']
                             configLines << "    User " + info['User'] + "\n" if info['User']
                             configLines << "    IdentityFile " + info['IdentityFile'] + "\n" if info['IdentityFile']
                         end
+                        configLines
                     end
                 end
             end
