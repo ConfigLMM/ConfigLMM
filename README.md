@@ -59,6 +59,8 @@ to work without being vendor locked into any particular implementation or provid
 
 The true [GitOps](https://en.wikipedia.org/wiki/DevOps#GitOps)/DevOps/DevSecOps/[TestOps](https://en.wikipedia.org/wiki/TestOps)/SysOps/[AIOps](https://en.wikipedia.org/wiki/Artificial_Intelligence_for_IT_Operations)[DataOps](https://en.wikipedia.org/wiki/DataOps) which I call AllTheOps :)
 
+![One Config to Rule Them All](/Images/singleConfig.png)
+
 ## Benefits
 
 * Compare performance and price among different providers
