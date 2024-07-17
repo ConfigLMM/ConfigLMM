@@ -11,6 +11,7 @@ module ConfigLMM
             ISO_LOCATION = '~/.cache/configlmm/images/'
             HOSTS_FILE = '/etc/hosts'
             SSH_CONFIG = '~/.ssh/config'
+            SYSCTL_FILE = '/etc/sysctl.d/10-configlmm.conf'
 
             def actionLinuxBuild(id, target, activeState, context, options)
                 prepareConfig(target)
@@ -58,6 +59,14 @@ module ConfigLMM
                     end
                     updateRemoteFile(locationUri, HOSTS_FILE, options, false) do |fileLines|
                         fileLines + hostsLines
+                    end
+                end
+                if target['Sysctl']
+                    updateRemoteFile(locationUri, SYSCTL_FILE, options, false) do |fileLines|
+                        target['Sysctl'].each do |name, value|
+                            fileLines << "#{name} = #{value}\n"
+                        end
+                        fileLines
                     end
                 end
             end
