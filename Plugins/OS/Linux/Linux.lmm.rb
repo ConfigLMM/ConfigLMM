@@ -290,7 +290,7 @@ module ConfigLMM
                     if packageName
                         names << packageName
                     else
-                        names << pkg
+                        names << pkg.downcase
                     end
                 end
                 names

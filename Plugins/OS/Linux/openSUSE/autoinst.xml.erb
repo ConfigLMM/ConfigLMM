@@ -39,7 +39,7 @@
     <% if !config['Apps'].to_a.empty? %>
       <packages t="list">
         <% config['Apps'].each do |app| %>
-          <package><%= app %></package>
+          <package><%= app.downcase %></package>
         <% end %>
       </packages>
     <% end %>
