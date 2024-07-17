@@ -67,6 +67,8 @@ Linux:
             Example:
                 User: root
                 HostName: example.org
+    Sysctl:
+        vm.overcommit_memory: 1
 
 # https://www.arubanetworks.com/
 ArubaInstant:
@@ -83,6 +85,10 @@ ArchiSteamFarm:
 Bitmagnet:
     Type: Bitmagnet
     Domain: bitmagnet.example.org
+
+Dovecot:
+    Type: Dovecot
+    Location: ssh://example.org/
 
 # https://github.com/gollum/gollum
 Gollum:
@@ -183,6 +189,11 @@ Scrutiny:
 Sunshine:
     Type: Sunshine
     Domain: sunshine.example.org
+
+# https://valkey.io/ (Redis fork)
+Valkey:
+    Type: Valkey
+    Location: ssh://example.org/
 
 # https://github.com/dani-garcia/vaultwarden
 Vaultwarden:

@@ -23,3 +23,5 @@ Linux:
             Example:
                 User: root
                 HostName: example.org
+    Sysctl:
+        vm.overcommit_memory: 1
