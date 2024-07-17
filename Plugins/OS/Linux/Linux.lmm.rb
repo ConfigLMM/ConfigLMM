@@ -6,12 +6,11 @@ require 'shellwords'
 
 module ConfigLMM
     module LMM
-        class Linux < Framework::Plugin
+        class Linux < Framework::LinuxApp
 
             ISO_LOCATION = '~/.cache/configlmm/images/'
             HOSTS_FILE = '/etc/hosts'
             SSH_CONFIG = '~/.ssh/config'
-            SUSE_NAME = 'openSUSE Leap'
 
             def actionLinuxBuild(id, target, activeState, context, options)
                 prepareConfig(target)
@@ -143,52 +142,6 @@ module ConfigLMM
                 end
             end
 
-            def ensurePackage(name, location)
-                if location && location != '@me'
-                    uri = Addressable::URI.parse(location)
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
-                    self.class.sshStart(uri) do |ssh|
-                        distroInfo = self.class.distroInfoFromSSH(ssh)
-                        pkg = self.class.mapPackages([name], distroInfo['Name']).first
-
-                        command = distroInfo['InstallPackage'] + ' ' + pkg.shellescape
-                        self.class.sshExec!(ssh, command)
-                    end
-                else
-                    # TODO
-                end
-            end
-
-            def ensureServiceAutoStart(name, location)
-                if location && location != '@me'
-                    uri = Addressable::URI.parse(location)
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
-                    self.class.sshStart(uri) do |ssh|
-                        distroInfo = self.class.distroInfoFromSSH(ssh)
-
-                        command = distroInfo['AutoStartService'] + ' ' + name.shellescape
-                        self.class.sshExec!(ssh, command)
-                    end
-                else
-                    # TODO
-                end
-            end
-
-            def startService(name, location)
-                if location && location != '@me'
-                    uri = Addressable::URI.parse(location)
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
-                    self.class.sshStart(uri) do |ssh|
-                        distroInfo = self.class.distroInfoFromSSH(ssh)
-
-                        command = distroInfo['StartService'] + ' ' + name.shellescape
-                        self.class.sshExec!(ssh, command)
-                    end
-                else
-                    # TODO
-                end
-            end
-
             def installationISO(distro, location)
                 url = nil
                 case distro
@@ -282,42 +235,11 @@ module ConfigLMM
                 target['Apps'] = self.class.mapPackages(target['Apps'], target['Distro'])
             end
 
-            def self.mapPackages(packages, distroName)
-                distroPackages = YAML.load_file(__dir__ + '/Packages.yaml')
-                names = []
-                packages.to_a.each do |pkg|
-                    packageName = distroPackages[distroName][pkg]
-                    if packageName
-                        names << packageName
-                    else
-                        names << pkg.downcase
-                    end
-                end
-                names
-            end
-
-            def self.distroID
-                `cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2`.strip.gsub('"', '')
-            end
-
-            def self.distroIDfromSSH(ssh)
-                ssh.exec!('cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2').strip.gsub('"', '')
-            end
-
-            def self.distroInfoFromSSH(ssh)
-                distroInfo = self.distroInfo(self.distroIDfromSSH(ssh))
-            end
-
-            def self.distroInfo(distroID)
-                distributions = YAML.load_file(__dir__ + '/Distributions.yaml')
-                raise Framework::PluginProcessError.new("Unknown Linux Distro: #{distroID}!") unless distributions.key?(distroID)
-                distributions[distroID]
-            end
-
             def self.linuxPasswordHash(password)
                 salt = SecureRandom.alphanumeric(16)
                 password.crypt('$6$' + salt)
             end
+
         end
     end
 end

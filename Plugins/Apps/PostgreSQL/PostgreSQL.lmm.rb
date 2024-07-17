@@ -3,7 +3,7 @@ require_relative '../../OS/Linux/Linux.lmm.rb'
 
 module ConfigLMM
     module LMM
-        class PostgreSQL < Linux
+        class PostgreSQL < Framework::LinuxApp
             PACKAGE_NAME = 'PostgreSQL'
             SERVICE_NAME = 'postgresql'
 
