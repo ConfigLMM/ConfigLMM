@@ -183,6 +183,7 @@ module ConfigLMM
                 closure = Proc.new do |ssh|
                     localFile = options['output'] + '/' + SecureRandom.alphanumeric(10)
                     File.write(localFile, '')
+                    self.class.sshExec!(ssh, "touch #{file}")
                     ssh.scp.download!(file, localFile)
                     updateLocalFile(localFile, options, atTop, &block)
                     ssh.scp.upload!(localFile, file)

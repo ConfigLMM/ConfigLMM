@@ -3,9 +3,11 @@ Arch Linux:
     Postfix: postfix
     Dovecot: dovecot
     PostgreSQL: postgresql
+    Valkey: redis
 
 openSUSE Leap:
     sshd: openssh
     Postfix: postfix
     Dovecot: dovecot
     PostgreSQL: postgresql-server
+    Valkey: redis
