@@ -178,16 +178,25 @@ module ConfigLMM
                 fileWrite(file, fileLines.join(), options[:dry])
             end
 
-            def updateRemoteFile(location, file, options, atTop = false, &block)
-                uri = Addressable::URI.parse(location)
-                raise Framework::PluginProcessError.new("Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
+            def updateRemoteFile(locationOrSSH, file, options, atTop = false, &block)
 
-                self.class.sshStart(uri) do |ssh|
+                closure = Proc.new do |ssh|
                     localFile = options['output'] + '/' + SecureRandom.alphanumeric(10)
                     File.write(localFile, '')
                     ssh.scp.download!(file, localFile)
                     updateLocalFile(localFile, options, atTop, &block)
                     ssh.scp.upload!(localFile, file)
+                end
+
+                if locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
+                    uri = Addressable::URI.parse(locationOrSSH)
+                    raise Framework::PluginProcessError.new("Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
+
+                    self.class.sshStart(uri) do |ssh|
+                        closure.call(ssh)
+                    end
+                else
+                    closure.call(locationOrSSH)
                 end
             end
 
@@ -215,7 +224,7 @@ module ConfigLMM
                 end
                 channel.wait
                 if !status[:exit_code].zero?
-                    puts output
+                    $stderr.puts(output)
                     raise Framework::PluginProcessError.new("Failed '#{command}'")
                 end
                 output
