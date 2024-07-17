@@ -10,19 +10,37 @@ module ConfigLMM
             SUSE_ID = 'opensuse-leap'
 
             def ensurePackage(name, location)
+              self.class.ensurePackage(name, location)
+            end
+
+            def self.ensurePackage(name, location)
                 if location && location != '@me'
                     uri = Addressable::URI.parse(location)
                     raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
-                    self.class.sshStart(uri) do |ssh|
-                        distroInfo = self.class.distroInfoFromSSH(ssh)
-                        pkg = self.class.mapPackages([name], distroInfo['Name']).first
-
-                        command = distroInfo['InstallPackage'] + ' ' + pkg.shellescape
-                        self.class.sshExec!(ssh, command)
-                    end
+                    self.ensurePackageOverSSH(name, uri)
                 else
                     # TODO
                 end
+            end
+
+            def self.ensurePackageOverSSH(name, locationOrSSH)
+
+                closure = Proc.new do |ssh|
+                    distroInfo = self.distroInfoFromSSH(ssh)
+                    pkg = self.mapPackages([name], distroInfo['Name']).first
+
+                    command = distroInfo['InstallPackage'] + ' ' + pkg.shellescape
+                    self.sshExec!(ssh, command)
+                end
+
+                if locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
+                    self.sshStart(locationOrSSH) do |ssh|
+                        closure.call(ssh)
+                    end
+                else
+                  closure.call(locationOrSSH)
+                end
+
             end
 
             def ensureServiceAutoStart(name, location)
