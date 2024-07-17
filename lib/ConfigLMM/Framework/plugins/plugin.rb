@@ -217,14 +217,14 @@ module ConfigLMM
                 end
             end
 
-            def self.sshExec!(ssh, command)
+            def self.sshExec!(ssh, command, allowFailure = false)
                 status = {}
                 output = ''
                 channel = ssh.exec(command, status: status) do |channel, stream, data|
                     output += data
                 end
                 channel.wait
-                if !status[:exit_code].zero?
+                if !allowFailure && !status[:exit_code].zero?
                     $stderr.puts(output)
                     raise Framework::PluginProcessError.new("Failed '#{command}'")
                 end

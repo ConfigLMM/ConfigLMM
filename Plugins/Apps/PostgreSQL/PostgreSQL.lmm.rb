@@ -6,6 +6,7 @@ module ConfigLMM
         class PostgreSQL < Framework::LinuxApp
             PACKAGE_NAME = 'PostgreSQL'
             SERVICE_NAME = 'postgresql'
+            USER_NAME = 'postgres'
 
             HBA_FILE = 'data/pg_hba.conf'
             CONFIG_FILE = 'data/postgresql.conf'
@@ -40,6 +41,13 @@ module ConfigLMM
                 end
 
                 self.startService(SERVICE_NAME, target['Location'])
+            end
+
+            def self.createUserAndDBOverSSH(user, password, ssh)
+                self.sshExec!(ssh, "su --login #{USER_NAME} --command 'createuser #{user}'", true)
+                self.sshExec!(ssh, "su --login #{USER_NAME} --command 'createdb --owner=#{user} #{user}'", true)
+                cmd = " su --login #{USER_NAME} --command ' psql -c \"ALTER USER #{user} WITH PASSWORD \\'#{password}\\';\"'"
+                self.sshExec!(ssh, cmd)
             end
 
             def pgsqlDir(distroID)
