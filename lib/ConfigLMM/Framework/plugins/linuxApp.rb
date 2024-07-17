@@ -87,6 +87,10 @@ module ConfigLMM
                 names
             end
 
+            def self.createSubuidsOverSSH(user, distroInfo, ssh)
+                self.sshExec!(ssh, "#{distroInfo['ModifyUser']} --add-subuids 100000-165535 --add-subgids 100000-165535 #{user}")
+            end
+
             def self.distroID
                 `cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2`.strip.gsub('"', '')
             end
