@@ -26,6 +26,7 @@ module ConfigLMM
                     end
                     self.class.sshStart(location) do |ssh|
                         domain = self.class.sshExec!(ssh, "hostname --fqdn").strip
+                        command = "sed -i 's|^myhostname = .*|myhostname = #{domain}|' #{MAIN_FILE}"
                         command = "sed -i 's|^#myhostname = virtual.domain.tld|myhostname = #{domain}|' #{MAIN_FILE}"
                         self.class.sshExec!(ssh, command)
                     end
