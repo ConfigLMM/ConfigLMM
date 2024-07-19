@@ -27,9 +27,10 @@ module ConfigLMM
 
                 closure = Proc.new do |ssh|
                     distroInfo = self.distroInfoFromSSH(ssh)
-                    pkg = self.mapPackages([name], distroInfo['Name']).first
+                    pkgs = self.mapPackages([name], distroInfo['Name']).first
 
-                    command = distroInfo['InstallPackage'] + ' ' + pkg.shellescape
+                    pkgs = [pkgs] unless pkgs.is_a?(Array)
+                    command = distroInfo['InstallPackage'] + ' ' + pkgs.map { |pkg| pkg.shellescape }.join(' ')
                     self.sshExec!(ssh, command)
                 end
 
