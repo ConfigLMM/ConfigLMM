@@ -26,7 +26,8 @@ module ConfigLMM
                     data.each do |name, data|
                         self.processDNS(domain, data).each do |type, records|
                             records.each do |record|
-                                shortName = name
+                                shortName = Addressable::IDNA.to_ascii(name)
+                                record[:content] = Addressable::IDNA.to_ascii(record[:content]) if record[:type] == 'CNAME'
                                 config['Records'] += [shortName, record[:ttl], ' IN ', record[:type], record[:content]].join("\t") + "\n"
                             end
                         end
