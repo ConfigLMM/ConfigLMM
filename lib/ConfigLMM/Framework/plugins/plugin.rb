@@ -201,6 +201,26 @@ module ConfigLMM
                 end
             end
 
+            def self.remoteFilePresent?(file, ssh)
+                result = self.sshExec!(ssh, "stat #{file}", true)
+                !result.start_with?('stat: cannot')
+            end
+
+            def self.uploadNotPresent(file, target, ssh)
+                target += '/' + File.basename(file)
+                if !self.remoteFilePresent?(target)
+                    ssh.scp.upload!(file, target)
+                end
+            end
+
+            def self.uploadFolder(folder, target, ssh)
+                target += '/' + File.basename(folder) + '/'
+                self.sshExec!(ssh, "mkdir -p #{target}")
+                Dir[folder + '/*'].each do |file|
+                    ssh.scp.upload!(file, target + File.basename(file))
+                end
+            end
+
             def self.toSSHparams(locationUri)
                 server = locationUri.hostname
                 params = {}
