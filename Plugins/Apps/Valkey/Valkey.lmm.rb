@@ -21,6 +21,7 @@ module ConfigLMM
                             target['Settings'] ||= {}
                             target['Settings']['pidfile'] = PID_FILE
                             target['Settings']['supervised'] = 'systemd'
+                            target['Settings']['dir'] = '/var/lib/redis/default/'
                         end
 
                         if target['Settings']
