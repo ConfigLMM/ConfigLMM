@@ -1,0 +1,31 @@
+
+server {
+    listen       80;
+    listen  [::]:80;
+    server_name _;
+
+    include config-lmm/errors.conf;
+
+    deny all;
+}
+
+server {
+    <% if config['NginxVersion'] >= 1.25 %>
+        listen 443 ssl reuseport;
+        listen [::]:443 ssl reuseport;
+        http2 on;
+    <% else %>
+        listen 443 ssl reuseport http2;
+        listen [::]:443 ssl reuseport http2;
+    <% end %>
+
+    server_name _;
+
+    deny all;
+
+    ssl_early_data on;
+
+    include config-lmm/errors.conf;
+    include config-lmm/security.conf;
+    include config-lmm/ssl.conf;
+}

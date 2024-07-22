@@ -1,4 +1,7 @@
 Arch Linux:
+    CertBotNginx:
+        - certbot-nginx
+        - certbot-dns-rfc2136
     Dovecot: dovecot
     nginx: nginx
     PostgreSQL: postgresql
@@ -8,6 +11,10 @@ Arch Linux:
     Valkey: redis
 
 openSUSE Leap:
+    CertBotNginx:
+        - python3-certbot-nginx
+        - certbot-systemd-timer
+        - python3-certbot-dns-rfc2136
     Dovecot: dovecot
     nginx: nginx
     PostgreSQL: postgresql-server
