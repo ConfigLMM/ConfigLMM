@@ -23,8 +23,7 @@ module ConfigLMM
 
                 items.each do |item|
                     type, content = item.strip.split('=')
-                    content += '.' if type == 'CNAME' || type == 'ALIAS'
-                    content = domain + '.' if content == '@' || content == '@.'
+                    content = domain if content == '@'
                     content = self.class.externalIp if content == '@me'
                     records[type] ||= []
                     records[type] << { type: type, content: content, ttl: DEFAULT_TTL }
