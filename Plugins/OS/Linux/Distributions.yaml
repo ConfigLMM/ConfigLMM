@@ -4,4 +4,5 @@ opensuse-leap:
     InstallPackage: zypper install --no-confirm
     AutoStartService: systemctl enable
     StartService: systemctl start
+    CreateServiceUser: useradd --system --shell /usr/sbin/nologin --user-group
     ModifyUser: usermod

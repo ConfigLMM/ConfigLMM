@@ -4,6 +4,7 @@ Arch Linux:
         - certbot-dns-rfc2136
     Dovecot: dovecot
     nginx: nginx
+    Podman: podman
     PostgreSQL: postgresql
     Postfix: postfix
     PowerDNS: powerdns
@@ -17,6 +18,7 @@ openSUSE Leap:
         - python3-certbot-dns-rfc2136
     Dovecot: dovecot
     nginx: nginx
+    Podman: podman
     PostgreSQL: postgresql-server
     Postfix: postfix
     PowerDNS:

@@ -1,0 +1,35 @@
+
+# Upstream where your authentik server is hosted.
+upstream authentik {
+    server localhost:19000;
+
+    # Improve performance by keeping some connections alive.
+    keepalive 10;
+}
+
+server {
+    <% if config['NginxVersion'] >= 1.25 %>
+        listen 443 ssl;
+        listen [::]:443 ssl;
+        http2 on;
+        http3 on;
+        quic_retry on;
+        add_header Alt-Svc 'h3=":443"; ma=86400';
+    <% else %>
+        listen 443 ssl http2;
+        listen [::]:443 ssl http2;
+    <% end %>
+
+    include config-lmm/ssl.conf;
+
+    server_name <%= config['Domain'] %>;
+
+    access_log  /var/log/nginx/authentik.access.log;
+    error_log   /var/log/nginx/authentik.error.log;
+
+    # Proxy site
+    location / {
+        proxy_pass http://authentik;
+        include config-lmm/proxy.conf;
+    }
+}
