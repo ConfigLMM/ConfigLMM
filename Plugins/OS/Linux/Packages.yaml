@@ -1,13 +1,20 @@
 Arch Linux:
-    sshd: openssh
-    Postfix: postfix
     Dovecot: dovecot
+    nginx: nginx
     PostgreSQL: postgresql
+    Postfix: postfix
+    PowerDNS: powerdns
+    sshd: openssh
     Valkey: redis
 
 openSUSE Leap:
-    sshd: openssh
-    Postfix: postfix
     Dovecot: dovecot
+    nginx: nginx
     PostgreSQL: postgresql-server
+    Postfix: postfix
+    PowerDNS:
+        - pdns-backend-geoip
+        - pdns-backend-sqlite3
+        - pdns-backend-postgresql
+    sshd: openssh
     Valkey: redis

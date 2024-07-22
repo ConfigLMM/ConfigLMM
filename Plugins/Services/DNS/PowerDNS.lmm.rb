@@ -13,6 +13,9 @@ module ConfigLMM
             DEFAULT_HOST = 'localhost'
             DEFAULT_PORT = 8081
             SSH_TIMEOUT = 10
+            PACKAGE_NAME = 'PowerDNS'
+            SERVICE_NAME = 'pdns'
+            USER = 'pdns'
 
             # TODO
             # def actionPowerDNSValidate(id, target, activeState, context, options)
@@ -21,6 +24,7 @@ module ConfigLMM
 
             def actionPowerDNSBuild(id, target, activeState, context, options)
                 if target['Settings']
+                    prepareSettings(target)
                     targetDir = options['output'] + CONFIG_DIR + '/'
                     mkdir(targetDir, options['dry'])
                     content = ''
@@ -44,7 +48,7 @@ module ConfigLMM
             def actionPowerDNSDeploy(id, target, activeState, context, options)
                 #actionPowerDNSDiff(id, target, activeState, context, options)
 
-                deploySettings(target)
+                deploySettings(target, options)
                 if target['DNS']
                     connect(id, target, activeState, context, options) do |host, port, key|
                         updateDNS(host, port, key, target['DNS'])
@@ -103,8 +107,8 @@ module ConfigLMM
                     rrsets = []
                     remove = []
                     info.each do |name, data|
-                        fullName = name + '.' + domain + '.'
-                        fullName = domain + '.' if name == '@'
+                        fullName = Addressable::IDNA.to_ascii(name) + '.' + Addressable::IDNA.to_ascii(domain) + '.'
+                        fullName = Addressable::IDNA.to_ascii(domain) + '.' if name == '@'
                         self.processDNS(domain, data).each do |type, records|
                             #remove += removeConflicting(zone, fullName, type)
                             rrset = {
@@ -115,6 +119,12 @@ module ConfigLMM
                                 records: []
                             }
                             records.each do |record|
+                                record[:content] = Addressable::IDNA.to_ascii(record[:content]) + '.' if type == 'CNAME' || type == 'ALIAS'
+                                if type == 'MX'
+                                    priority, name = record[:content].split(' ')
+                                    name = Addressable::IDNA.to_ascii(name) + '.'
+                                    record[:content] = [priority, name].join(' ')
+                                end
                                 rrset[:records] << { content: record[:content], disabled: false }
                             end
                             rrsets << rrset
@@ -129,12 +139,65 @@ module ConfigLMM
 
             end
 
-            def deploySettings(target)
-                if target['Settings']
-                    # TODO
+            def prepareSettings(target)
+                if !target['Settings'].key?('api')
+                    target['Settings']['api'] = 'yes'
+                end
+                if !target['Settings'].key?('expand-alias')
+                    target['Settings']['expand-alias'] = 'yes'
+                end
+                if !target['Settings'].key?('launch')
+                    target['Settings']['launch'] = 'gpgsql'
+                    target['Settings']['gpgsql-host'] = '/run/postgresql'
+                    target['Settings']['gpgsql-user'] = USER
+                    target['Settings']['gpgsql-dbname'] = USER
                 end
             end
 
+            def deploySettings(target, options)
+                if target['Location']
+                    uri = Addressable::URI.parse(target['Location'])
+                    params = {}
+                    params = CGI.parse(uri.query) if uri.query
+                    if uri.scheme == 'ssh' && !params.key?('host')
+                        self.class.sshStart(uri) do |ssh|
+                            Framework::LinuxApp.ensurePackageOverSSH(PACKAGE_NAME, ssh)
+                            Framework::LinuxApp.ensureServiceAutoStartOverSSH(SERVICE_NAME, ssh)
+                            if target['Settings']
+                                prepareSettings(target)
+                                self.class.sshExec!(ssh, "mkdir -p #{CONFIG_DIR}")
+                                self.class.sshExec!(ssh, "sed -i 's|# include-dir=|include-dir=#{CONFIG_DIR}|' /etc/pdns/pdns.conf")
+                                ssh.scp.upload!(options['output'] + CONFIG_DIR + '/configlmm.conf', CONFIG_DIR + '/configlmm.conf')
+                                apiKeyFile = CONFIG_DIR + '/apiKey.conf'
+                                if !self.class.remoteFilePresent?(apiKeyFile, ssh)
+                                    apiKey = ENV['POWERDNS_API_KEY']
+                                    apiKey = SecureRandom.urlsafe_base64(60) unless apiKey
+                                    self.class.sshExec!(ssh, " echo 'api-key=#{apiKey}' > #{apiKeyFile}")
+                                    self.class.sshExec!(ssh, " chown #{USER}:#{USER} #{apiKeyFile}")
+                                    self.class.sshExec!(ssh, " chmod 400 #{apiKeyFile}")
+                                    prompt.say("PowerDNS API Key: #{apiKey}", )
+                                end
+                                self.configurePostgreSQL(target['Settings'], ssh)
+                            end
+                            Framework::LinuxApp.startServiceOverSSH(SERVICE_NAME, ssh)
+                        end
+                    end
+                end
+            end
+
+            def configurePostgreSQL(settings, ssh)
+                password = SecureRandom.alphanumeric(20)
+                if settings['gpgsql-host'] == 'localhost' || settings['gpgsql-host'].start_with?('/')
+                    PostgreSQL.createUserAndDBOverSSH(USER, password, ssh)
+                    PostgreSQL.importSQL(USER, USER, '/usr/share/doc/packages/pdns/schema.pgsql.sql', ssh)
+                else
+                    self.class.sshStart("ssh://#{settings['gpgsql-host']}/") do |ssh|
+                        PostgreSQL.createUserAndDBOverSSH(USER, password, ssh)
+                        PostgreSQL.importSQL(USER, USER, '/usr/share/doc/packages/pdns/schema.pgsql.sql', ssh)
+                    end
+                end
+                password
+            end
 
             def connect(id, target, activeState, context, options)
                 host = DEFAULT_HOST

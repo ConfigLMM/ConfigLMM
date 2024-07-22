@@ -4,3 +4,4 @@ opensuse-leap:
     InstallPackage: zypper install --no-confirm
     AutoStartService: systemctl enable
     StartService: systemctl start
+    ModifyUser: usermod

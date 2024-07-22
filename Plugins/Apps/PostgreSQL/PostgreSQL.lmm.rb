@@ -60,6 +60,13 @@ module ConfigLMM
                 self.sshExec!(ssh, cmd)
             end
 
+            def self.importSQL(owner, db, sqlFile, ssh)
+                self.sshExec!(ssh, "echo \"SET ROLE '#{owner}';\" > /tmp/postgres_import.sql")
+                self.sshExec!(ssh, "cat #{sqlFile} >> /tmp/postgres_import.sql")
+                cmd = "su --login #{USER_NAME} --command 'psql #{db} < /tmp/postgres_import.sql'"
+                self.sshExec!(ssh, cmd)
+            end
+
             def pgsqlDir(distroID)
                 if distroID == 'opensuse-leap'
                     '/var/lib/pgsql/'

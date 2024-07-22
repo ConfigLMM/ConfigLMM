@@ -39,7 +39,7 @@ module ConfigLMM
                         closure.call(ssh)
                     end
                 else
-                  closure.call(locationOrSSH)
+                    closure.call(locationOrSSH)
                 end
 
             end
@@ -48,14 +48,26 @@ module ConfigLMM
                 if location && location != '@me'
                     uri = Addressable::URI.parse(location)
                     raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
-                    self.class.sshStart(uri) do |ssh|
-                        distroInfo = self.class.distroInfoFromSSH(ssh)
-
-                        command = distroInfo['AutoStartService'] + ' ' + name.shellescape
-                        self.class.sshExec!(ssh, command)
-                    end
+                    self.class.ensureServiceAutoStartOverSSH(name, uri)
                 else
                     # TODO
+                end
+            end
+
+            def self.ensureServiceAutoStartOverSSH(name, locationOrSSH)
+                closure = Proc.new do |ssh|
+                    distroInfo = self.distroInfoFromSSH(ssh)
+
+                    command = distroInfo['AutoStartService'] + ' ' + name.shellescape
+                    self.sshExec!(ssh, command)
+                end
+
+                if locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
+                    self.sshStart(locationOrSSH) do |ssh|
+                        closure.call(ssh)
+                    end
+                else
+                    closure.call(locationOrSSH)
                 end
             end
 
@@ -63,14 +75,26 @@ module ConfigLMM
                 if location && location != '@me'
                     uri = Addressable::URI.parse(location)
                     raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
-                    self.class.sshStart(uri) do |ssh|
-                        distroInfo = self.class.distroInfoFromSSH(ssh)
-
-                        command = distroInfo['StartService'] + ' ' + name.shellescape
-                        self.class.sshExec!(ssh, command)
-                    end
+                    self.class.startServiceOverSSH(name, location)
                 else
                     # TODO
+                end
+            end
+
+            def self.startServiceOverSSH(name, locationOrSSH)
+                 closure = Proc.new do |ssh|
+                     distroInfo = self.distroInfoFromSSH(ssh)
+
+                     command = distroInfo['StartService'] + ' ' + name.shellescape
+                     self.sshExec!(ssh, command)
+                 end
+
+                if locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
+                    self.sshStart(locationOrSSH) do |ssh|
+                        closure.call(ssh)
+                    end
+                else
+                    closure.call(locationOrSSH)
                 end
             end
 
