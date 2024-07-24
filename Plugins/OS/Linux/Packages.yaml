@@ -3,6 +3,7 @@ Arch Linux:
         - certbot-nginx
         - certbot-dns-rfc2136
     Dovecot: dovecot
+    firewalld: firewalld
     nginx: nginx
     Podman: podman
     PostgreSQL: postgresql
@@ -10,6 +11,7 @@ Arch Linux:
     PowerDNS: powerdns
     sshd: openssh
     Valkey: redis
+    WireGuard: wireguard-tools
 
 openSUSE Leap:
     CertBotNginx:
@@ -17,6 +19,7 @@ openSUSE Leap:
         - certbot-systemd-timer
         - python3-certbot-dns-rfc2136
     Dovecot: dovecot
+    firewalld: firewalld
     nginx: nginx
     Podman: podman
     PostgreSQL: postgresql-server
@@ -27,3 +30,4 @@ openSUSE Leap:
         - pdns-backend-postgresql
     sshd: openssh
     Valkey: redis
+    WireGuard: wireguard-tools

@@ -1,0 +1,15 @@
+[Interface]
+Address = <%= config['Address'] %>
+ListenPort = 51820
+PrivateKey = <%= config['PrivateKey'] %>
+
+<% config['Peers'].to_h.each do |name, peer| %>
+# <%= name %>
+[Peer]
+PublicKey = <%= peer['PublicKey'] %>
+PresharedKey = <%= peer['PresharedKey'] %>
+AllowedIPs = <%= peer['AllowedIPs'] %>
+<% if peer['Endpoint'] %>
+Endpoint = <%= peer['Endpoint'] %>:51820
+<% end %>
+<% end %>

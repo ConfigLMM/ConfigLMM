@@ -98,6 +98,37 @@ module ConfigLMM
                 end
             end
 
+
+            def self.firewallAddServiceOverSSH(serviceName, locationOrSSH)
+                 closure = Proc.new do |ssh|
+                     command = 'firewall-cmd --permanent --add-service ' + serviceName.shellescape
+                     self.sshExec!(ssh, command, true)
+                 end
+
+                if locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
+                    self.sshStart(locationOrSSH) do |ssh|
+                        closure.call(ssh)
+                    end
+                else
+                    closure.call(locationOrSSH)
+                end
+            end
+
+            def self.firewallAddPortOverSSH(portName, locationOrSSH)
+                 closure = Proc.new do |ssh|
+                     command = 'firewall-cmd --permanent --add-port ' + portName.shellescape
+                     self.sshExec!(ssh, command, true)
+                 end
+
+                if locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
+                    self.sshStart(locationOrSSH) do |ssh|
+                        closure.call(ssh)
+                    end
+                else
+                    closure.call(locationOrSSH)
+                end
+            end
+
             def self.mapPackages(packages, distroName)
                 distroPackages = YAML.load_file(LINUX_FOLDER + 'Packages.yaml')
                 names = []

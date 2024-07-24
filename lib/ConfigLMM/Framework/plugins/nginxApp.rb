@@ -36,6 +36,7 @@ module ConfigLMM
                     raise Framework::PluginProcessError.new("Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
                     self.class.sshStart(uri) do |ssh|
                         self.class.uploadFolder(outputFolder, CONFIG_DIR, ssh)
+                        Framework::LinuxApp.firewallAddServiceOverSSH('https', ssh)
                     end
                 else
                     copy(outputFolder, CONFIG_DIR, options['dry'])

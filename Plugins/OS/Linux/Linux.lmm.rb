@@ -11,7 +11,9 @@ module ConfigLMM
             ISO_LOCATION = '~/.cache/configlmm/images/'
             HOSTS_FILE = '/etc/hosts'
             SSH_CONFIG = '~/.ssh/config'
-            SYSCTL_FILE = '/etc/sysctl.d/10-configlmm.conf'
+            SYSCTL_FILE = '/etc/sysctl.d/90-configlmm.conf'
+            FIREWALL_PACKAGE = 'firewalld'
+            FIREWALL_SERVICE = 'firewalld'
 
             def actionLinuxBuild(id, target, activeState, context, options)
                 prepareConfig(target)
@@ -35,6 +37,11 @@ module ConfigLMM
                 else
                     deployLocalHostsFile(target, options)
                     deployLocalSSHConfig(target, options)
+                    if target['Firewall'] && target['Firewall'] != 'no'
+                        self.ensurePackage(FIREWALL_PACKAGE, locationUri)
+                        self.ensureServiceAutoStart(FIREWALL_SERVICE, locationUri)
+                        self.startService(FIREWALL_SERVICE, locationUri)
+                    end
                 end
                 if target['AlternativeLocation']
                     uri = Addressable::URI.parse(target['AlternativeLocation'])
@@ -68,6 +75,11 @@ module ConfigLMM
                         end
                         fileLines
                     end
+                end
+                if target['Firewall'] && target['Firewall'] != 'no'
+                    self.ensurePackage(FIREWALL_PACKAGE, locationUri)
+                    self.ensureServiceAutoStart(FIREWALL_SERVICE, locationUri)
+                    self.startService(FIREWALL_SERVICE, locationUri)
                 end
             end
 
