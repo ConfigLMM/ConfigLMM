@@ -146,6 +146,19 @@ module ConfigLMM
                 end
             end
 
+            def self.loadVariable(value, target)
+                variableStart = value.index('${')
+                return value unless variableStart
+                variableEnd = value.index('}', variableStart + 2)
+                variableName = value[variableStart + 2...variableEnd]
+                if variableName.start_with?('ENV:')
+                    value = value[0...variableStart].to_s + ENV[variableName[4..variableEnd]] + value[(variableEnd + 1)..-1].to_s
+                else
+                    raise 'Not implemented!'
+                end
+                value
+            end
+
             CONFIGLMM_SECTION_BEGIN = "# -----BEGIN CONFIGLMM-----\n"
             CONFIGLMM_SECTION_END   = "# -----END CONFIGLMM-----\n"
 
