@@ -44,15 +44,7 @@ module ConfigLMM
                         renderTemplate(template, target, dir + 'main.conf', options)
                         ssh.scp.upload!(dir + 'main.conf', CONFIG_DIR + 'main.conf')
 
-                        dir = "/etc/letsencrypt/live/Wildcard/"
-                        self.class.sshExec!(ssh, "mkdir -p #{dir}")
-                        # Need this temporarily so nginx can start
-                        if !self.class.remoteFilePresent?(dir + 'fullchain.pem', ssh)
-                            self.class.sshExec!(ssh, "openssl req -x509 -noenc -days 90 -newkey rsa:2048 -keyout #{dir}privkey.pem -out #{dir}fullchain.pem -subj '/C=US/O=ConfigLMM/CN=Wildcard'")
-                            self.class.sshExec!(ssh, "cp #{dir}fullchain.pem #{dir}chain.pem")
-                        end
-
-
+                        Framework::LinuxApp.createCertificateOverSSH(ssh)
                     end
                 else
                     self.class.prepareNginxConfig(target, nil)

@@ -143,6 +143,17 @@ module ConfigLMM
                 names
             end
 
+            def self.createCertificateOverSSH(ssh)
+                dir = "/etc/letsencrypt/live/Wildcard/"
+                self.sshExec!(ssh, "mkdir -p #{dir}")
+                # Need this temporarily before real certs are created
+                if !self.remoteFilePresent?(dir + 'fullchain.pem', ssh)
+                    self.sshExec!(ssh, "openssl req -x509 -noenc -days 90 -newkey rsa:2048 -keyout #{dir}privkey.pem -out #{dir}fullchain.pem -subj '/C=US/O=ConfigLMM/CN=Wildcard'")
+                    self.sshExec!(ssh, "cp #{dir}fullchain.pem #{dir}chain.pem")
+                end
+                dir
+            end
+
             def self.configurePodmanServiceOverSSH(user, homedir, userComment, distroInfo, ssh)
                 Framework::LinuxApp.ensurePackagesOverSSH([PODMAN_PACKAGE], ssh)
                 addUserCmd = "#{distroInfo['CreateServiceUser']} --home-dir '#{homedir}' --create-home --comment '#{userComment}' #{user}"

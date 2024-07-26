@@ -2,6 +2,7 @@ Arch Linux:
     CertBotNginx:
         - certbot-nginx
         - certbot-dns-rfc2136
+    CyrusSASL: cyrus-sasl
     Dovecot: dovecot
     firewalld: firewalld
     nginx: nginx
@@ -18,6 +19,7 @@ openSUSE Leap:
         - python3-certbot-nginx
         - certbot-systemd-timer
         - python3-certbot-dns-rfc2136
+    CyrusSASL: cyrus-sasl-plain
     Dovecot: dovecot
     firewalld: firewalld
     nginx: nginx
