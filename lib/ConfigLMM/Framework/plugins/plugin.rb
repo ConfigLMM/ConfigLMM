@@ -236,7 +236,7 @@ module ConfigLMM
                 target += '/' + File.basename(folder) + '/'
                 self.sshExec!(ssh, "mkdir -p #{target}")
                 Dir[folder + '/*'].each do |file|
-                    ssh.scp.upload!(file, target + File.basename(file))
+                    ssh.scp.upload!(file, target + File.basename(file), recursive: true)
                 end
             end
 

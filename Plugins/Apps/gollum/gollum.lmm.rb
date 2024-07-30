@@ -4,12 +4,11 @@ module ConfigLMM
         class Gollum < Framework::NginxApp
 
             NAME = 'gollum'
+            USER = 'gollum'
             GOLLUM_PATH = '/srv/gollum'
+            HOME_DIR = '/var/lib/authentik'
 
             def actionGollumBuild(id, target, activeState, context, options)
-                if !target['Root'] && (!target['Location'] || target['Location'] == '@me')
-                    target['Root'] = File.dirname(`gem which gollum`.strip) + '/gollum/public'
-                end
                 writeNginxConfig(__dir__, NAME, id, target, activeState, context, options)
                 targetDir = options['output'] + GOLLUM_PATH
                 mkdir(targetDir, options['dry'])
@@ -22,16 +21,46 @@ module ConfigLMM
             end
 
             def actionGollumDeploy(id, target, activeState, context, options)
-                if !target['Location'] || target['Location'] == '@me'
+                if target['Location'] && target['Location'] != '@me'
+                    uri = Addressable::URI.parse(target['Location'])
+                    self.class.sshStart(uri) do |ssh|
+                        if !target.key?('Proxy') || !!target['Proxy']
+                            self.class.prepareNginxConfig(target, ssh)
+                            if !target['Root']
+                                gollumPath = ssh.exec!('gem which gollum').strip
+                                target['Root'] = File.dirname(gollumPath) + '/gollum/public'
+                            end
+                            writeNginxConfig(__dir__, NAME, id, target, state, context, options)
+                            deployNginxConfig(id, target, activeState, context, options)
+                        end
+                        if !target.key?('Proxy') || target['Proxy'] != 'only'
+                            distroInfo = Framework::LinuxApp.distroInfoFromSSH(ssh)
+                            Framework::LinuxApp.configurePodmanServiceOverSSH(USER, GOLLUM_PATH, 'gollum', distroInfo, ssh)
+                            self.class.uploadFolder(options['output'] + GOLLUM_PATH, '/srv', ssh)
+                            path = Framework::LinuxApp::SYSTEMD_CONTAINERS_PATH.gsub('~', GOLLUM_PATH)
+                            ssh.scp.upload!(__dir__ + '/gollum.container', path)
+                            self.class.sshExec!(ssh, "chown -R #{USER}:#{USER} #{GOLLUM_PATH}")
+                            self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ daemon-reload")
+                            self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ start gollum")
+                        end
+                    end
+                else
                     targetDir = GOLLUM_PATH
                     mkdir(targetDir, options['dry'])
-                    deployNginxConfig(id, target, activeState, context, options)
-                    copy(options['output'] + GOLLUM_PATH + '/config.ru', GOLLUM_PATH, options['dry'])
-                    copyNotPresent(options['output'] + GOLLUM_PATH + '/repo', GOLLUM_PATH, options['dry'])
-                    chown('http', 'http', GOLLUM_PATH, options['dry'])
+                    if !target.key?('Proxy') || !!target['Proxy']
+                        self.class.prepareNginxConfig(target)
+                        if !target['Root']
+                            target['Root'] = File.dirname(`gem which gollum`.strip) + '/gollum/public'
+                        end
+                        writeNginxConfig(__dir__, NAME, id, target, state, context, options)
+                        deployNginxConfig(id, target, activeState, context, options)
+                    end
+                    if !target.key?('Proxy') || target['Proxy'] != 'only'
+                        copy(options['output'] + GOLLUM_PATH + '/config.ru', GOLLUM_PATH, options['dry'])
+                        copyNotPresent(options['output'] + GOLLUM_PATH + '/repo', GOLLUM_PATH, options['dry'])
+                        chown('http', 'http', GOLLUM_PATH, options['dry'])
+                    end
                     activeState['Location'] = '@me'
-                else
-                    # TODO
                 end
             end
 

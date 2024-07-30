@@ -1,0 +1,12 @@
+[Unit]
+Description=gollum container
+After=local-fs.target
+
+[Container]
+Image=gollumwiki/gollum:master
+PublishPort=0.0.0.0:14567:4567
+UserNS=keep-id:uid=1000,gid=1000
+Volume=/srv/gollum/repo:/wiki
+
+[Install]
+WantedBy=multi-user.target default.target

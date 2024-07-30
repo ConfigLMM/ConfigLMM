@@ -47,7 +47,7 @@ module ConfigLMM
                 rm('/etc/nginx/servers-lmm/' + name + '.conf', options['dry'])
             end
 
-            def self.prepareNginxConfig(target, ssh)
+            def self.prepareNginxConfig(target, ssh = nil)
                 if ssh
                     target['NginxVersion'] = self.sshExec!(ssh, 'nginx -v').strip.split('/')[1].to_f
                 else

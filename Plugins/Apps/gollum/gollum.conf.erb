@@ -1,22 +1,37 @@
 
 server {
 
-    <% if !config['TLS'] %>
-        listen       <%= config['Port'] %>;
-        listen  [::]:<%= config['Port'] %>;
-    <% else %>
-        listen       <%= config['Port'] %> ssl;
-        listen  [::]:<%= config['Port'] %> ssl;
+    <% if config['NginxVersion'] >= 1.25 %>
+        <% if !config['TLS'] %>
+            listen       <%= config['Port'] %>;
+            listen  [::]:<%= config['Port'] %>;
+        <% else %>
+            listen       <%= config['Port'] %> ssl;
+            listen  [::]:<%= config['Port'] %> ssl;
+
+            include config-lmm/ssl.conf;
+        <% end %>
         http2 on;
-        include config-lmm/ssl.conf;
+        http3 on;
+        quic_retry on;
+        add_header Alt-Svc 'h3=":443"; ma=86400';
+    <% else %>
+        <% if !config['TLS'] %>
+            listen       <%= config['Port'] %>;
+            listen  [::]:<%= config['Port'] %>;
+        <% else %>
+            listen       <%= config['Port'] %> ssl http2;
+            listen  [::]:<%= config['Port'] %> ssl http2;
+
+            include config-lmm/ssl.conf;
+        <% end %>
     <% end %>
 
     server_name <%= config['Domain'] %>;
 
-    root               <%= config['Root'] %>;
-    passenger_app_root /srv/gollum;
-
-    try_files    $uri @Passenger;
+    <% if config['Root'] %>
+        root               <%= config['Root'] %>;
+    <% end %>
 
     access_log  /var/log/nginx/gollum.access.log;
     error_log   /var/log/nginx/gollum.error.log;
@@ -30,12 +45,24 @@ server {
         ssl_trusted_certificate "/etc/letsencrypt/live/<%= config['CertName'] %>/chain.pem";
     <% end %>
 
-    location @Passenger {
-        passenger_enabled on;
-        passenger_min_instances 1;
-        rails_env production;
+    <% if config['Passenger'] %>
+        passenger_app_root /srv/gollum;
 
-        #passenger_set_cgi_param HTTP_X_FORWARDED_PROTO https;
-        #limit_req zone=one burst=5;
-    }
+        try_files    $uri @Passenger;
+
+        location @Passenger {
+            passenger_enabled on;
+            passenger_min_instances 1;
+            rails_env production;
+
+            #passenger_set_cgi_param HTTP_X_FORWARDED_PROTO https;
+            #limit_req zone=one burst=5;
+        }
+    <% else %>
+        location / {
+            proxy_pass <%= config['Server'] %>;
+
+            include config-lmm/proxy.conf;
+        }
+    <% end %>
 }
