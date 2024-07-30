@@ -162,22 +162,24 @@ module ConfigLMM
             CONFIGLMM_SECTION_BEGIN = "# -----BEGIN CONFIGLMM-----\n"
             CONFIGLMM_SECTION_END   = "# -----END CONFIGLMM-----\n"
 
-            def updateLocalFile(file, options, atTop = false)
+            def updateLocalFile(file, options, atTop = false, comment = '#')
+                sectionBegin = CONFIGLMM_SECTION_BEGIN.gsub('#', comment)
+                sectionEnd = CONFIGLMM_SECTION_END.gsub('#', comment)
                 fileLines = File.read(file).lines
-                sectionBeginIndex = fileLines.index(CONFIGLMM_SECTION_BEGIN)
-                sectionEndIndex = fileLines.index(CONFIGLMM_SECTION_END)
+                sectionBeginIndex = fileLines.index(sectionBegin)
+                sectionEndIndex = fileLines.index(sectionEnd)
                 if sectionBeginIndex.nil?
                     linesBefore = []
                     linesBefore = fileLines unless atTop
                     linesBefore << "\n"
-                    linesBefore << CONFIGLMM_SECTION_BEGIN
-                    linesAfter = [CONFIGLMM_SECTION_END]
+                    linesBefore << sectionBegin
+                    linesAfter = [sectionEnd]
                     linesAfter << "\n"
                     linesAfter += fileLines if atTop
                 else
                     linesBefore = fileLines[0..sectionBeginIndex]
                     if sectionEndIndex.nil?
-                        linesAfter = [CONFIGLMM_SECTION_END]
+                        linesAfter = [sectionEnd]
                         linesAfter << "\n"
                     else
                         linesAfter = fileLines[sectionEndIndex..fileLines.length]
@@ -191,14 +193,14 @@ module ConfigLMM
                 fileWrite(file, fileLines.join(), options[:dry])
             end
 
-            def updateRemoteFile(locationOrSSH, file, options, atTop = false, &block)
+            def updateRemoteFile(locationOrSSH, file, options, atTop = false, comment = '#', &block)
 
                 closure = Proc.new do |ssh|
                     localFile = options['output'] + '/' + SecureRandom.alphanumeric(10)
                     File.write(localFile, '')
                     self.class.sshExec!(ssh, "touch #{file}")
                     ssh.scp.download!(file, localFile)
-                    updateLocalFile(localFile, options, atTop, &block)
+                    updateLocalFile(localFile, options, atTop, comment, &block)
                     ssh.scp.upload!(localFile, file)
                 end
 
@@ -219,9 +221,13 @@ module ConfigLMM
                 !result.start_with?('stat: cannot')
             end
 
+            def self.remoteFileContains?(file, content, ssh)
+                !self.sshExec!(ssh, "grep '#{content}' #{file}", true).strip.empty?
+            end
+
             def self.uploadNotPresent(file, target, ssh)
                 target += '/' + File.basename(file)
-                if !self.remoteFilePresent?(target)
+                if !self.remoteFilePresent?(target, ssh)
                     ssh.scp.upload!(file, target)
                 end
             end

@@ -9,7 +9,7 @@ module ConfigLMM
             TRANSPORT_FILE = 'transport'
 
             def actionPostfixDeploy(id, target, activeState, context, options)
-                plugins[:Linux].ensurePackage(PACKAGE_NAME, target['Location'])
+                plugins[:Linux].ensurePackages([PACKAGE_NAME, 'CyrusSASL'], target['Location'])
                 plugins[:Linux].ensureServiceAutoStart(SERVICE_NAME, target['Location'])
 
                 deploySettings(target, target['Location'], options)

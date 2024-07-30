@@ -8,40 +8,60 @@ module ConfigLMM
             LINUX_FOLDER = __dir__ + '/../../../../Plugins/OS/Linux/'
             SUSE_NAME = 'openSUSE Leap'
             SUSE_ID = 'opensuse-leap'
+            PODMAN_PACKAGE = 'Podman'
+            SYSTEMD_CONTAINERS_PATH = '~/.config/containers/systemd/'
 
             def ensurePackage(name, location)
-              self.class.ensurePackage(name, location)
+              self.class.ensurePackages([name], location)
             end
 
-            def self.ensurePackage(name, location)
+            def ensurePackages(names, location)
+              self.class.ensurePackages(names, location)
+            end
+
+            def self.ensurePackages(names, location)
                 if location && location != '@me'
                     uri = Addressable::URI.parse(location)
                     raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
-                    self.ensurePackageOverSSH(name, uri)
+                    self.ensurePackagesOverSSH(names, uri)
                 else
                     # TODO
                 end
             end
 
-            def self.ensurePackageOverSSH(name, locationOrSSH)
-
+            def self.ensurePackagesOverSSH(names, locationOrSSH)
+                distroInfo = nil
                 closure = Proc.new do |ssh|
                     distroInfo = self.distroInfoFromSSH(ssh)
-                    pkgs = self.mapPackages([name], distroInfo['Name']).first
+                    reposPackages = self.mapPackages(names, distroInfo['Name'])
 
-                    pkgs = [pkgs] unless pkgs.is_a?(Array)
+                    repos = []
+                    pkgs = []
+                    reposPackages.each do |pkg|
+                        if pkg.include?('|')
+                            repoName, pkg = pkg.split('|')
+                            repos << repoName
+                            pkgs << pkg
+                        else
+                            pkgs << pkg
+                        end
+                    end
+                    repos.each do |repoName|
+                        self.addRepoOverSSH(repoName, distroInfo, ssh)
+                    end
                     command = distroInfo['InstallPackage'] + ' ' + pkgs.map { |pkg| pkg.shellescape }.join(' ')
                     self.sshExec!(ssh, command)
+                    distroInfo
                 end
 
                 if locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
                     self.sshStart(locationOrSSH) do |ssh|
-                        closure.call(ssh)
+                        distroInfo = closure.call(ssh)
                     end
                 else
-                    closure.call(locationOrSSH)
+                    distroInfo = closure.call(locationOrSSH)
                 end
-
+                distroInfo
             end
 
             def ensureServiceAutoStart(name, location)
@@ -118,6 +138,8 @@ module ConfigLMM
                  closure = Proc.new do |ssh|
                      command = 'firewall-cmd --permanent --add-port ' + portName.shellescape
                      self.sshExec!(ssh, command, true)
+                     command = 'firewall-cmd --add-port ' + portName.shellescape
+                     self.sshExec!(ssh, command, true)
                  end
 
                 if locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
@@ -135,7 +157,11 @@ module ConfigLMM
                 packages.to_a.each do |pkg|
                     packageName = distroPackages[distroName][pkg]
                     if packageName
-                        names << packageName
+                        if packageName.is_a?(Array)
+                            names += packageName
+                        else
+                            names << packageName
+                        end
                     else
                         names << pkg.downcase
                     end
@@ -161,6 +187,16 @@ module ConfigLMM
                 self.createSubuidsOverSSH(user, distroInfo, ssh)
                 self.sshExec!(ssh, "loginctl enable-linger #{user}")
                 self.sshExec!(ssh, "su --login #{user} --shell /bin/sh --command 'mkdir -p #{SYSTEMD_CONTAINERS_PATH}'")
+            end
+
+            def self.addRepoOverSSH(name, distroInfo, ssh)
+                if distroInfo['Name'] == 'openSUSE Leap'
+                    versionId = ssh.exec!('cat /etc/os-release | grep "^VERSION_ID=" | cut -d "=" -f 2').strip.gsub('"', '')
+                    self.sshExec!(ssh, "zypper addrepo https://download.opensuse.org/repositories/#{name}/#{versionId}/#{name}.repo", true)
+                    self.sshExec!(ssh, "zypper --gpg-auto-import-keys refresh")
+                else
+                    # TODO
+                end
             end
 
             def self.createSubuidsOverSSH(user, distroInfo, ssh)

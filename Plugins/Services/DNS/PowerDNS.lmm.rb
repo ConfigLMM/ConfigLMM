@@ -161,7 +161,7 @@ module ConfigLMM
                     params = CGI.parse(uri.query) if uri.query
                     if uri.scheme == 'ssh' && !params.key?('host')
                         self.class.sshStart(uri) do |ssh|
-                            Framework::LinuxApp.ensurePackageOverSSH(PACKAGE_NAME, ssh)
+                            Framework::LinuxApp.ensurePackagesOverSSH([PACKAGE_NAME], ssh)
                             Framework::LinuxApp.ensureServiceAutoStartOverSSH(SERVICE_NAME, ssh)
                             if target['Settings']
                                 prepareSettings(target)
