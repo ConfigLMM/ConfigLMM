@@ -1,22 +1,39 @@
 
 upstream vaultwarden {
-    server 127.0.0.1:8000;
-}
-
-upstream vaultwarden-websocket {
-    server 127.0.0.1:3012;
+    <% if config['Server'] %>
+        server <%= config['Server'] %>;
+    <% else %>
+        server 127.0.0.1:18000;
+    <% end %>
+    keepalive 2;
 }
 
 server {
 
-    <% if !config['TLS'] %>
-        listen       <%= config['Port'] %>;
-        listen  [::]:<%= config['Port'] %>;
-    <% else %>
-        listen       <%= config['Port'] %> ssl;
-        listen  [::]:<%= config['Port'] %> ssl;
+    <% if config['NginxVersion'] >= 1.25 %>
+        <% if !config['TLS'] %>
+            listen       <%= config['Port'] %>;
+            listen  [::]:<%= config['Port'] %>;
+        <% else %>
+            listen       <%= config['Port'] %> ssl;
+            listen  [::]:<%= config['Port'] %> ssl;
+
+            include config-lmm/ssl.conf;
+        <% end %>
         http2 on;
-        include config-lmm/ssl.conf;
+        http3 on;
+        quic_retry on;
+        add_header Alt-Svc 'h3=":443"; ma=86400';
+    <% else %>
+        <% if !config['TLS'] %>
+            listen       <%= config['Port'] %>;
+            listen  [::]:<%= config['Port'] %>;
+        <% else %>
+            listen       <%= config['Port'] %> ssl http2;
+            listen  [::]:<%= config['Port'] %> ssl http2;
+
+            include config-lmm/ssl.conf;
+        <% end %>
     <% end %>
 
     server_name <%= config['Domain'] %>;
@@ -37,12 +54,12 @@ server {
         include config-lmm/proxy.conf;
     }
 
-    location /notifications/ {
-        proxy_pass http://vaultwarden-websocket/;
+    #location /notifications/ {
+    #    proxy_pass http://127.0.0.1:3012/;
 
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        include config-lmm/proxy.conf;
-    }
+    #    proxy_set_header Upgrade $http_upgrade;
+    #    proxy_set_header Connection "upgrade";
+    #    include config-lmm/proxy.conf;
+    #}
 
 }

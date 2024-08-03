@@ -1,0 +1,16 @@
+[Unit]
+Description=vaultwarden container
+After=local-fs.target
+
+[Container]
+AutoUpdate=registry
+Image=ghcr.io/dani-garcia/vaultwarden:latest
+Exec=/start.sh
+EnvironmentFile=/var/lib/vaultwarden/.config/containers/systemd/Vaultwarden.env
+Network=slirp4netns:allow_host_loopback=true
+PublishPort=0.0.0.0:18000:8000
+UserNS=keep-id:uid=1000,gid=1000
+Volume=/var/lib/vaultwarden/data/:/data/
+
+[Install]
+WantedBy=multi-user.target default.target
