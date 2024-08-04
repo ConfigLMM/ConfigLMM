@@ -10,6 +10,7 @@ module ConfigLMM
 
             ISO_LOCATION = '~/.cache/configlmm/images/'
             HOSTS_FILE = '/etc/hosts'
+            FSTAB_FILE = '/etc/fstab'
             SSH_CONFIG = '~/.ssh/config'
             SYSCTL_FILE = '/etc/sysctl.d/90-configlmm.conf'
             FIREWALL_PACKAGE = 'firewalld'
@@ -66,6 +67,14 @@ module ConfigLMM
                     end
                     updateRemoteFile(locationUri, HOSTS_FILE, options, false) do |fileLines|
                         fileLines + hostsLines
+                    end
+                end
+                if target['Tmpfs']
+                    self.class.sshStart(locationUri) do |ssh|
+                        self.class.sshExec!(ssh, "sed -i '/ \\/tmp /d' #{FSTAB_FILE}")
+                        updateRemoteFile(ssh, FSTAB_FILE, options, false) do |fileLines|
+                            fileLines << "tmpfs                                      /tmp                    tmpfs  nodev,nosuid,size=#{target['Tmpfs']}          0  0\n"
+                        end
                     end
                 end
                 if target['Sysctl']
