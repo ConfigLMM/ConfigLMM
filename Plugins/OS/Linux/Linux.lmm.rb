@@ -52,37 +52,75 @@ module ConfigLMM
             end
 
             def deployOverSSH(locationUri, id, target, activeState, context, options)
-                if target['Domain'] || target['Hosts']
-                    hostsLines = []
-                    if target['Domain']
-                        self.class.sshStart(locationUri) do |ssh|
+                self.class.sshStart(locationUri) do |ssh|
+                    if target['Domain'] || target['Hosts']
+                        hostsLines = []
+                        if target['Domain']
                             envs = self.class.sshExec!(ssh, "env").split("\n")
                             envVars = Hash[envs.map { |vars| vars.split('=', 2) }]
                             ipAddr = envVars['SSH_CONNECTION'].split[-2]
                             hostsLines << ipAddr.ljust(16) + target['Domain'] + ' ' + target['Name'] + "\n"
                         end
-                    end
-                    target['Hosts'].to_a.each do |ip, entries|
+                        target['Hosts'].to_a.each do |ip, entries|
                             hostsLines << ip.ljust(16) + entries.join(' ') + "\n"
+                        end
+                        updateRemoteFile(ssh, HOSTS_FILE, options, false) do |fileLines|
+                            fileLines + hostsLines
+                        end
                     end
-                    updateRemoteFile(locationUri, HOSTS_FILE, options, false) do |fileLines|
-                        fileLines + hostsLines
+                    if target['Network']
+                        distroInfo = self.class.distroInfoFromSSH(ssh)
+                        if distroInfo['Name'] == 'openSUSE Leap'
+                            networkFile = '/etc/sysconfig/network/ifcfg-eth0'
+                            if target['Network'] == 'dhcp'
+                                self.class.sshExec!(ssh, "sed -i \"s|^BOOTPROTO=.*|BOOTPROTO='dhcp'|\" #{networkFile}")
+                            else
+                                self.class.sshExec!(ssh, "sed -i \"s|^BOOTPROTO=.*|BOOTPROTO='static'|\" #{networkFile}")
+                                updateRemoteFile(ssh, networkFile, options, false) do |fileLines|
+                                    fileLines << "\n"
+                                    if target['Network']['IP']
+                                        if target['Network']['IP'].is_a?(Array)
+                                            # TODO
+                                        else
+                                            self.class.sshExec!(ssh, "sed -i 's|^IPADDR=|#IPADDR=|' #{networkFile}")
+                                            fileLines << "IPADDR=#{target['Network']['IP']}\n"
+                                        end
+                                    end
+                                    fileLines
+                                end
+                                if target['Network']['DNS']
+                                    configFile = '/etc/sysconfig/network/config'
+                                    dns = target['Network']['DNS']
+                                    dns = [dns] unless dns.is_a?(Array)
+                                    self.class.sshExec!(ssh, "sed -i 's|^NETCONFIG_DNS_STATIC_SERVERS=.*|NETCONFIG_DNS_STATIC_SERVERS=\"#{dns.join(' ')}\"|' #{configFile}")
+                                end
+                                if target['Network']['Gateway']
+                                    routesFile = '/etc/sysconfig/network/routes'
+                                    self.class.sshExec!(ssh, "sed -i 's|^default |#default |' #{routesFile}")
+                                    updateRemoteFile(ssh, routesFile, options) do |fileLines|
+                                        fileLines << "default #{target['Network']['Gateway']}\n"
+                                    end
+                                end
+                            end
+                        else
+                            # TODO
+                            raise 'Not Unimplemented!'
+                        end
                     end
-                end
-                if target['Tmpfs']
-                    self.class.sshStart(locationUri) do |ssh|
+                    if target['Tmpfs']
                         self.class.sshExec!(ssh, "sed -i '/ \\/tmp /d' #{FSTAB_FILE}")
                         updateRemoteFile(ssh, FSTAB_FILE, options, false) do |fileLines|
                             fileLines << "tmpfs                                      /tmp                    tmpfs  nodev,nosuid,size=#{target['Tmpfs']}          0  0\n"
                         end
                     end
-                end
-                if target['Sysctl']
-                    updateRemoteFile(locationUri, SYSCTL_FILE, options, false) do |fileLines|
-                        target['Sysctl'].each do |name, value|
-                            fileLines << "#{name} = #{value}\n"
+                    if target['Sysctl']
+                        updateRemoteFile(ssh, SYSCTL_FILE, options, false) do |fileLines|
+                            target['Sysctl'].each do |name, value|
+                                fileLines << "#{name} = #{value}\n"
+                                self.class.sshExec!(ssh, "sysctl #{name}=#{value}")
+                            end
+                            fileLines
                         end
-                        fileLines
                     end
                 end
                 if target['Firewall'] && target['Firewall'] != 'no'
