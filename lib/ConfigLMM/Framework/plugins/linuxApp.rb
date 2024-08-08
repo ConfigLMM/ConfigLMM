@@ -123,6 +123,8 @@ module ConfigLMM
                  closure = Proc.new do |ssh|
                      command = 'firewall-cmd --permanent --add-service ' + serviceName.shellescape
                      self.sshExec!(ssh, command, true)
+                     command = 'firewall-cmd --add-service ' + serviceName.shellescape
+                     self.sshExec!(ssh, command, true)
                  end
 
                 if locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
