@@ -167,11 +167,18 @@ module ConfigLMM
             end
 
             def self.createRemoteUserAndDBOverSSH(settings, user, password, ssh)
+                    self.executeRemotelyOverSSH(settings, ssh) do |ssh|
+                        self.createUserAndDBOverSSH(user, password, ssh)
+                    end
+            end
+
+            def self.executeRemotelyOverSSH(settings, ssh)
+                settings['HostName'] = 'localhost' unless settings['HostName']
                 if settings['HostName'] == 'localhost'
-                    self.createUserAndDBOverSSH(user, password, ssh)
+                    yield(ssh)
                 else
                     self.sshStart("ssh://#{settings['HostName']}/") do |ssh|
-                        self.createUserAndDBOverSSH(user, password, ssh)
+                        yield(ssh)
                     end
                 end
             end

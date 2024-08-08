@@ -55,7 +55,6 @@ module ConfigLMM
 
             def prepareConfig(target, ssh)
               target['Database'] ||= {}
-              target['Database']['HostName'] = 'localhost' unless target['Database']['HostName']
 
               raise Framework::PluginProcessError.new('Domain field must be set!') unless target['Domain']
 

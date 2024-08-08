@@ -1,29 +1,46 @@
 
 upstream odoo {
-    server 127.0.0.1:8069;
+    <% if config['Server'] %>
+        server <%= config['Server'] %>;
+    <% else %>
+        server 127.0.0.1:8069;
+    <% end %>
 }
 
 server {
 
-    <% if !config['TLS'] %>
-        listen       <%= config['Port'] %>;
-        listen  [::]:<%= config['Port'] %>;
-    <% else %>
-        listen       <%= config['Port'] %> ssl;
-        listen  [::]:<%= config['Port'] %> ssl;
+    <% if config['NginxVersion'] >= 1.25 %>
+        <% if !config['TLS'] %>
+            listen       <%= config['Port'] %>;
+            listen  [::]:<%= config['Port'] %>;
+        <% else %>
+            listen       <%= config['Port'] %> ssl;
+            listen  [::]:<%= config['Port'] %> ssl;
+
+            include config-lmm/ssl.conf;
+        <% end %>
         http2 on;
-        include config/ssl.conf;
+        http3 on;
+        quic_retry on;
+        add_header Alt-Svc 'h3=":443"; ma=86400';
+    <% else %>
+        <% if !config['TLS'] %>
+            listen       <%= config['Port'] %>;
+            listen  [::]:<%= config['Port'] %>;
+        <% else %>
+            listen       <%= config['Port'] %> ssl http2;
+            listen  [::]:<%= config['Port'] %> ssl http2;
+
+            include config-lmm/ssl.conf;
+        <% end %>
     <% end %>
 
     server_name <%= config['Domain'] %>;
 
-    root        /usr/share/nginx/html;
-    index       index.html index.htm;
     access_log  /var/log/nginx/odoo.access.log;
     error_log   /var/log/nginx/odoo.error.log;
 
-    include config/private.conf;
-    include config/errors.conf;
+    include config-lmm/errors.conf;
 
     location / {
         proxy_pass  http://odoo;
@@ -31,7 +48,7 @@ server {
         proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
         proxy_redirect off;
 
-        include config/proxy.conf;
+        include config-lmm/proxy.conf;
     }
 
     # cache some static data in memory for 60mins
