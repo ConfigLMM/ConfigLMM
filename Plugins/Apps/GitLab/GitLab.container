@@ -1,0 +1,17 @@
+
+[Unit]
+Description=GitLab container
+After=local-fs.target
+
+[Container]
+Image=gitlab/gitlab-ce:nightly
+PublishPort=127.0.0.1:18100:80
+PublishPort=0.0.0.0:22:22
+Volume=/var/lib/gitlab/config:/etc/gitlab
+Volume=/var/lib/gitlab/logs:/var/log/gitlab
+Volume=/var/lib/gitlab/data:/var/opt/gitlab
+Volume=/var/lib/gitlab/backups:/var/opt/gitlab/backups
+ShmSize=256M
+
+[Install]
+WantedBy=multi-user.target default.target
