@@ -8,6 +8,7 @@ Arch Linux:
     Nextcloud: nextcloud
     nginx: nginx
     PHP-FPM: php-fpm
+    php-pecl: php-pecl
     Podman: podman
     PostgreSQL: postgresql
     Postfix: postfix
@@ -27,9 +28,13 @@ openSUSE Leap:
     Nextcloud: server:php:applications|nextcloud
     nginx: nginx
     PHP-FPM:
+        - php8-devel
+        - php8-mbstring
         - php8-fpm
         - php8-redis
         - php8-pgsql
+        - php8-mysql
+    php-pecl: php8-pecl
     Podman: podman
     PostgreSQL: postgresql-server
     Postfix: postfix
