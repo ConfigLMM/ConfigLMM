@@ -1,7 +1,7 @@
 
 server {
-    listen       80;
-    listen  [::]:80;
+    listen       80 default_server;
+    listen  [::]:80 default_server;
     server_name _;
 
     include config-lmm/errors.conf;
@@ -11,12 +11,12 @@ server {
 
 server {
     <% if config['NginxVersion'] >= 1.25 %>
-        listen 443 ssl reuseport;
-        listen [::]:443 ssl reuseport;
+        listen 443 default_server ssl reuseport;
+        listen [::]:443 default_server ssl reuseport;
         http2 on;
     <% else %>
-        listen 443 ssl reuseport http2;
-        listen [::]:443 ssl reuseport http2;
+        listen 443 default_server ssl reuseport http2;
+        listen [::]:443 default_server ssl reuseport http2;
     <% end %>
 
     server_name _;
