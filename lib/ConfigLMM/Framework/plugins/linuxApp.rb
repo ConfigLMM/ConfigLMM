@@ -44,9 +44,9 @@ module ConfigLMM
                         self.sshExec!(ssh, command)
                     else
                         if `echo $EUID`.strip == '0'
-                            `#{command}`
+                            `#{command} >/dev/null`
                         else
-                            `sudo #{command}`
+                            `sudo #{command} >/dev/null`
                         end
                     end
                     distroInfo

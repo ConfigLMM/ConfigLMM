@@ -3,6 +3,8 @@ module ConfigLMM
     module LMM
         class Nginx < Framework::NginxApp
             CERTBOT_PACKAGE = 'CertBotNginx'
+            REPOS_CACHE = '~/.cache/configlmm/repos'
+            ERROR_PAGES_REPO = 'https://github.com/HttpErrorPages/HttpErrorPages.git'
 
             def actionNginxBuild(id, target, activeState, context, options)
 
@@ -46,6 +48,23 @@ module ConfigLMM
                         template = ERB.new(File.read(__dir__ + '/main.conf.erb'))
                         renderTemplate(template, target, dir + 'main.conf', options)
                         ssh.scp.upload!(dir + 'main.conf', CONFIG_DIR + 'main.conf')
+
+                        if !self.class.remoteFilePresent?(WWW_DIR + 'errors/HTTP500.html', ssh)
+                            errorPages = File.expand_path(REPOS_CACHE + '/HttpErrorPages')
+                            if !File.exist?(errorPages)
+                                mkdir(File.expand_path(REPOS_CACHE), false)
+                                begin
+                                    Framework::LinuxApp.ensurePackages(['git', 'Yarn'], '@me')
+                                rescue error
+                                    prompt.say(error, :color => :red)
+                                end
+                                `cd #{REPOS_CACHE} && git clone --quiet #{ERROR_PAGES_REPO} > /dev/null`
+                            end
+                            `cd #{errorPages} && yarn install --silent`
+                            `cd #{errorPages} && yarn run static config-dist.json > /dev/null`
+                            `cd #{errorPages} && cp -R dist errors`
+                            self.class.uploadFolder(errorPages + '/errors', WWW_DIR, ssh)
+                        end
 
                         Framework::LinuxApp.createCertificateOverSSH(ssh)
                     end
