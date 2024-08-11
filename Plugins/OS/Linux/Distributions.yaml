@@ -6,3 +6,11 @@ opensuse-leap:
     StartService: systemctl start
     CreateServiceUser: useradd --system --shell /usr/sbin/nologin --user-group
     ModifyUser: usermod
+
+arch:
+    Name: Arch Linux
+    InstallPackage: pacman -S --noconfirm --needed
+    AutoStartService: systemctl enable
+    StartService: systemctl start
+    CreateServiceUser: useradd --system --shell /usr/sbin/nologin --user-group
+    ModifyUser: usermod
