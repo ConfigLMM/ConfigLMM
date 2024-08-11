@@ -16,6 +16,7 @@ Arch Linux:
     sshd: openssh
     Valkey: redis
     WireGuard: wireguard-tools
+    Yarn: yarn
 
 openSUSE Leap:
     CertBotNginx:
@@ -45,3 +46,4 @@ openSUSE Leap:
     sshd: openssh
     Valkey: redis
     WireGuard: wireguard-tools
+    Yarn: yarn

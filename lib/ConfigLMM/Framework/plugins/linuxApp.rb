@@ -19,20 +19,10 @@ module ConfigLMM
               self.class.ensurePackages(names, location)
             end
 
-            def self.ensurePackages(names, location)
-                if location && location != '@me'
-                    uri = Addressable::URI.parse(location)
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
-                    self.ensurePackagesOverSSH(names, uri)
-                else
-                    # TODO
-                end
-            end
-
-            def self.ensurePackagesOverSSH(names, locationOrSSH)
+            def self.ensurePackages(names, locationOrSSH)
                 distroInfo = nil
                 closure = Proc.new do |ssh|
-                    distroInfo = self.distroInfoFromSSH(ssh)
+                    distroInfo = self.currentDistroInfo(ssh)
                     reposPackages = self.mapPackages(names, distroInfo['Name'])
 
                     repos = []
@@ -47,14 +37,27 @@ module ConfigLMM
                         end
                     end
                     repos.each do |repoName|
-                        self.addRepoOverSSH(repoName, distroInfo, ssh)
+                        self.addRepo(repoName, distroInfo, ssh)
                     end
                     command = distroInfo['InstallPackage'] + ' ' + pkgs.map { |pkg| pkg.shellescape }.join(' ')
-                    self.sshExec!(ssh, command)
+                    if ssh
+                        self.sshExec!(ssh, command)
+                    else
+                        if `echo $EUID`.strip == '0'
+                            `#{command}`
+                        else
+                            `sudo #{command}`
+                        end
+                    end
                     distroInfo
                 end
 
-                if locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
+                if locationOrSSH.nil? || locationOrSSH == '@me'
+                    distroInfo = closure.call(nil)
+                elsif locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
+                    uri = Addressable::URI.parse(locationOrSSH)
+                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
+
                     self.sshStart(locationOrSSH) do |ssh|
                         distroInfo = closure.call(ssh)
                     end
@@ -76,7 +79,7 @@ module ConfigLMM
 
             def self.ensureServiceAutoStartOverSSH(name, locationOrSSH)
                 closure = Proc.new do |ssh|
-                    distroInfo = self.distroInfoFromSSH(ssh)
+                    distroInfo = self.currentDistroInfo(ssh)
 
                     command = distroInfo['AutoStartService'] + ' ' + name.shellescape
                     self.sshExec!(ssh, command)
@@ -103,7 +106,7 @@ module ConfigLMM
 
             def self.startServiceOverSSH(name, locationOrSSH)
                  closure = Proc.new do |ssh|
-                     distroInfo = self.distroInfoFromSSH(ssh)
+                     distroInfo = self.currentDistroInfo(ssh)
 
                      command = distroInfo['StartService'] + ' ' + name.shellescape
                      self.sshExec!(ssh, command)
@@ -183,7 +186,7 @@ module ConfigLMM
             end
 
             def self.configurePodmanServiceOverSSH(user, homedir, userComment, distroInfo, ssh)
-                Framework::LinuxApp.ensurePackagesOverSSH([PODMAN_PACKAGE], ssh)
+                Framework::LinuxApp.ensurePackages([PODMAN_PACKAGE], ssh)
                 addUserCmd = "#{distroInfo['CreateServiceUser']} --home-dir '#{homedir}' --create-home --comment '#{userComment}' #{user}"
                 self.sshExec!(ssh, addUserCmd, true)
                 self.createSubuidsOverSSH(user, distroInfo, ssh)
@@ -191,11 +194,17 @@ module ConfigLMM
                 self.sshExec!(ssh, "su --login #{user} --shell /bin/sh --command 'mkdir -p #{SYSTEMD_CONTAINERS_PATH}'")
             end
 
-            def self.addRepoOverSSH(name, distroInfo, ssh)
+            def self.addRepo(name, distroInfo, ssh = nil)
                 if distroInfo['Name'] == 'openSUSE Leap'
-                    versionId = ssh.exec!('cat /etc/os-release | grep "^VERSION_ID=" | cut -d "=" -f 2').strip.gsub('"', '')
-                    self.sshExec!(ssh, "zypper addrepo https://download.opensuse.org/repositories/#{name}/#{versionId}/#{name}.repo", true)
-                    self.sshExec!(ssh, "zypper --gpg-auto-import-keys refresh")
+                    if ssh
+                        versionId = ssh.exec!('cat /etc/os-release | grep "^VERSION_ID=" | cut -d "=" -f 2').strip.gsub('"', '')
+                        self.sshExec!(ssh, "zypper addrepo https://download.opensuse.org/repositories/#{name}/#{versionId}/#{name}.repo", true)
+                        self.sshExec!(ssh, "zypper --gpg-auto-import-keys refresh")
+                    else
+                        versionId = `cat /etc/os-release | grep "^VERSION_ID=" | cut -d "=" -f 2`.strip.gsub('"', '')
+                        `zypper addrepo https://download.opensuse.org/repositories/#{name}/#{versionId}/#{name}.repo`
+                        `zypper --gpg-auto-import-keys refresh`
+                    end
                 else
                     # TODO
                 end
@@ -205,16 +214,16 @@ module ConfigLMM
                 self.sshExec!(ssh, "#{distroInfo['ModifyUser']} --add-subuids 100000-165535 --add-subgids 100000-165535 #{user}")
             end
 
-            def self.distroID
-                `cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2`.strip.gsub('"', '')
+            def self.distroID(ssh = nil)
+                if ssh
+                    ssh.exec!('cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2').strip.gsub('"', '')
+                else
+                    `cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2`.strip.gsub('"', '')
+                end
             end
 
-            def self.distroIDfromSSH(ssh)
-                ssh.exec!('cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2').strip.gsub('"', '')
-            end
-
-            def self.distroInfoFromSSH(ssh)
-                distroInfo = self.distroInfo(self.distroIDfromSSH(ssh))
+            def self.currentDistroInfo(ssh)
+                self.distroInfo(self.distroID(ssh))
             end
 
             def self.distroInfo(distroID)

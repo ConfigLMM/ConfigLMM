@@ -18,9 +18,9 @@ module ConfigLMM
                     self.class.sshStart(uri) do |ssh|
                         dbPassword = self.configureMariaDB(target['Database'], ssh)
 
-                        Framework::LinuxApp.ensurePackagesOverSSH([PHP_FPM::PHPFPM_PACKAGE, 'php-pecl', 'make'], ssh)
+                        Framework::LinuxApp.ensurePackages([PHP_FPM::PHPFPM_PACKAGE, 'php-pecl', 'make'], ssh)
                         Framework::LinuxApp.ensureServiceAutoStartOverSSH(PHP_FPM::PHPFPM_SERVICE, ssh)
-                        distroInfo = Framework::LinuxApp.distroInfoFromSSH(ssh)
+                        distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
                         addUserCmd = "#{distroInfo['CreateServiceUser']} --home-dir '#{HOME_DIR}' --create-home --comment 'UVdesk' #{USER}"
                         self.class.sshExec!(ssh, addUserCmd, true)
                         if !self.class.remoteFilePresent?(HOME_DIR + '/public/index.php', ssh)
@@ -61,7 +61,7 @@ module ConfigLMM
 
                         Framework::LinuxApp.startServiceOverSSH(PHP_FPM::PHPFPM_SERVICE, ssh)
 
-                        Framework::LinuxApp.ensurePackagesOverSSH([NGINX_PACKAGE], ssh)
+                        Framework::LinuxApp.ensurePackages([NGINX_PACKAGE], ssh)
                         Framework::LinuxApp.ensureServiceAutoStartOverSSH(NGINX_PACKAGE, ssh)
                         self.class.prepareNginxConfig(target, ssh)
                         self.writeNginxConfig(__dir__, 'UVdesk', id, target, state, context, options)

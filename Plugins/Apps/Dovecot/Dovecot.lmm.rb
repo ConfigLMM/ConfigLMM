@@ -17,7 +17,7 @@ module ConfigLMM
                     raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
 
                     self.class.sshStart(uri) do |ssh|
-                        distroInfo = Framework::LinuxApp.distroInfoFromSSH(ssh)
+                        distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
                         addUserCmd = "#{distroInfo['CreateServiceUser']} --home-dir '#{EMAIL_HOME}' --create-home --comment 'Dovecot EMail' #{EMAIL_USER}"
                         self.class.sshExec!(ssh, addUserCmd, true)
                         uid = self.class.sshExec!(ssh, "id -u #{EMAIL_USER}").strip

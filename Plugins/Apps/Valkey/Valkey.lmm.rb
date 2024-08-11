@@ -13,7 +13,7 @@ module ConfigLMM
 
                 if target['Location'] && target['Location'] != '@me'
                     self.class.sshStart(target['Location']) do |ssh|
-                        distroId = self.class.distroIDfromSSH(ssh)
+                        distroId = self.class.distroID(ssh)
                         if distroId == SUSE_ID
                             serviceName = 'redis@redis'
                             self.class.sshExec!(ssh, "touch #{CONFIG_FILE}")

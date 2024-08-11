@@ -21,9 +21,9 @@ module ConfigLMM
                     raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
                     self.class.sshStart(uri) do |ssh|
                         if !target.key?('Proxy') || target['Proxy'] != 'only'
-                            Framework::LinuxApp.ensurePackagesOverSSH([PHP_FPM::PHPFPM_PACKAGE], ssh)
+                            Framework::LinuxApp.ensurePackages([PHP_FPM::PHPFPM_PACKAGE], ssh)
                             Framework::LinuxApp.ensureServiceAutoStartOverSSH(PHP_FPM::PHPFPM_SERVICE, ssh)
-                            distroInfo = Framework::LinuxApp.ensurePackagesOverSSH([PACKAGE_NAME], ssh)
+                            distroInfo = Framework::LinuxApp.ensurePackages([PACKAGE_NAME], ssh)
                             addUserCmd = "#{distroInfo['CreateServiceUser']} --home-dir '#{HOME_DIR}' --create-home --comment 'Nextcloud' #{USER}"
                             self.class.sshExec!(ssh, addUserCmd, true)
                             self.class.sshExec!(ssh, "mkdir -p /var/log/php/ /var/lib/nextcloud/apps/ /var/lib/nextcloud/data/")
@@ -60,7 +60,7 @@ module ConfigLMM
                         if !target.key?('Proxy') || target['Proxy']
                             self.class.prepareNginxConfig(target, ssh)
                             self.writeNginxConfig(__dir__, 'Nextcloud', id, target, state, context, options)
-                            distroInfo = Framework::LinuxApp.ensurePackagesOverSSH([PACKAGE_NAME], ssh)
+                            distroInfo = Framework::LinuxApp.ensurePackages([PACKAGE_NAME], ssh)
                             webappsDir = PHP_FPM::webappsDir(distroInfo)
                             nginxFile = options['output'] + '/nginx/servers-lmm/Nextcloud.conf'
                             `sed -i 's|root .*|root #{webappsDir}nextcloud;|' #{nginxFile}`

@@ -21,7 +21,7 @@ module ConfigLMM
                         sharedKey = self.class.sshExec!(ssh, "firewall-cmd -q --permanent --zone=trusted --add-source=#{SUBNET}")
                         sharedKey = self.class.sshExec!(ssh, "firewall-cmd -q --permanent --direct --add-rule ipv4 nat POSTROUTING 0 -s #{SUBNET} ! -d #{SUBNET} -j MASQUERADE")
 
-                        self.class.ensurePackagesOverSSH([WIREGUARD_PACKAGE], ssh)
+                        self.class.ensurePackages([WIREGUARD_PACKAGE], ssh)
                         self.class.ensureServiceAutoStartOverSSH(SERVICE_NAME, ssh)
 
                         dir = options['output'] + '/' + id + '/etc/wireguard/'

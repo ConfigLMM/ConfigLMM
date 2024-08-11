@@ -34,7 +34,7 @@ module ConfigLMM
                             deployNginxConfig(id, target, activeState, context, options)
                         end
                         if !target.key?('Proxy') || target['Proxy'] != 'only'
-                            distroInfo = Framework::LinuxApp.distroInfoFromSSH(ssh)
+                            distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
                             Framework::LinuxApp.configurePodmanServiceOverSSH(USER, GOLLUM_PATH, 'gollum', distroInfo, ssh)
                             self.class.uploadFolder(options['output'] + GOLLUM_PATH, '/srv', ssh)
                             path = Framework::LinuxApp::SYSTEMD_CONTAINERS_PATH.gsub('~', GOLLUM_PATH)

@@ -22,7 +22,7 @@ module ConfigLMM
                     uri = Addressable::URI.parse(target['Location'])
                     self.class.sshStart(uri) do |ssh|
                         if !target.key?('Proxy') || target['Proxy'] != 'only'
-                            distroInfo = Framework::LinuxApp.distroInfoFromSSH(ssh)
+                            distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
                             Framework::LinuxApp.configurePodmanServiceOverSSH(USER, HOME_DIR, 'Vaultwarden', distroInfo, ssh)
                             self.class.sshExec!(ssh, "su --login #{USER} --shell /bin/sh --command 'mkdir -p ~/data'")
                             path = Framework::LinuxApp::SYSTEMD_CONTAINERS_PATH.gsub('~', HOME_DIR)

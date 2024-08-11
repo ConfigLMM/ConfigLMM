@@ -24,7 +24,7 @@ module ConfigLMM
 
                         if !target.key?('Proxy') || target['Proxy'] != 'only'
                             dbPassword = self.configurePostgreSQL(target['Database'], ssh)
-                            distroInfo = Framework::LinuxApp.distroInfoFromSSH(ssh)
+                            distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
                             Framework::LinuxApp.configurePodmanServiceOverSSH(USER, HOME_DIR, 'Odoo', distroInfo, ssh)
                             self.class.sshExec!(ssh, "su --login #{USER} --shell /bin/sh --command 'mkdir -p ~/config'")
                             self.class.sshExec!(ssh, "su --login #{USER} --shell /bin/sh --command 'mkdir -p ~/data'")
@@ -50,7 +50,7 @@ module ConfigLMM
                         if !target.key?('Proxy') || target['Proxy'] == true || target['Proxy'] == 'only'
                             raise Framework::PluginProcessError.new('Domain field must be set!') unless target['Domain']
 
-                            Framework::LinuxApp.ensurePackagesOverSSH([NGINX_PACKAGE], ssh)
+                            Framework::LinuxApp.ensurePackages([NGINX_PACKAGE], ssh)
                             Framework::LinuxApp.ensureServiceAutoStartOverSSH(NGINX_PACKAGE, ssh)
                             self.class.prepareNginxConfig(target, ssh)
                             self.writeNginxConfig(__dir__, 'Odoo', id, target, state, context, options)

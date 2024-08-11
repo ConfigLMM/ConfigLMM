@@ -69,7 +69,7 @@ module ConfigLMM
                         end
                     end
                     if target['Network']
-                        distroInfo = self.class.distroInfoFromSSH(ssh)
+                        distroInfo = self.class.currentDistroInfo(ssh)
                         if distroInfo['Name'] == 'openSUSE Leap'
                             networkFile = '/etc/sysconfig/network/ifcfg-eth0'
                             if target['Network'] == 'dhcp'

@@ -14,7 +14,7 @@ module ConfigLMM
                     self.class.sshStart(uri) do |ssh|
                         self.prepareConfig(target, ssh)
 
-                        distroInfo = Framework::LinuxApp.distroInfoFromSSH(ssh)
+                        distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
                         self.class.sshExec!(ssh, "mkdir -p #{HOME_DIR}/config")
                         self.class.sshExec!(ssh, "mkdir -p #{HOME_DIR}/logs")
                         self.class.sshExec!(ssh, "mkdir -p #{HOME_DIR}/data")
@@ -64,7 +64,7 @@ module ConfigLMM
             def prepareConfig(target, ssh)
               raise Framework::PluginProcessError.new('Domain field must be set!') unless target['Domain']
 
-              Framework::LinuxApp.ensurePackagesOverSSH([NGINX_PACKAGE], ssh)
+              Framework::LinuxApp.ensurePackages([NGINX_PACKAGE], ssh)
               self.class.prepareNginxConfig(target, ssh)
             end
 

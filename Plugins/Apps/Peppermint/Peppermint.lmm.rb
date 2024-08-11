@@ -18,7 +18,7 @@ module ConfigLMM
                     self.class.sshStart(uri) do |ssh|
 
                         dbPassword = self.configurePostgreSQL(target['Database'], ssh)
-                        distroInfo = Framework::LinuxApp.distroInfoFromSSH(ssh)
+                        distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
                         Framework::LinuxApp.configurePodmanServiceOverSSH(USER, HOME_DIR, 'Peppermint Ticket Management', distroInfo, ssh)
 
                         path = Framework::LinuxApp::SYSTEMD_CONTAINERS_PATH.gsub('~', HOME_DIR)
@@ -34,7 +34,7 @@ module ConfigLMM
                         self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ daemon-reload")
                         self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ start Peppermint")
 
-                        Framework::LinuxApp.ensurePackagesOverSSH([NGINX_PACKAGE], ssh)
+                        Framework::LinuxApp.ensurePackages([NGINX_PACKAGE], ssh)
                         Framework::LinuxApp.ensureServiceAutoStartOverSSH(NGINX_PACKAGE, ssh)
                         self.class.prepareNginxConfig(target, ssh)
                         self.writeNginxConfig(__dir__, 'Peppermint', id, target, state, context, options)

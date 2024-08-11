@@ -29,7 +29,7 @@ module ConfigLMM
                     uri = Addressable::URI.parse(target['Location'])
                     raise Framework::PluginProcessError.new("Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
                     self.class.sshStart(uri) do |ssh|
-                        Framework::LinuxApp.ensurePackagesOverSSH([CERTBOT_PACKAGE], ssh)
+                        Framework::LinuxApp.ensurePackages([CERTBOT_PACKAGE], ssh)
                         self.class.prepareNginxConfig(target, ssh)
 
                         self.class.sshExec!(ssh, "mkdir -p #{CONFIG_DIR}conf.d")

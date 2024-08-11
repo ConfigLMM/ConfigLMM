@@ -159,7 +159,7 @@ module ConfigLMM
             def updateConfigOverSSH(uri, cmd)
                 dir = ''
                 self.class.sshStart(uri) do |ssh|
-                    distroID = self.class.distroIDfromSSH(ssh)
+                    distroID = self.class.distroID(ssh)
                     dir = pgsqlDir(distroID)
                     self.class.sshExec!(ssh, cmd + ' ' + dir + HBA_FILE)
                 end

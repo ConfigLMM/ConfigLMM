@@ -20,7 +20,7 @@ module ConfigLMM
                             self.prepareConfig(target, ssh)
 
                             dbPassword = self.configurePostgreSQL(target['Database'], ssh)
-                            distroInfo = Framework::LinuxApp.distroInfoFromSSH(ssh)
+                            distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
                             Framework::LinuxApp.configurePodmanServiceOverSSH(USER, HOME_DIR, 'Authentik IdP and SSO', distroInfo, ssh)
                             self.class.sshExec!(ssh, "su --login #{USER} --shell /bin/sh --command 'mkdir -p ~/media'")
                             self.class.sshExec!(ssh, "su --login #{USER} --shell /bin/sh --command 'mkdir -p ~/templates'")
@@ -58,7 +58,7 @@ module ConfigLMM
 
               raise Framework::PluginProcessError.new('Domain field must be set!') unless target['Domain']
 
-              Framework::LinuxApp.ensurePackagesOverSSH([NGINX_PACKAGE], ssh)
+              Framework::LinuxApp.ensurePackages([NGINX_PACKAGE], ssh)
               self.class.prepareNginxConfig(target, ssh)
             end
 
