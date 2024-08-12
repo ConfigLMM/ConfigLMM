@@ -1,4 +1,5 @@
 Arch Linux:
+    Cassandra: AUR|cassandra
     CertBotNginx:
         - certbot-nginx
         - certbot-dns-rfc2136
@@ -19,6 +20,7 @@ Arch Linux:
     Yarn: yarn
 
 openSUSE Leap:
+    Cassandra: home:davispuh:branches:server:database|cassandra
     CertBotNginx:
         - python3-certbot-nginx
         - certbot-systemd-timer
