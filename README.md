@@ -221,6 +221,12 @@ First you need to have Ruby and RubyGems. Then you can install it with:
 
     $ gem install ConfigLMM
 
+If that doesn't work (eg. your Ruby is too old) then install with (it will install [RVM](https://rvm.io/))
+
+```
+$ curl -sS https://raw.githubusercontent.com/ConfigLMM/ConfigLMM/master/bootstrap.sh | sh
+```
+
 ## Usage
 
 Create yaml file with desired config, eg.
