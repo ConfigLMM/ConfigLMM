@@ -1,4 +1,35 @@
 
+## [0.3.0] - 2024-08-13
+
+Implement:
+- systemd UserCgroups
+- Authentik - https://goauthentik.io/
+- WireGuard - https://www.wireguard.com/
+- Dovecot - https://www.dovecot.org/
+- Nextcloud - https://nextcloud.com/
+- Vaultwarden - https://github.com/dani-garcia/vaultwarden
+- Linux: fstab tmpfs
+- Linux: Network config
+- Linux: deployLocal() and Execute commands
+- SSH settings
+- Odoo - https://www.odoo.com/
+- GitLab - https://about.gitlab.com/
+- Partial UVdesk - https://www.uvdesk.com/en/ticket-management-system/
+- Peppermint - https://peppermint.sh/
+- Cassandra - https://cassandra.apache.org/_/index.html
+
+Other improvements:
+- Add bootstrap.sh script
+- PowerDNS
+- GoDaddy
+- Nginx
+- PostgreSQL: Support Logical Replication
+- Postfix
+- gollum
+- Linux: Users SSHKey
+- PostgreSQL
+- Valkey
+
 ## [0.2.0] - 2024-07-19
 
 - openSUSE - https://www.opensuse.org/
