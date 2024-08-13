@@ -122,6 +122,25 @@ module ConfigLMM
                             fileLines
                         end
                     end
+                    if target['Users']
+                        target['Users'].each do |name, info|
+                            userId = ssh.exec!("id -u #{name} 2>/dev/null").strip
+                            if userId.empty?
+                                shell = ''
+                                if info['Shell']
+                                    shell = "--shell '/usr/bin/#{info['Shell']}'"
+                                end
+                                self.class.sshExec!(ssh, "useradd --badnames --create-home --user-group #{shell} #{name}")
+                            end
+                            homeDir = self.class.sshExec!(ssh, "getent passwd #{name} | cut -d ':' -f 6").strip
+                            keyFile = homeDir + "/.ssh/id_ed25519"
+                            if info['SSHKey'] && !self.class.remoteFilePresent?(keyFile, ssh)
+                                self.class.sshExec!(ssh, "mkdir -p #{homeDir}/.ssh")
+                                self.class.sshExec!(ssh, "ssh-keygen -t ed25519 -f #{keyFile} -P ''")
+                                self.class.sshExec!(ssh, "chown -R #{name}:#{name} #{homeDir}/.ssh")
+                            end
+                        end
+                    end
                 end
                 if target['Firewall'] && target['Firewall'] != 'no'
                     self.ensurePackage(FIREWALL_PACKAGE, locationUri)
