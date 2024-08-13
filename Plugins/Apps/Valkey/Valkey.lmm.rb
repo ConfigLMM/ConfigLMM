@@ -25,6 +25,7 @@ module ConfigLMM
                         end
 
                         if target['Settings']
+                            target['Settings']['bind'] = '127.0.0.1' unless target['Settings']['bind']
                             updateRemoteFile(ssh, CONFIG_FILE, options, false) do |configLines|
                                 target['Settings'].each do |name, value|
                                     configLines << "#{name} #{value}\n"
