@@ -14,24 +14,22 @@ module ConfigLMM
             def actionPostgreSQLDeploy(id, target, activeState, context, options)
                 self.ensurePackage(PACKAGE_NAME, target['Location'])
                 self.ensureServiceAutoStart(SERVICE_NAME, target['Location'])
+                self.startService(SERVICE_NAME, target['Location'])
 
                 if target['Location'] && target['Location'] != '@me'
                     uri = Addressable::URI.parse(target['Location'])
                     raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
-                    self.updateSettingsOverSSH(target, uri, options)
-
-                    self.startService(SERVICE_NAME, target['Location'])
 
                     self.class.sshStart(uri) do |ssh|
+                        self.updateSettingsOverSSH(target, ssh, options)
+                        self.class.sshExec!(ssh, "su --login #{USER_NAME} --command 'pg_ctl reload'")
                         self.class.createUsersOverSSH(target, ssh)
                         self.class.createDatabasesOverSSH(target, ssh)
                         self.class.createPublicationsOverSSH(target, ssh)
                         self.class.createSubscriptionsOverSSH(target, ssh)
                     end
                 else
-                    self.updateListenLocal(target)
-
-                    self.startService(SERVICE_NAME, target['Location'])
+                    `pg_ctl reload`
                 end
 
             end
@@ -48,18 +46,18 @@ module ConfigLMM
                 end
             end
 
-            def updateSettingsOverSSH(target, uri, options)
+            def updateSettingsOverSSH(target, ssh, options)
                 dir = nil
                 settingLines = []
                 hbaLines = []
                 if target['ListenAll']
                     cmd = "sed -i 's|^host    all             all             127.0.0.1/32            ident|host    all             all             0.0.0.0/0               scram-sha-256|'"
-                    dir = updateConfigOverSSH(uri, cmd)
+                    dir = updateConfigOverSSH(ssh, cmd)
                     settingLines << "listen_addresses = '*'\n"
-                    Framework::LinuxApp.firewallAddPortOverSSH('5432/tcp', uri)
+                    Framework::LinuxApp.firewallAddPortOverSSH('5432/tcp', ssh)
                 elsif target['Listen'] && !target['Listen'].empty?
                     cmd = "sed -i 's|^host    all             all             127.0.0.1/32            ident|host    all             all             127.0.0.1/32            scram-sha-256|'"
-                    dir = updateConfigOverSSH(uri, cmd)
+                    dir = updateConfigOverSSH(ssh, cmd)
 
                     ips = target['Listen'].map { |addr| addr.split('/').first }.join(',')
                     settingLines << "listen_addresses = '#{ips}'\n"
@@ -71,7 +69,7 @@ module ConfigLMM
                     end
                 else
                     cmd = "sed -i 's|^host    all             all             127.0.0.1/32            ident|host    all             all             127.0.0.1/32            scram-sha-256|'"
-                    dir = updateConfigOverSSH(uri, cmd)
+                    dir = updateConfigOverSSH(ssh, cmd)
                 end
                 #if !target['Publications'].to_h.empty?
                 #    target['Settings'] ||= {}
@@ -81,12 +79,12 @@ module ConfigLMM
                     settingLines << "#{name} = #{value}\n"
                 end
                 if !hbaLines.empty?
-                    updateRemoteFile(uri, dir + HBA_FILE, options, false) do |configLines|
+                    updateRemoteFile(ssh, dir + HBA_FILE, options, false) do |configLines|
                         configLines += hbaLines
                     end
                 end
                 if !settingLines.empty?
-                    updateRemoteFile(uri, dir + CONFIG_FILE, options, false) do |configLines|
+                    updateRemoteFile(ssh, dir + CONFIG_FILE, options, false) do |configLines|
                         configLines += settingLines
                     end
                 end
@@ -156,13 +154,11 @@ module ConfigLMM
                 self.sshExec!(ssh, cmd)
             end
 
-            def updateConfigOverSSH(uri, cmd)
+            def updateConfigOverSSH(ssh, cmd)
                 dir = ''
-                self.class.sshStart(uri) do |ssh|
-                    distroID = self.class.distroID(ssh)
-                    dir = pgsqlDir(distroID)
-                    self.class.sshExec!(ssh, cmd + ' ' + dir + HBA_FILE)
-                end
+                distroID = self.class.distroID(ssh)
+                dir = pgsqlDir(distroID)
+                self.class.sshExec!(ssh, cmd + ' ' + dir + HBA_FILE)
                 dir
             end
 
