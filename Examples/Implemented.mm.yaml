@@ -49,6 +49,7 @@ Linux:
     CPU: 2
     RAM: 4 GiB
     Storage: 30 GiB
+    Tmpfs: 1G
     Domain: example.org
     Hosts:
         127.0.0.1:
@@ -60,6 +61,7 @@ Linux:
     Users:
         root:
             Shell: fish
+            SSHKey: yes
             AuthorizedKeys:
                 - ~/.ssh/id_ed25519.pub
     SSH:
@@ -68,7 +70,26 @@ Linux:
                 User: root
                 HostName: example.org
     Sysctl:
-        vm.overcommit_memory: 1
+        vm.overcommit_memory: 1 # Need for ValKey
+        net.ipv4.ip_forward: 1 # Need for Wanguard
+    Network:
+        IP: 192.168.1.2/24
+        Gateway: 192.168.1.1
+        DNS: 192.168.1.1
+    Execute:
+        sh: echo Hello World from ConfigLMM > /tmp/hello
+
+SSH:
+    Type: SSH
+    Location: ssh://example.org/
+    Port: 1234
+    Settings:
+        PasswordAuthentication: no
+
+Systemd:
+    Type: systemd
+    Location: ssh://example.org/
+    UserCgroups: yes # Need for Podman
 
 # https://www.arubanetworks.com/
 ArubaInstant:
@@ -81,14 +102,38 @@ ArchiSteamFarm:
     Type: ArchiSteamFarm
     Domain: ASF.example.org
 
+# https://goauthentik.io/
+Authentik:
+    Type: Authentik
+    Location: ssh://example.org/
+    Domain: auth.example.org
+
 # https://bitmagnet.io/
 Bitmagnet:
     Type: Bitmagnet
     Domain: bitmagnet.example.org
 
+# https://cassandra.apache.org/_/index.html
+Cassandra:
+    Type: Cassandra
+    Location: ssh://example.org/
+    ClusterName: Cluster
+
+# https://www.dovecot.org/
 Dovecot:
     Type: Dovecot
     Location: ssh://example.org/
+
+# https://about.gitlab.com/
+GitLab:
+    Type: GitLab
+    Location: ssh://example.org/
+    Domain: git.example.org
+    SMTP:
+        HostName: email.example.org
+        Port: 465
+        User: git@example.org
+        TLS: yes
 
 # https://github.com/gollum/gollum
 Gollum:
@@ -141,18 +186,31 @@ Netdata:
 Nextcloud:
     Type: Nextcloud
     Domain: nextcloud.example.org
+    Database:
+        Type: pgsql
+        HostName: localhost
 
 # https://www.odoo.com/
 Odoo:
     Type: Odoo
     Domain: odoo.example.org
+    Database:
+        HostName: db.example.org
+
+# https://peppermint.sh/
+Peppermint:
+    Type: Peppermint
+    Location: ssh://example.org/
+    Domain: Peppermint.example.org
 
 # https://www.postfix.org/
 Postfix:
     Type: Postfix
     Location: ssh://example.org/
     AlternativePort: 2525
+    SMTP: unix
     ForwardAll: example.com
+    ForwardDovecot: yes
     Settings:
         inet_interfaces: $myhostname, localhost
 
@@ -160,6 +218,13 @@ PostgreSQL:
     Type: PostgreSQL
     Location: ssh://example.org/
     ListenAll: yes
+    Users:
+        replication:
+            Replication: yes
+            Password: ${ENV:POSTGRES_REPLICATION_PASSWORD}
+    Subscriptions:
+        db:
+            Connection: user=replication dbname=db password=${ENV:POSTGRES_REPLICATION_PASSWORD}
 
 # https://pterodactyl.io/
 Pterodactyl:
@@ -199,3 +264,12 @@ Valkey:
 Vaultwarden:
     Type: Vaultwarden
     Domain: vaultwarden.example.org
+
+# https://www.wireguard.com/
+WireGuard:
+    Type: WireGuard
+    Location: ssh://example.org/
+    Address: 172.20.0.1/20
+    Peers:
+        example:
+            Endpoint: example.example.org
