@@ -7,6 +7,7 @@ require 'http'
 require 'fileutils'
 require 'net/ssh'
 require 'net/scp'
+require 'open3'
 
 module ConfigLMM
     module Framework
@@ -163,6 +164,7 @@ module ConfigLMM
             CONFIGLMM_SECTION_END   = "# -----END CONFIGLMM-----\n"
 
             def updateLocalFile(file, options, atTop = false, comment = '#')
+                File.write(file, '') unless File.exist?(file)
                 sectionBegin = CONFIGLMM_SECTION_BEGIN.gsub('#', comment)
                 sectionEnd = CONFIGLMM_SECTION_END.gsub('#', comment)
                 fileLines = File.read(file).lines
@@ -216,9 +218,14 @@ module ConfigLMM
                 end
             end
 
-            def self.remoteFilePresent?(file, ssh)
-                result = self.sshExec!(ssh, "stat #{file}", true)
+            def self.filePresent?(file, ssh = nil)
+                result = self.exec("stat #{file}", ssh, true)
                 !result.start_with?('stat: cannot')
+            end
+
+            # DEPRECATED - use filePresent()
+            def self.remoteFilePresent?(file, ssh)
+                self.filePresent?(file, ssh)
             end
 
             def self.remoteFileContains?(file, content, ssh)
@@ -237,6 +244,20 @@ module ConfigLMM
                 self.sshExec!(ssh, "mkdir -p #{target}")
                 Dir[folder + '/*'].each do |file|
                     ssh.scp.upload!(file, target + File.basename(file), recursive: true)
+                end
+            end
+
+            def self.exec(command, ssh = nil, allowFailure = false)
+                if ssh.nil?
+                    stdout, stdeerr, status = Open3.capture3(command)
+                    if !allowFailure && !status.success?
+                        $stderr.puts(stdout)
+                        $stderr.puts(stdeerr)
+                        raise Framework::PluginProcessError.new("Failed '#{command}'")
+                    end
+                    stdout + stdeerr
+                else
+                    self.sshExec!(ssh, command, allowFailure)
                 end
             end
 

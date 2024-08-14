@@ -36,13 +36,7 @@ module ConfigLMM
                         raise Framework::PluginProcessError.new("#{id}: Unknown protocol: #{uri.scheme}!")
                     end
                 else
-                    deployLocalHostsFile(target, options)
-                    deployLocalSSHConfig(target, options)
-                    if target['Firewall'] && target['Firewall'] != 'no'
-                        self.ensurePackage(FIREWALL_PACKAGE, locationUri)
-                        self.ensureServiceAutoStart(FIREWALL_SERVICE, locationUri)
-                        self.startService(FIREWALL_SERVICE, locationUri)
-                    end
+                    deployLocal(target, options)
                 end
                 if target['AlternativeLocation']
                     uri = Addressable::URI.parse(target['AlternativeLocation'])
@@ -68,8 +62,8 @@ module ConfigLMM
                             fileLines + hostsLines
                         end
                     end
+                    distroInfo = self.class.currentDistroInfo(ssh)
                     if target['Network']
-                        distroInfo = self.class.currentDistroInfo(ssh)
                         if distroInfo['Name'] == 'openSUSE Leap'
                             networkFile = '/etc/sysconfig/network/ifcfg-eth0'
                             if target['Network'] == 'dhcp'
@@ -130,7 +124,9 @@ module ConfigLMM
                                 if info['Shell']
                                     shell = "--shell '/usr/bin/#{info['Shell']}'"
                                 end
-                                self.class.sshExec!(ssh, "useradd --badnames --create-home --user-group #{shell} #{name}")
+                                badname = '--badname'
+                                badname = '--badnames' if distroInfo['Name'] == 'openSUSE Leap'
+                                self.class.sshExec!(ssh, "useradd #{badname} --create-home --user-group #{shell} #{name}")
                             end
                             homeDir = self.class.sshExec!(ssh, "getent passwd #{name} | cut -d ':' -f 6").strip
                             keyFile = homeDir + "/.ssh/id_ed25519"
@@ -141,11 +137,70 @@ module ConfigLMM
                             end
                         end
                     end
+                    self.executeCommands(target['Execute'], ssh)
                 end
                 if target['Firewall'] && target['Firewall'] != 'no'
                     self.ensurePackage(FIREWALL_PACKAGE, locationUri)
                     self.ensureServiceAutoStart(FIREWALL_SERVICE, locationUri)
                     self.startService(FIREWALL_SERVICE, locationUri)
+                end
+            end
+
+            def deployLocal(target, options)
+                deployLocalHostsFile(target, options)
+                deployLocalSSHConfig(target, options)
+                if target['Sysctl']
+                    updateLocalFile(SYSCTL_FILE, options) do |fileLines|
+                        target['Sysctl'].each do |name, value|
+                            fileLines << "#{name} = #{value}\n"
+                            `sysctl #{name}=#{value}`
+                        end
+                        fileLines
+                    end
+                end
+                if target['Users']
+                    target['Users'].each do |name, info|
+                        userId = self.class.exec("id -u #{name} 2>/dev/null", nil, true).strip
+                        if userId.empty?
+                            shell = ''
+                            if info['Shell']
+                                shell = "--shell '/usr/bin/#{info['Shell']}'"
+                            end
+                            distroInfo = self.class.currentDistroInfo(nil)
+                            badname = '--badname'
+                            badname = '--badnames' if distroInfo['Name'] == 'openSUSE Leap'
+                            self.class.exec("useradd #{badname} --create-home --user-group #{shell} #{name}")
+                        end
+                        homeDir = self.class.exec("getent passwd #{name} | cut -d ':' -f 6").strip
+                        keyFile = homeDir + "/.ssh/id_ed25519"
+                        if info['SSHKey'] && !self.class.filePresent?(keyFile)
+                            self.class.exec("mkdir -p #{homeDir}/.ssh")
+                            self.class.exec("ssh-keygen -t ed25519 -f #{keyFile} -P ''")
+                            self.class.exec("chown -R #{name}:#{name} #{homeDir}/.ssh")
+                        end
+                    end
+                end
+                if target['Firewall'] && target['Firewall'] != 'no'
+                    self.ensurePackage(FIREWALL_PACKAGE, locationUri)
+                    self.ensureServiceAutoStart(FIREWALL_SERVICE, locationUri)
+                    self.startService(FIREWALL_SERVICE, locationUri)
+                end
+                self.executeCommands(target['Execute'])
+            end
+
+            def executeCommands(commands, ssh = nil)
+                return unless commands
+
+                commands.each do |type, data|
+                    case type
+                    when 'sh'
+                        data = [data] unless data.is_a?(Array)
+                        data.each do |cmd|
+                            self.class.exec(cmd, ssh)
+                        end
+                    else
+                        raise 'Unimplemented!'
+                    end
                 end
             end
 
