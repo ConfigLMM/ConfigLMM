@@ -46,9 +46,17 @@ if [ "$rubyTooOld" -eq "1" ]; then
     source /etc/profile.d/rvm.sh
 
     if [ "$SHELL" = "/usr/bin/fish" ]; then
-        curl -L --create-dirs -o ~/.config/fish/functions/rvm.fish https://raw.github.com/lunks/fish-nuggets/master/functions/rvm.fish
+        curl -sSL --create-dirs -o ~/.config/fish/functions/rvm.fish https://raw.github.com/lunks/fish-nuggets/master/functions/rvm.fish
+        sed -i "/rvm default/d" ~/.config/fish/config.fish
         echo "rvm default" >> ~/.config/fish/config.fish
     fi
 fi
 
-gem install ConfigLMM
+# This shouldn't be needed but without it doesn't work
+export PATH=/usr/local/rvm/gems/ruby-3.3.4/bin:/usr/local/rvm/rubies/ruby-3.3.4/bin:$PATH
+export GEM_HOME=/usr/local/rvm/gems/ruby-3.3.4
+export GEM_PATH=/usr/local/rvm/gems/ruby-3.3.4
+
+bash -lc 'gem install ConfigLMM'
+
+echo "You need to close and reopen your shell" >&2
