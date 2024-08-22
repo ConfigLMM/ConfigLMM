@@ -1,0 +1,15 @@
+
+[Unit]
+Description=BookStack container
+After=local-fs.target
+
+[Container]
+Image=ghcr.io/linuxserver/bookstack:latest
+EnvironmentFile=/var/lib/bookstack/.config/containers/systemd/BookStack.env
+Network=slirp4netns:allow_host_loopback=true
+PublishPort=127.0.0.1:18200:80
+Volume=/var/lib/bookstack/config:/config
+AutoUpdate=registry
+
+[Install]
+WantedBy=multi-user.target default.target
