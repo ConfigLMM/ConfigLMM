@@ -8,6 +8,7 @@ module ConfigLMM
             NAME = 'Vaultwarden'
             USER = 'vaultwarden'
             HOME_DIR = '/var/lib/vaultwarden'
+            SERVICE_PORT = '18000'
 
             def actionVaultwardenBuild(id, target, state, context, options)
                 writeNginxConfig(__dir__, NAME, id, target, state, context, options)
@@ -46,6 +47,9 @@ module ConfigLMM
                             ssh.scp.upload!(__dir__ + '/Vaultwarden.container', path)
                             self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ daemon-reload")
                             self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ start Vaultwarden")
+                            if target['Proxy'] != 'only'
+                                Framework::LinuxApp.firewallAddPortOverSSH(SERVICE_PORT + '/tcp', ssh)
+                            end
                         end
                         if !target.key?('Proxy') || !!target['Proxy']
                             self.class.prepareNginxConfig(target, ssh)
