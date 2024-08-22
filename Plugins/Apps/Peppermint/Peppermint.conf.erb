@@ -1,9 +1,5 @@
 
 server {
-    listen 80;
-    listen [::]:80;
-    server_name peppermint.example.com;
-    add_header Strict-Transport-Security "max-age=15552000; includeSubDomains" always;
 
     <% if !config['TLS'] %>
         listen       <%= config['Port'] %>;
