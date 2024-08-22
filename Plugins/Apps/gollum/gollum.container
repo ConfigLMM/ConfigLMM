@@ -4,9 +4,11 @@ After=local-fs.target
 
 [Container]
 Image=gollumwiki/gollum:master
+Exec=--config=/config/config.rb
 PublishPort=0.0.0.0:14567:4567
 UserNS=keep-id:uid=1000,gid=1000
 Volume=/srv/gollum/repo:/wiki
+Volume=/srv/gollum/config:/config
 
 [Install]
 WantedBy=multi-user.target default.target

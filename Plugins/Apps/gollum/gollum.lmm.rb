@@ -6,12 +6,12 @@ module ConfigLMM
             NAME = 'gollum'
             USER = 'gollum'
             GOLLUM_PATH = '/srv/gollum'
-            HOME_DIR = '/var/lib/authentik'
+            GOLLUM_PORT = '14567'
 
             def actionGollumBuild(id, target, activeState, context, options)
                 writeNginxConfig(__dir__, NAME, id, target, activeState, context, options)
                 targetDir = options['output'] + GOLLUM_PATH
-                mkdir(targetDir, options['dry'])
+                mkdir(targetDir + '/config', options['dry'])
                 copy(__dir__ + '/config.ru', targetDir, options['dry'])
                 `git init #{targetDir}/repo`
             end
@@ -36,12 +36,20 @@ module ConfigLMM
                         if !target.key?('Proxy') || target['Proxy'] != 'only'
                             distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
                             Framework::LinuxApp.configurePodmanServiceOverSSH(USER, GOLLUM_PATH, 'gollum', distroInfo, ssh)
+                            if target['Config']
+                                `cp #{target['Config']} #{options['output'] + GOLLUM_PATH}/config/config.rb`
+                            else
+                                `touch #{options['output'] + GOLLUM_PATH}/config/config.rb`
+                            end
                             self.class.uploadFolder(options['output'] + GOLLUM_PATH, '/srv', ssh)
                             path = Framework::LinuxApp::SYSTEMD_CONTAINERS_PATH.gsub('~', GOLLUM_PATH)
                             ssh.scp.upload!(__dir__ + '/gollum.container', path)
                             self.class.sshExec!(ssh, "chown -R #{USER}:#{USER} #{GOLLUM_PATH}")
                             self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ daemon-reload")
-                            self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ start gollum")
+                            self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ restart gollum")
+                            if target['Proxy'] != 'only'
+                                Framework::LinuxApp.firewallAddPortOverSSH(GOLLUM_PORT + '/tcp', ssh)
+                            end
                         end
                     end
                 else

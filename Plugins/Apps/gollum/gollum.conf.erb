@@ -36,7 +36,10 @@ server {
     access_log  /var/log/nginx/gollum.access.log;
     error_log   /var/log/nginx/gollum.error.log;
 
-    include config-lmm/private.conf;
+    <% if config['AuthentikDomain'].nil? %>
+        include config-lmm/private.conf;
+    <% end %>
+
     include config-lmm/errors.conf;
 
     <% if config['CertName'] %>
@@ -62,7 +65,42 @@ server {
         location / {
             proxy_pass <%= config['Server'] %>;
 
+            <% if config['AuthentikDomain'] %>
+                error_page       401 = @authenticate;
+                include config-lmm/errors.conf;
+
+                auth_request     /outpost.goauthentik.io/auth/nginx;
+
+                # translate headers from the outposts back to the actual upstream
+                auth_request_set $authentik_username $upstream_http_x_authentik_username;
+                auth_request_set $authentik_groups $upstream_http_x_authentik_groups;
+                auth_request_set $authentik_email $upstream_http_x_authentik_email;
+                auth_request_set $authentik_name $upstream_http_x_authentik_name;
+                auth_request_set $authentik_uid $upstream_http_x_authentik_uid;
+
+                proxy_set_header REMOTE_USER $authentik_username;
+                proxy_set_header REMOTE_GROUPS $authentik_groups;
+                proxy_set_header REMOTE_EMAIL $authentik_email;
+                proxy_set_header REMOTE_NAME $authentik_name;
+                proxy_set_header REMOTE_UID $authentik_uid;
+            <% end %>
+
             include config-lmm/proxy.conf;
+        }
+    <% end %>
+
+    <% if config['AuthentikDomain'] %>
+        location /outpost.goauthentik.io {
+            proxy_pass              https://<%= config['AuthentikDomain'] %>/outpost.goauthentik.io;
+            proxy_ssl_protocols     TLSv1.2 TLSv1.3;
+            proxy_set_header        X-Original-URL $scheme://$http_host$request_uri;
+            proxy_pass_request_body off;
+            proxy_set_header        Content-Length "";
+        }
+
+        location @authenticate {
+            internal;
+            return 302 /outpost.goauthentik.io/start?rd=$request_uri;
         }
     <% end %>
 }
