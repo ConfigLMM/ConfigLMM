@@ -12,6 +12,7 @@ UserNS=keep-id:uid=101,gid=101
 Volume=/var/lib/odoo/config:/etc/odoo
 Volume=/var/lib/odoo/data:/var/lib/odoo
 Volume=/var/lib/odoo/addons:/mnt/extra-addons
+AutoUpdate=registry
 
 [Install]
 WantedBy=multi-user.target default.target

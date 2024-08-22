@@ -9,6 +9,7 @@ EnvironmentFile=/var/lib/peppermint/.config/containers/systemd/Peppermint.env
 Network=slirp4netns:allow_host_loopback=true
 PublishPort=127.0.0.1:13000:3000
 PublishPort=127.0.0.1:15003:5003
+AutoUpdate=registry
 
 [Install]
 WantedBy=multi-user.target default.target

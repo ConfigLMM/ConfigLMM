@@ -12,6 +12,7 @@ Volume=/var/lib/gitlab/logs:/var/log/gitlab
 Volume=/var/lib/gitlab/data:/var/opt/gitlab
 Volume=/var/lib/gitlab/backups:/var/opt/gitlab/backups
 ShmSize=256M
+AutoUpdate=registry
 
 [Install]
 WantedBy=multi-user.target default.target

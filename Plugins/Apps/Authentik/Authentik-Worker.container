@@ -12,6 +12,7 @@ UserNS=keep-id:uid=1000,gid=1000
 Volume=/var/lib/authentik/media:/media
 Volume=/var/lib/authentik/templates:/templates
 Volume=/var/lib/authentik/certs:/certs
+AutoUpdate=registry
 
 [Install]
 WantedBy=multi-user.target default.target
