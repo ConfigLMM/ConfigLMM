@@ -32,4 +32,11 @@ server {
         proxy_pass http://authentik;
         include config-lmm/proxy.conf;
     }
+
+    <% if config['Outposts'].to_a.include?('Proxy') %>
+        location /outpost.goauthentik.io {
+            proxy_pass http://localhost:19010/outpost.goauthentik.io;
+            include config-lmm/proxy.conf;
+        }
+    <% end %>
 }

@@ -1,0 +1,14 @@
+
+[Unit]
+Description=Authentik Proxy Outpost container
+After=local-fs.target
+
+[Container]
+Image=ghcr.io/goauthentik/proxy:latest
+EnvironmentFile=/var/lib/authentik/.config/containers/systemd/ProxyOutpost.env
+PublishPort=127.0.0.1:19010:9000
+UserNS=keep-id:uid=1000,gid=1000
+AutoUpdate=registry
+
+[Install]
+WantedBy=multi-user.target default.target

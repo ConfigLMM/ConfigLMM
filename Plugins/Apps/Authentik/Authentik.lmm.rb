@@ -37,13 +37,15 @@ module ConfigLMM
                             ssh.scp.upload!(__dir__ + '/Authentik-Server.container', path)
                             ssh.scp.upload!(__dir__ + '/Authentik-Worker.container', path)
                             self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ daemon-reload")
-                            self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ start Authentik-Server")
-                            self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ start Authentik-Worker")
+                            self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ restart Authentik-Server")
+                            self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ restart Authentik-Worker")
 
                             Framework::LinuxApp.ensureServiceAutoStartOverSSH(NGINX_PACKAGE, ssh)
                             self.writeNginxConfig(__dir__, 'Authentik', id, target, state, context, options)
                             self.deployNginxConfig(id, target, activeState, context, options)
                             Framework::LinuxApp.startServiceOverSSH(NGINX_PACKAGE, ssh)
+
+                            self.deployProxyOutpost(target, ssh)
                         end
                     else
                         raise Framework::PluginProcessError.new("#{id}: Unknown protocol: #{uri.scheme}!")
@@ -51,6 +53,26 @@ module ConfigLMM
                 else
                     # TODO
                 end
+            end
+
+            def deployProxyOutpost(target, ssh = nil)
+                return unless target['Outposts'].to_a.include?('Proxy')
+
+                path = Framework::LinuxApp::SYSTEMD_CONTAINERS_PATH.gsub('~', HOME_DIR)
+                self.class.exec("echo 'AUTHENTIK_HOST=https://#{target['Domain'].downcase}' > #{path}/ProxyOutpost.env", ssh)
+                self.class.exec("echo 'AUTHENTIK_INSECURE=false' >> #{path}/ProxyOutpost.env", ssh)
+                self.class.exec(" echo 'AUTHENTIK_TOKEN=#{ENV['AUTHENTIK_TOKEN']}' >> #{path}/ProxyOutpost.env", ssh)
+                self.class.exec("chown #{USER}:#{USER} #{path}/ProxyOutpost.env", ssh)
+                self.class.exec("chmod 600 #{path}/ProxyOutpost.env", ssh)
+
+                if ssh.nil?
+                    self.class.exec("cp #{__dir__ + '/Authentik-ProxyOutpost.container'} #{path}/")
+                else
+                    ssh.scp.upload!(__dir__ + '/Authentik-ProxyOutpost.container', path)
+                end
+
+                self.class.exec("systemctl --user --machine=#{USER}@ daemon-reload", ssh)
+                self.class.exec("systemctl --user --machine=#{USER}@ restart Authentik-ProxyOutpost", ssh)
             end
 
             def prepareConfig(target, ssh)
