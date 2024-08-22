@@ -6,6 +6,7 @@ Arch Linux:
     CyrusSASL: cyrus-sasl
     Dovecot: dovecot
     firewalld: firewalld
+    MariaDB: mariadb
     Nextcloud: nextcloud
     nginx: nginx
     PHP-FPM: php-fpm
@@ -28,6 +29,7 @@ openSUSE Leap:
     CyrusSASL: cyrus-sasl-plain
     Dovecot: dovecot
     firewalld: firewalld
+    MariaDB: mariadb
     Nextcloud: server:php:applications|nextcloud
     nginx: nginx
     PHP-FPM:
