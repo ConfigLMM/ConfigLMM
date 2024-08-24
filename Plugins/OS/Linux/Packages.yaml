@@ -41,7 +41,9 @@ openSUSE Leap:
         - php8-mysql
     php-pecl: php8-pecl
     Podman: podman
-    PostgreSQL: postgresql-server
+    PostgreSQL:
+        - postgresql-server
+        - postgresql-contrib
     Postfix: postfix
     PowerDNS:
         - pdns-backend-geoip

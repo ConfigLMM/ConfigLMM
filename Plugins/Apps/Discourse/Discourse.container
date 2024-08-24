@@ -1,0 +1,17 @@
+
+[Unit]
+Description=Discourse container
+After=local-fs.target
+
+[Container]
+ContainerName=Discourse
+Image=docker.io/bitnami/discourse:latest
+EnvironmentFile=/var/lib/discourse/.config/containers/systemd/Discourse.env
+Network=slirp4netns:allow_host_loopback=true
+PublishPort=127.0.0.1:13100:3000
+UserNS=keep-id:uid=999,gid=999
+Volume=/var/lib/discourse/data:/bitnami/discourse
+AutoUpdate=registry
+
+[Install]
+WantedBy=multi-user.target default.target

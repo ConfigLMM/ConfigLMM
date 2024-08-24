@@ -168,6 +168,14 @@ module ConfigLMM
                     end
             end
 
+            def self.createExtensions(settings, db, extensions, ssh)
+                self.executeRemotelyOverSSH(settings, ssh) do |ssh|
+                    extensions.each do |extension|
+                        self.executeSQL("CREATE EXTENSION #{extension}", db, ssh, true)
+                    end
+                end
+            end
+
             def self.executeRemotelyOverSSH(settings, ssh)
                 settings['HostName'] = 'localhost' unless settings['HostName']
                 if settings['HostName'] == 'localhost'

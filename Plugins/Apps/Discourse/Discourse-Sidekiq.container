@@ -1,0 +1,17 @@
+
+
+[Unit]
+Description=Discourse Sidekiq container
+After=local-fs.target
+
+[Container]
+Image=docker.io/bitnami/discourse:latest
+Exec=/opt/bitnami/scripts/discourse-sidekiq/run.sh
+EnvironmentFile=/var/lib/discourse/.config/containers/systemd/Discourse.env
+Network=slirp4netns:allow_host_loopback=true
+UserNS=keep-id:uid=999,gid=999
+Volume=/var/lib/discourse/sidekiq:/bitnami/discourse
+AutoUpdate=registry
+
+[Install]
+WantedBy=multi-user.target default.target
