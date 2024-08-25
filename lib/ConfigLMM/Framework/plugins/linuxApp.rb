@@ -189,6 +189,7 @@ module ConfigLMM
                 Framework::LinuxApp.ensurePackages([PODMAN_PACKAGE], ssh)
                 addUserCmd = "#{distroInfo['CreateServiceUser']} --home-dir '#{homedir}' --create-home --comment '#{userComment}' #{user}"
                 self.sshExec!(ssh, addUserCmd, true)
+                self.sshExec!(ssh, "chmod o-rwx #{homedir}")
                 self.createSubuidsOverSSH(user, distroInfo, ssh)
                 self.sshExec!(ssh, "loginctl enable-linger #{user}")
                 self.sshExec!(ssh, "su --login #{user} --shell /bin/sh --command 'mkdir -p #{SYSTEMD_CONTAINERS_PATH}'")
