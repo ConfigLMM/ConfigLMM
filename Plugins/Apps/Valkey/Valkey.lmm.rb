@@ -24,6 +24,12 @@ module ConfigLMM
                             target['Settings']['dir'] = '/var/lib/redis/default/'
                         end
 
+                        if ENV[id + '-VALKEY_PASSWORD']
+                            target['Settings']['requirepass'] = ENV[id + '-VALKEY_PASSWORD']
+                        elsif ENV['VALKEY_PASSWORD']
+                            target['Settings']['requirepass'] = ENV['VALKEY_PASSWORD']
+                        end
+
                         if target['Settings']
                             target['Settings']['bind'] = '127.0.0.1' unless target['Settings']['bind']
                             updateRemoteFile(ssh, CONFIG_FILE, options, false) do |configLines|
