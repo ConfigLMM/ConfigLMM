@@ -1,0 +1,34 @@
+
+server {
+    <% if config['NginxVersion'] >= 1.25 %>
+        listen 443 ssl;
+        listen [::]:443 ssl;
+        http2 on;
+        http3 on;
+        quic_retry on;
+        add_header Alt-Svc 'h3=":443"; ma=86400';
+    <% else %>
+        listen 443 ssl http2;
+        listen [::]:443 ssl http2;
+    <% end %>
+
+    include config-lmm/ssl.conf;
+
+    server_name <%= config['Domain'] %>;
+
+    <% if config['CertName'] %>
+        ssl_certificate "/etc/letsencrypt/live/<%= config['CertName'] %>/fullchain.pem";
+        ssl_certificate_key "/etc/letsencrypt/live/<%= config['CertName'] %>/privkey.pem";
+        ssl_trusted_certificate "/etc/letsencrypt/live/<%= config['CertName'] %>/chain.pem";
+    <% end %>
+
+    access_log  /var/log/nginx/openvidu.access.log;
+    error_log   /var/log/nginx/openvidu.error.log;
+
+    # Proxy site
+    location / {
+        proxy_pass http://127.0.0.1:7880;
+        include config-lmm/proxy.conf;
+    }
+
+}

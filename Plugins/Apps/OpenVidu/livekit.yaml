@@ -1,0 +1,13 @@
+keys:
+    Main: $SECRET
+
+rtc:
+    tcp_port: 7881
+    port_range_start: 7900
+    port_range_end: 7999
+
+turn:
+    enabled: true
+    udp_port: 3478
+    relay_range_start: 45000
+    relay_range_end: 55000

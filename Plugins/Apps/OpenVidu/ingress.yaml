@@ -1,0 +1,10 @@
+redis:
+    address: 10.0.2.2:6379
+    username: ""
+    password:
+
+cpu_cost:
+    rtmp_cpu_cost: 2
+    whip_cpu_cost: 2
+    whip_bypass_transcoding_cpu_cost: 0.1
+    url_cpu_cost: 2

@@ -1,0 +1,18 @@
+
+[Unit]
+Description=LiveKit Ingress container
+After=local-fs.target
+
+[Container]
+Image=docker.io/livekit/ingress:latest
+EnvironmentFile=/var/lib/openvidu/.config/containers/systemd/OpenVidu.env
+Network=slirp4netns:allow_host_loopback=true
+PublishPort=127.0.0.1:1935:1935
+PublishPort=127.0.0.1:8085:8085
+PublishPort=127.0.0.1:7895:7895/udp
+UserNS=keep-id:uid=1000,gid=1000
+Volume=/var/lib/openvidu/ingress.yaml:/etc/ingress.yaml
+AutoUpdate=registry
+
+[Install]
+WantedBy=multi-user.target default.target
