@@ -29,6 +29,12 @@ module ConfigLMM
                         cmd = "sed -i 's|^#mail_location =.*|mail_location = maildir:~/Mail|' #{DOVECOT_DIR}conf.d/10-mail.conf"
                         self.class.sshExec!(ssh, cmd)
 
+                        if !target['Protocols'].to_a.empty?
+                            updateRemoteFile(ssh, DOVECOT_DIR + 'dovecot.conf', options) do |configLines|
+                                configLines << "protocols = #{target['Protocols'].join(' ')}\n"
+                            end
+                        end
+
                         updateRemoteFile(ssh, DOVECOT_DIR + 'conf.d/10-mail.conf', options) do |configLines|
                             configLines << "mail_home = #{EMAIL_HOME}/emails/%u\n"
                             configLines << "first_valid_uid = #{uid}\n"
