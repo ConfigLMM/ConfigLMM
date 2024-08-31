@@ -73,10 +73,14 @@ module ConfigLMM
                                 updateRemoteFile(ssh, networkFile, options, false) do |fileLines|
                                     fileLines << "\n"
                                     if target['Network']['IP']
+                                        self.class.sshExec!(ssh, "sed -i 's|^IPADDR=|#IPADDR=|' #{networkFile}")
                                         if target['Network']['IP'].is_a?(Array)
-                                            # TODO
+                                            target['Network']['IP'].each_with_index do |ip, i|
+                                                c = "_#{i}"
+                                                c = '' if i.zero?
+                                                fileLines << "IPADDR#{c}=#{ip}\n"
+                                            end
                                         else
-                                            self.class.sshExec!(ssh, "sed -i 's|^IPADDR=|#IPADDR=|' #{networkFile}")
                                             fileLines << "IPADDR=#{target['Network']['IP']}\n"
                                         end
                                     end
