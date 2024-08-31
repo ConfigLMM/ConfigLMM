@@ -1,0 +1,70 @@
+# Configuration file for Synapse.
+#
+# This is a YAML file: see [1] for a quick introduction. Note in particular
+# that *indentation is important*: all the elements of a list or dictionary
+# should have the same indentation.
+#
+# [1] https://docs.ansible.com/ansible/latest/reference_appendices/YAMLSyntax.html
+#
+# For more information on how to configure Synapse, including a complete accounting of
+# each option, go to docs/usage/configuration/config_documentation.md or
+# https://element-hq.github.io/synapse/latest/usage/configuration/config_documentation.html
+server_name: $SERVER_NAME
+public_baseurl: https://$SYNAPSE_DOMAIN/
+pid_file: /data/homeserver.pid
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    resources:
+      - names: [client, federation]
+        compress: false
+
+database:
+  name: psycopg2
+  allow_unsafe_locale: true
+  args:
+    user: matrix
+    password: $DB_PASSWORD
+    dbname: matrix
+    host: 10.0.2.2
+
+email:
+    smtp_host: 10.0.2.2
+    smtp_port: 25
+    smtp_user:
+    smtp_pass:
+    force_tls: false
+    notif_from:
+
+password_config:
+   enabled: true
+
+oidc_providers:
+  - idp_id: OIDC
+    idp_name: OIDC
+    discover: true
+    issuer: $OIDC_ISSUER
+    client_id: $CLIENT_ID
+    client_secret: $CLIENT_SECRET
+    scopes:
+      - "openid"
+      - "profile"
+      - "email"
+    user_mapping_provider:
+      config:
+        localpart_template: "{{ user.preferred_username }}"
+        display_name_template: "{{ user.name|capitalize }}"
+
+log_config: "/data/log.config"
+media_store_path: /data/media_store
+registration_shared_secret: $SECRET1
+report_stats: false
+macaroon_secret_key: $SECRET2
+form_secret: $SECRET3
+report_stats: false
+signing_key_path: "/data/signing.key"
+trusted_key_servers:
+  - server_name: "matrix.org"
+suppress_key_server_warning: true

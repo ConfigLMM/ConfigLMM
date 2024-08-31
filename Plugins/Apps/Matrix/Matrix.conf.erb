@@ -1,12 +1,56 @@
 
 server {
+
     <% if !config['TLS'] %>
         listen       <%= config['Port'] %>;
         listen  [::]:<%= config['Port'] %>;
     <% else %>
-        listen       <%= config['Port'] %> ssl;
-        listen  [::]:<%= config['Port'] %> ssl;
-        http2 on;
+        <% if config['NginxVersion'] >= 1.25 %>
+            listen <%= config['Port'] %> ssl;
+            listen [::]:<%= config['Port'] %> ssl;
+            http2 on;
+            http3 on;
+            quic_retry on;
+            add_header Alt-Svc 'h3=":<%= config['Port'] %>"; ma=86400';
+        <% else %>
+            listen <%= config['Port'] %> ssl http2;
+            listen [::]:<%= config['Port'] %> ssl http2;
+        <% end %>
+
+        include config-lmm/ssl.conf;
+    <% end %>
+
+    server_name <%= config['Domain'] %>;
+
+    access_log  /var/log/nginx/matrix.access.log;
+    error_log   /var/log/nginx/matrix.error.log;
+
+    include config-lmm/errors.conf;
+
+    location / {
+        proxy_pass http://localhost:18300;
+        include config-lmm/proxy.conf;
+    }
+}
+
+server {
+
+    <% if !config['TLS'] %>
+        listen       <%= config['Port'] %>;
+        listen  [::]:<%= config['Port'] %>;
+    <% else %>
+        <% if config['NginxVersion'] >= 1.25 %>
+            listen <%= config['Port'] %> ssl;
+            listen [::]:<%= config['Port'] %> ssl;
+            http2 on;
+            http3 on;
+            quic_retry on;
+            add_header Alt-Svc 'h3=":<%= config['Port'] %>"; ma=86400';
+        <% else %>
+            listen <%= config['Port'] %> ssl http2;
+            listen [::]:<%= config['Port'] %> ssl http2;
+        <% end %>
+
         include config-lmm/ssl.conf;
     <% end %>
 
@@ -14,12 +58,11 @@ server {
     #listen 8448 ssl http2 default_server;
     #listen [::]:8448 ssl http2 default_server;
 
-    server_name <%= config['Domain'] %>;
+    server_name <%= config['SynapseDomain'] %>;
 
     access_log  /var/log/nginx/matrix.access.log;
     error_log   /var/log/nginx/matrix.error.log;
 
-    include config-lmm/private.conf;
     include config-lmm/errors.conf;
 
     location ~ ^(/_matrix|/_synapse/client) {
@@ -28,6 +71,7 @@ server {
         # errors.
         proxy_pass http://localhost:8008;
         include config-lmm/proxy.conf;
+        proxy_intercept_errors off;
 
         # Nginx by default only allows file uploads up to 1M in size
         # Increase client_max_body_size to match max_upload_size defined in homeserver.yaml
