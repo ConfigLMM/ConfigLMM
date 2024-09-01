@@ -1,0 +1,15 @@
+
+[Unit]
+Description=Wiki.js container
+After=local-fs.target
+
+[Container]
+Image=docker.io/requarks/wiki:latest
+EnvironmentFile=/var/lib/wikijs/.config/containers/systemd/Wiki.js.env
+Network=slirp4netns:allow_host_loopback=true
+PublishPort=127.0.0.1:13200:3000
+UserNS=keep-id:uid=1000,gid=1000
+AutoUpdate=registry
+
+[Install]
+WantedBy=multi-user.target default.target

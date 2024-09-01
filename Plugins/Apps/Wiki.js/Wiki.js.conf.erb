@@ -1,0 +1,42 @@
+
+server {
+
+    <% if !config['TLS'] %>
+        listen       <%= config['Port'] %>;
+        listen  [::]:<%= config['Port'] %>;
+    <% else %>
+        <% if config['NginxVersion'] >= 1.25 %>
+            listen <%= config['Port'] %> ssl;
+            listen [::]:<%= config['Port'] %> ssl;
+            http2 on;
+            http3 on;
+            quic_retry on;
+            add_header Alt-Svc 'h3=":<%= config['Port'] %>"; ma=86400';
+        <% else %>
+            listen <%= config['Port'] %> ssl http2;
+            listen [::]:<%= config['Port'] %> ssl http2;
+        <% end %>
+
+        include config-lmm/ssl.conf;
+    <% end %>
+
+    server_name <%= config['Domain'] %>;
+
+    access_log  /var/log/nginx/wikijs.access.log;
+    error_log   /var/log/nginx/wikijs.error.log;
+
+    include config-lmm/errors.conf;
+    include config-lmm/security.conf;
+
+    location / {
+        <% if config['Server'] %>
+            proxy_pass <%= config['Server'] %>;
+        <% else %>
+            proxy_pass http://127.0.0.1:13200;
+        <% end %>
+
+        include config-lmm/proxy.conf;
+    }
+
+}
+
