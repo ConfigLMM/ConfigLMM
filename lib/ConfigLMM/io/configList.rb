@@ -67,7 +67,9 @@ module ConfigLMM
             def toConfig(context)
                 config = {}
                 @Sources.each do |source|
-                    YAML.safe_load_file(source.to_s, permitted_classes: [Symbol]).each do |id, data|
+                    data = YAML.safe_load_file(source.to_s, permitted_classes: [Symbol])
+                    next unless data.is_a?(Hash)
+                    data.each do |id, data|
                         normalizedId = self.class.normalizeId(id)
                         if id == '_CONTEXT_'
                             context.add(data)
