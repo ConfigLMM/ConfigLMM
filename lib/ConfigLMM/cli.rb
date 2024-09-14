@@ -14,7 +14,7 @@ module ConfigLMM
         MissingArgument = Class.new(ArgumentError)
         InvalidOption = Class.new(ArgumentError)
 
-        #class_option :locations, type: :string, default: '', group: :configs, desc: 'Filter by config file locations'
+        class_option :locations, type: :string, default: '', group: :configs, desc: 'Filter by config file locations'
         #class_option :things, type: :string, default: '', group: :configs, desc: 'Filter things to use'
         class_option :level, type: :string, enum: ['debug', 'info', 'warn', 'error'], default: 'info', desc: 'Logging level to use'
         class_option :dry,  aliases: '-n', type: :boolean, desc: 'Only show actions without performing'

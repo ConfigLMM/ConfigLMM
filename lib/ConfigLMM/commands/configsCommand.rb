@@ -43,7 +43,7 @@ module ConfigLMM
                 options = @Options.dup
                 options.delete(:locations)
                 options.delete(:things)
-                #options[:locationFilter] = Utils::Filters.parseLocationsOption(@Options[:locations], logger)
+                options[:locationFilter] = Utils::Filters.parseLocationsOption(@Options[:locations], logger)
                 #options[:thingFilter] = Utils::Filters.parseThingsOption(@Options[:things], logger)
 
                 configList = IO::ConfigList.create(@ConfigPaths, logger)
