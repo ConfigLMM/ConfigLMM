@@ -124,6 +124,7 @@ module ConfigLMM
                 elsif activeState[:Type] != singleTarget['Type'].to_s
                     raise Framework::PluginError.new("Unexpected Type #{activeState[:Type].inspect}! Wanted #{singleTarget['Type']}")
                 end
+                activeState['Location'] = singleTarget['Location']
                 actionMethod = plugin.class.actionMethod(singleTarget['Type'], 'Deploy')
                 if plugin.methods.include?(:authenticate)
                     result = plugin.authenticate(actionMethod, singleTarget, state, context, options)
