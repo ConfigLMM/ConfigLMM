@@ -66,8 +66,10 @@ module ConfigLMM
         private
 
         def findStateFile(configList)
-            if configList.count == 1
-                configList.to_a.first.parent.to_s + '/.lmm.state.yaml'
+            parent = configList.to_a.first.parent
+            sameParent = configList.to_a.all? { |item| item.parent == parent }
+            if sameParent
+                parent.to_s + '/.lmm.state.yaml'
             else
                 # FIXME TODO
                 # Find common ancestor and use that as a path to the state file
