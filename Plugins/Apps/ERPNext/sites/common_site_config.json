@@ -1,0 +1,11 @@
+{
+    "db_host": "10.0.2.2",
+    "db_port": 3306,
+    "redis_cache": "redis://default:$VALKEY_PASSWORD@10.0.2.2:6379",
+    "redis_queue": "redis://default:$VALKEY_PASSWORD@10.0.2.2:6379",
+    "redis_socketio": "redis://default:$VALKEY_PASSWORD@10.0.2.2:6379",
+    "use_rq_auth": false,
+    "rq_password": "$VALKEY_PASSWORD",
+    "rq_username": "default",
+    "socketio_port": 9000
+}

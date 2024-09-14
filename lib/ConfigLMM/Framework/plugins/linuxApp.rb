@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'tty-which'
+
 module ConfigLMM
     module Framework
 
@@ -11,12 +13,19 @@ module ConfigLMM
             PODMAN_PACKAGE = 'Podman'
             SYSTEMD_CONTAINERS_PATH = '~/.config/containers/systemd/'
 
-            def ensurePackage(name, location)
-              self.class.ensurePackages([name], location)
+            def ensurePackage(name, location, binary = nil)
+                self.class.ensurePackage(name, location, binary)
             end
 
             def ensurePackages(names, location)
-              self.class.ensurePackages(names, location)
+                self.class.ensurePackages(names, location)
+            end
+
+            def self.ensurePackage(name, location, binary = nil)
+                if binary && TTY::Which.which(binary)
+                    return
+                end
+                self.ensurePackages([name], location)
             end
 
             def self.ensurePackages(names, locationOrSSH)

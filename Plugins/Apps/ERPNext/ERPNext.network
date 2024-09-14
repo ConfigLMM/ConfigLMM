@@ -1,0 +1,12 @@
+
+[Unit]
+Description=ERPNext network
+After=network-online.target
+
+[Network]
+NetworkName=ERPNext
+Subnet=10.90.50.0/28
+Gateway=10.90.50.1
+
+[Install]
+WantedBy=default.target

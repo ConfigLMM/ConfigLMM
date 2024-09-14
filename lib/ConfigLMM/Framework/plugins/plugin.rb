@@ -14,6 +14,7 @@ module ConfigLMM
 
         class Plugin
 
+            REPOS_CACHE = '~/.cache/configlmm/repos'
 
             def self.inherited(plugin)
                 Store.registerPlugin(plugin)
@@ -261,12 +262,29 @@ module ConfigLMM
                 end
             end
 
+            def self.cmdSuccess?(command, ssh = nil)
+                if ssh.nil?
+                    system(command, :out => File::NULL)
+                else
+                    self.sshSuccess?(ssh, command)
+                end
+            end
+
             def self.toSSHparams(locationUri)
                 server = locationUri.hostname
                 params = {}
                 params[:port] = locationUri.port if locationUri.port
                 params[:user] = locationUri.user if locationUri.user
                 [server, params]
+            end
+
+            def self.cmdSSH(uri)
+                uri = Addressable::URI.parse(uri) if uri.is_a?(String)
+                server, sshParams = self.toSSHparams(uri)
+                cmd = 'ssh '
+                cmd += '-p ' + sshParams[:port] if sshParams[:port]
+                cmd += sshParams[:user] + '@' if sshParams[:port]
+                cmd + server
             end
 
             def self.sshStart(uri)
@@ -289,6 +307,12 @@ module ConfigLMM
                     raise Framework::PluginProcessError.new("Failed '#{command}'")
                 end
                 output
+            end
+
+            def self.sshSuccess?(ssh, command)
+                status = {}
+                ssh.exec!(command, status)
+                status[:exit_code].zero?
             end
 
             def renderTemplate(template, target, outputPath, options)

@@ -1,0 +1,19 @@
+
+[Unit]
+Description=ERPNext Websocket container
+After=local-fs.target
+
+[Container]
+ContainerName=ERPNext-Websocket
+Image=ConfigLM.moe/erpnext:v$VERSION
+Exec=node /home/frappe/frappe-bench/apps/frappe/socketio.js
+EnvironmentFile=/var/lib/erpnext/.config/containers/systemd/ERPNext.env
+Network=ERPNext
+IP=10.90.50.11
+HostName=ERPNext-Websocket
+UserNS=keep-id:uid=1000,gid=1000
+Volume=/var/lib/erpnext/sites:/home/frappe/frappe-bench/sites
+Volume=/var/lib/erpnext/logs:/home/frappe/frappe-bench/logs
+
+[Install]
+WantedBy=multi-user.target default.target

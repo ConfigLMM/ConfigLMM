@@ -1,0 +1,17 @@
+
+[Unit]
+Description=ERPNext Queue container
+After=local-fs.target
+
+[Container]
+ContainerName=ERPNext-Queue
+Image=ConfigLM.moe/erpnext:v$VERSION
+Exec=bench worker --queue long,default,short
+EnvironmentFile=/var/lib/erpnext/.config/containers/systemd/ERPNext.env
+Network=slirp4netns:allow_host_loopback=true
+UserNS=keep-id:uid=1000,gid=1000
+Volume=/var/lib/erpnext/sites:/home/frappe/frappe-bench/sites
+Volume=/var/lib/erpnext/logs:/home/frappe/frappe-bench/logs
+
+[Install]
+WantedBy=multi-user.target default.target

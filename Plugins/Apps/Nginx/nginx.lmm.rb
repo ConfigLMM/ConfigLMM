@@ -3,7 +3,6 @@ module ConfigLMM
     module LMM
         class Nginx < Framework::NginxApp
             CERTBOT_PACKAGE = 'CertBotNginx'
-            REPOS_CACHE = '~/.cache/configlmm/repos'
             ERROR_PAGES_REPO = 'https://github.com/HttpErrorPages/HttpErrorPages.git'
 
             def actionNginxBuild(id, target, activeState, context, options)
@@ -55,7 +54,7 @@ module ConfigLMM
                                 mkdir(File.expand_path(REPOS_CACHE), false)
                                 begin
                                     Framework::LinuxApp.ensurePackages(['git', 'Yarn'], '@me')
-                                rescue error
+                                rescue RuntimeError => error
                                     prompt.say(error, :color => :red)
                                 end
                                 `cd #{REPOS_CACHE} && git clone --quiet #{ERROR_PAGES_REPO} > /dev/null`

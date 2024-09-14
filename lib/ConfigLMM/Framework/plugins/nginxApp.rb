@@ -55,6 +55,16 @@ module ConfigLMM
                 end
             end
 
+            def useNginxProxy(dir, configName, id, target, activeState, state, context, options, ssh)
+                Framework::LinuxApp.ensurePackages([NGINX_PACKAGE], ssh)
+                Framework::LinuxApp.ensureServiceAutoStartOverSSH(NGINX_PACKAGE, ssh)
+                self.class.prepareNginxConfig(target, ssh)
+                self.writeNginxConfig(dir, configName, id, target, state, context, options)
+                self.deployNginxConfig(id, target, activeState, context, options)
+                Framework::LinuxApp.startServiceOverSSH(NGINX_PACKAGE, ssh)
+                self.class.exec("nginx -s reload", ssh)
+            end
+
             private
 
             def updateTargetConfig(target)
