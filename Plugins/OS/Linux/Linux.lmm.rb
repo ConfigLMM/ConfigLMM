@@ -65,39 +65,23 @@ module ConfigLMM
                     distroInfo = self.class.currentDistroInfo(ssh)
                     if target['Network']
                         if distroInfo['Name'] == 'openSUSE Leap'
-                            networkFile = '/etc/sysconfig/network/ifcfg-eth0'
-                            if target['Network'] == 'dhcp'
-                                self.class.sshExec!(ssh, "sed -i \"s|^BOOTPROTO=.*|BOOTPROTO='dhcp'|\" #{networkFile}")
-                            else
-                                self.class.sshExec!(ssh, "sed -i \"s|^BOOTPROTO=.*|BOOTPROTO='static'|\" #{networkFile}")
-                                updateRemoteFile(ssh, networkFile, options, false) do |fileLines|
-                                    fileLines << "\n"
-                                    if target['Network']['IP']
-                                        self.class.sshExec!(ssh, "sed -i 's|^IPADDR=|#IPADDR=|' #{networkFile}")
-                                        if target['Network']['IP'].is_a?(Array)
-                                            target['Network']['IP'].each_with_index do |ip, i|
-                                                c = "_#{i}"
-                                                c = '' if i.zero?
-                                                fileLines << "IPADDR#{c}=#{ip}\n"
-                                            end
-                                        else
-                                            fileLines << "IPADDR=#{target['Network']['IP']}\n"
-                                        end
-                                    end
-                                    fileLines
+                            updateNetworkInterface(target['Network'], 'eth0', ssh, options)
+                            if target['Network']['Interfaces']
+                                target['Network']['Interfaces'].each do |interface, config|
+                                    updateNetworkInterface(config, interface, ssh, options)
                                 end
-                                if target['Network']['DNS']
-                                    configFile = '/etc/sysconfig/network/config'
-                                    dns = target['Network']['DNS']
-                                    dns = [dns] unless dns.is_a?(Array)
-                                    self.class.sshExec!(ssh, "sed -i 's|^NETCONFIG_DNS_STATIC_SERVERS=.*|NETCONFIG_DNS_STATIC_SERVERS=\"#{dns.join(' ')}\"|' #{configFile}")
-                                end
-                                if target['Network']['Gateway']
-                                    routesFile = '/etc/sysconfig/network/routes'
-                                    self.class.sshExec!(ssh, "sed -i 's|^default |#default |' #{routesFile}")
-                                    updateRemoteFile(ssh, routesFile, options) do |fileLines|
-                                        fileLines << "default #{target['Network']['Gateway']}\n"
-                                    end
+                            end
+                            if target['Network']['DNS']
+                                configFile = '/etc/sysconfig/network/config'
+                                dns = target['Network']['DNS']
+                                dns = [dns] unless dns.is_a?(Array)
+                                self.class.sshExec!(ssh, "sed -i 's|^NETCONFIG_DNS_STATIC_SERVERS=.*|NETCONFIG_DNS_STATIC_SERVERS=\"#{dns.join(' ')}\"|' #{configFile}")
+                            end
+                            if target['Network']['Gateway']
+                                routesFile = '/etc/sysconfig/network/routes'
+                                self.class.sshExec!(ssh, "sed -i 's|^default |#default |' #{routesFile}")
+                                updateRemoteFile(ssh, routesFile, options) do |fileLines|
+                                    fileLines << "default #{target['Network']['Gateway']}\n"
                                 end
                             end
                         else
@@ -147,6 +131,38 @@ module ConfigLMM
                     self.ensurePackage(FIREWALL_PACKAGE, locationUri)
                     self.ensureServiceAutoStart(FIREWALL_SERVICE, locationUri)
                     self.startService(FIREWALL_SERVICE, locationUri)
+                end
+            end
+
+            def updateNetworkInterface(config, interface, ssh, options)
+                baseFile = '/etc/sysconfig/network/ifcfg-'
+                networkFile = baseFile + interface
+                self.class.sshExec!(ssh, "touch #{networkFile}")
+                self.class.sshExec!(ssh, "sed -i \"/^BOOTPROTO=.*/d\" #{networkFile}")
+                self.class.sshExec!(ssh, "sed -i \"/^STARTMODE=.*/d\" #{networkFile}")
+                self.class.sshExec!(ssh, "sed -i \"/^ZONE=.*/d\" #{networkFile}")
+                updateRemoteFile(ssh, networkFile, options, false) do |fileLines|
+                    fileLines << "STARTMODE=auto\n"
+                    fileLines << "ZONE=public\n"
+                    if config == 'dhcp'
+                        fileLines << "BOOTPROTO=dhcp\n"
+                    else
+                        fileLines << "BOOTPROTO=static\n"
+                        fileLines << "\n"
+                        if config['IP']
+                            self.class.sshExec!(ssh, "sed -i 's|^IPADDR=|#IPADDR=|' #{networkFile}")
+                            if config['IP'].is_a?(Array)
+                                config['IP'].each_with_index do |ip, i|
+                                    c = "_#{i}"
+                                    c = '' if i.zero?
+                                    fileLines << "IPADDR#{c}=#{ip}\n"
+                                end
+                            else
+                                fileLines << "IPADDR=#{config['IP']}\n"
+                            end
+                        end
+                    end
+                    fileLines
                 end
             end
 
