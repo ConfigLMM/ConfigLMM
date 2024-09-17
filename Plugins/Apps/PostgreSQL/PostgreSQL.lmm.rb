@@ -154,6 +154,26 @@ module ConfigLMM
                 self.sshExec!(ssh, cmd)
             end
 
+            def self.updateOwner(db, owner, ssh)
+                sql = "SELECT tablename FROM pg_tables WHERE NOT schemaname IN ('pg_catalog', 'information_schema')"
+                tables = self.executeSQL(sql, db, ssh, false, ['--csv', '--tuples-only']).strip.lines
+                tables.each do |table|
+                    self.executeSQL("ALTER TABLE public.#{table} OWNER TO #{owner};", db, ssh)
+                end
+
+                sql = "SELECT sequence_name FROM information_schema.sequences WHERE NOT sequence_schema IN ('pg_catalog', 'information_schema')"
+                sequences = self.executeSQL(sql, db, ssh, false, ['--csv', '--tuples-only']).strip.lines
+                sequences.each do |sequence|
+                    self.executeSQL("ALTER SEQUENCE public.#{sequence} OWNER TO #{owner};", db, ssh)
+                end
+
+                sql = "SELECT table_name FROM information_schema.views WHERE NOT table_schema IN ('pg_catalog', 'information_schema')"
+                views = self.executeSQL(sql, db, ssh, false, ['--csv', '--tuples-only']).strip.lines
+                views.each do |view|
+                    self.executeSQL("ALTER VIEW public.#{view} OWNER TO #{owner};", db, ssh)
+                end
+            end
+
             def updateConfigOverSSH(ssh, cmd)
                 dir = ''
                 distroID = self.class.distroID(ssh)
@@ -207,10 +227,10 @@ module ConfigLMM
                 end
             end
 
-            def self.executeSQL(sql, db, ssh = nil, allowFailure = false)
+            def self.executeSQL(sql, db, ssh = nil, allowFailure = false, options = [])
                 if ssh
                     db = 'postgres' unless db
-                    cmd = " su --login #{USER_NAME} --command ' psql --dbname=#{db} --command=\"#{sql.gsub("'", "\\\\'")};\"'"
+                    cmd = " su --login #{USER_NAME} --command ' psql #{options.join(' ')} --dbname=#{db} --command=\"#{sql.gsub("'", "\\\\'")};\"'"
                     self.sshExec!(ssh, cmd, allowFailure)
                 else
                     # TODO

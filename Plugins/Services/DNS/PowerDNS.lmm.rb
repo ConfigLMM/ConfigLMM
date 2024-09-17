@@ -4,6 +4,7 @@ require 'uri'
 require 'addressable/uri'
 require 'addressable/idna'
 require 'fog/powerdns'
+require 'http'
 
 module ConfigLMM
     module LMM
@@ -49,9 +50,15 @@ module ConfigLMM
                 #actionPowerDNSDiff(id, target, activeState, context, options)
 
                 deploySettings(target, options)
-                if target['DNS']
-                    connect(id, target, activeState, context, options) do |host, port, key|
+                connect(id, target, activeState, context, options) do |host, port, key|
+                    if target['TSIG']
+                        updateTSIG(host, port, key, target['TSIG'])
+                    end
+                    if target['DNS']
                         updateDNS(host, port, key, target['DNS'])
+                    end
+                    if target['Metadata']
+                        updateMetadata(host, port, key, target['Metadata'])
                     end
                 end
             end
@@ -99,7 +106,10 @@ module ConfigLMM
                     canonicalDomain = domain + '.'
 
                     if !dns.list_zones(server).map { |zone| zone['name'].downcase }.include?(canonicalDomain.downcase)
-                        dns.create_zone(server, canonicalDomain, [], { kind: 'Native' })
+                        dns.create_zone(server, canonicalDomain, [], { kind: 'Native' }.update(info['!'].to_h))
+                    elsif !info['!'].to_h.empty?
+                        puts ({ kind: 'Native' }.update(info['!'].to_h).inspect)
+                        dns.update_zone(server, canonicalDomain, { kind: 'Native' }.update(info['!'].to_h))
                     end
 
                     zone = dns.get_zone(server, canonicalDomain)
@@ -107,6 +117,7 @@ module ConfigLMM
                     rrsets = []
                     remove = []
                     info.each do |name, data|
+                        next if name == '!'
                         fullName = Addressable::IDNA.to_ascii(name) + '.' + Addressable::IDNA.to_ascii(domain) + '.'
                         fullName = Addressable::IDNA.to_ascii(domain) + '.' if name == '@'
                         self.processDNS(domain, data).each do |type, records|
@@ -124,6 +135,15 @@ module ConfigLMM
                                     priority, name = record[:content].split(' ')
                                     name = Addressable::IDNA.to_ascii(name) + '.'
                                     record[:content] = [priority, name].join(' ')
+                                elsif type == 'SOA'
+                                    ns, email, serial, refresh, again, expire, ttl = record[:content].split(' ')
+                                    record[:content] = [Addressable::IDNA.to_ascii(ns) + '.',
+                                                        Addressable::IDNA.to_ascii(email) + '.',
+                                                        serial.to_s,
+                                                        refresh.to_s,
+                                                        again.to_s,
+                                                        expire.to_s,
+                                                        ttl.to_s].join(' ')
                                 end
                                 rrset[:records] << { content: record[:content], disabled: false }
                             end
@@ -137,6 +157,40 @@ module ConfigLMM
                     dns.update_rrsets('localhost', zone['name'], { 'rrsets' => rrsets })
                 end
 
+            end
+
+            def updateTSIG(host, port, key, targetTSIG)
+                server = 'localhost'
+                url = "http://#{host}:#{port}/api/v1/servers/#{server}/tsigkeys"
+                headers = { 'X-Api-Key' => key }
+                targetTSIG.each do |name, info|
+                    data = { name: name, algorithm: info['Algorithm'] }
+                    response = HTTP.headers(headers).post(url, json: data)
+                    if response.status == 201
+                        result = response.parse(:json)
+                        prompt.say("TSIG #{result['name']} key: #{result['key']}", :color => :magenta)
+                    elsif response.status != 409
+                        prompt.say(response.body.to_s, :color => :red)
+                        raise 'Failed to create TSIG key!'
+                    end
+                end
+            end
+
+            def updateMetadata(host, port, key, targetMetadata)
+                server = 'localhost'
+                headers = { 'X-Api-Key' => key }
+                targetMetadata.each do |zone, info|
+                    info.each do |kind, metadata|
+                        url = "http://#{host}:#{port}/api/v1/servers/#{server}/zones/#{Addressable::IDNA.to_ascii(zone)}/metadata/#{kind}"
+                        metadata = [metadata] unless metadata.is_a?(Array)
+                        data = { kind: kind, metadata: metadata }
+                        response = HTTP.headers(headers).put(url, json: data)
+                        if response.status != 200
+                            prompt.say(response.body.to_s, :color => :red)
+                            raise "Failed to update Metadata for #{zone}!"
+                        end
+                    end
+                end
             end
 
             def prepareSettings(target)
@@ -179,6 +233,7 @@ module ConfigLMM
                                 end
                                 self.configurePostgreSQL(target['Settings'], ssh)
                             end
+                            Framework::LinuxApp.firewallAddServiceOverSSH('dns', ssh)
                             Framework::LinuxApp.startServiceOverSSH(SERVICE_NAME, ssh)
                         end
                     end
@@ -190,10 +245,12 @@ module ConfigLMM
                 if settings['gpgsql-host'] == 'localhost' || settings['gpgsql-host'].start_with?('/')
                     PostgreSQL.createUserAndDBOverSSH(USER, password, ssh)
                     PostgreSQL.importSQL(USER, USER, '/usr/share/doc/packages/pdns/schema.pgsql.sql', ssh)
+                    PostgreSQL.updateOwner(USER, USER, ssh)
                 else
                     self.class.sshStart("ssh://#{settings['gpgsql-host']}/") do |ssh|
                         PostgreSQL.createUserAndDBOverSSH(USER, password, ssh)
                         PostgreSQL.importSQL(USER, USER, '/usr/share/doc/packages/pdns/schema.pgsql.sql', ssh)
+                        PostgreSQL.updateOwner(USER, USER, ssh)
                     end
                 end
                 password
