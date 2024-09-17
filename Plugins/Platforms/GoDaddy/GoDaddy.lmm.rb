@@ -21,7 +21,7 @@ module ConfigLMM
 
                 template = ERB.new(File.read(__dir__ + '/zone.txt.erb'))
 
-                target['DNS'].each do |domain, data|
+                target['DNS'].to_h.each do |domain, data|
                     config = { 'Domain' => domain, 'Records' => '' }
                     data.each do |name, data|
                         self.processDNS(domain, data).each do |type, records|
