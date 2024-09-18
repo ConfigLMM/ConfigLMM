@@ -1,0 +1,7 @@
+
+[Unit]
+Description=Renew certificates
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/certbot renew
