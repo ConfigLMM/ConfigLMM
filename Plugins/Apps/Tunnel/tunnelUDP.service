@@ -1,0 +1,9 @@
+
+[Unit]
+Description=Forward UDP $PORT to remote
+
+[Service]
+ExecStart=/usr/bin/socat UDP-RECVFROM:$PORT,reuseaddr,fork UDP-SENDTO:$REMOTE
+
+[Install]
+WantedBy=multi-user.target

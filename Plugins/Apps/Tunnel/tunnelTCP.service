@@ -1,0 +1,9 @@
+
+[Unit]
+Description=Forward TCP $PORT to remote
+
+[Service]
+ExecStart=/usr/lib/systemd/systemd-socket-proxyd $REMOTE
+
+[Install]
+WantedBy=multi-user.target

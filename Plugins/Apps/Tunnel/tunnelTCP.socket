@@ -1,0 +1,9 @@
+
+[Unit]
+Description=TCP tunnel listening on local port $PORT
+
+[Socket]
+ListenStream=$PORT
+
+[Install]
+WantedBy=sockets.target
