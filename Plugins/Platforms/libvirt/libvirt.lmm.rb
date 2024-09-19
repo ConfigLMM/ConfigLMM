@@ -77,7 +77,7 @@ module ConfigLMM
                     server.iso_file = File.basename(iso)
                 end
                 server.save
-                activeState['Status'] = 'CREATED'
+                activeState['Status'] = State::STATUS_CREATED
                 state.save
                 server.start
             end

@@ -12,6 +12,7 @@ module ConfigLMM
                     loadConfigs(plugin, config, configs)
                     plugin.cleanup(configs, state, context, options)
                 end
+                state.save
                 prompt.ok('Cleanup successful!')
             end
 

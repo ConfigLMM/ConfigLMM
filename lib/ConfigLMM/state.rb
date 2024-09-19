@@ -6,6 +6,11 @@ require 'yaml'
 module ConfigLMM
     class State
 
+        STATUS_CREATED = 'CREATED'
+        STATUS_DEPLOYED = 'DEPLOYED'
+        STATUS_DELETED = 'DELETED'
+        STATUS_DESTROYED = 'DESTROYED'
+
         def initialize(logger, prompt)
             @Logger = logger
             @Prompt = prompt

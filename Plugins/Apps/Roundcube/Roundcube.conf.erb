@@ -1,0 +1,75 @@
+
+upstream roundcube
+{
+<% if config['Server'] %>
+    server <%= config['Server'] %>;
+<% else %>
+    server unix:/run/php-fpm/roundcube.sock;
+<% end %>
+}
+
+server
+{
+    <% if !config['TLS'] %>
+        listen       <%= config['Port'] %>;
+        listen  [::]:<%= config['Port'] %>;
+    <% else %>
+        <% if config['NginxVersion'] >= 1.25 %>
+            listen <%= config['Port'] %> ssl;
+            listen [::]:<%= config['Port'] %> ssl;
+            http2 on;
+            http3 on;
+            quic_retry on;
+            add_header Alt-Svc 'h3=":<%= config['Port'] %>"; ma=86400';
+        <% else %>
+            listen <%= config['Port'] %> ssl http2;
+            listen [::]:<%= config['Port'] %> ssl http2;
+        <% end %>
+
+        include config-lmm/ssl.conf;
+    <% end %>
+
+    server_name <%= config['Domain'] %>;
+
+    access_log  /var/log/nginx/roundcube.access.log;
+    error_log   /var/log/nginx/roundcube.error.log;
+
+    index index.php;
+    root /usr/share/webapps/roundcubemail;
+
+    include config-lmm/private.conf;
+    include config-lmm/errors.conf;
+
+    location / {
+        try_files $uri $uri/ $uri/index.php;
+    }
+
+    location ~ \.php$
+    {
+        fastcgi_pass roundcube;
+        include fastcgi.conf;
+
+        try_files $uri =404;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+
+        fastcgi_intercept_errors off;
+    }
+
+    location ~ ^/(README|INSTALL|LICENSE|CHANGELOG|UPGRADING)$
+    {
+        deny all;
+    }
+
+    location ~ ^/(bin|SQL)/
+    {
+        deny all;
+    }
+
+    location ~* \.(jpg|jpeg|gif|png|webp|svg|woff|woff2|ttf|css|js|ico|xml)$
+    {
+        access_log        off;
+        expires           360d;
+    }
+}

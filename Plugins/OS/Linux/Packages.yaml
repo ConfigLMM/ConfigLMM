@@ -15,6 +15,7 @@ Arch Linux:
     PostgreSQL: postgresql
     Postfix: postfix
     PowerDNS: powerdns
+    Roundcube: roundcubemail
     sshd: openssh
     Valkey: redis
     WireGuard: wireguard-tools
@@ -49,6 +50,7 @@ openSUSE Leap:
         - pdns-backend-geoip
         - pdns-backend-sqlite3
         - pdns-backend-postgresql
+    Roundcube: roundcubemail
     sshd: openssh
     Valkey: redis
     WireGuard: wireguard-tools
