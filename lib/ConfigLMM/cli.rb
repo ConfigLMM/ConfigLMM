@@ -99,6 +99,8 @@ module ConfigLMM
                               desc: 'Display usage information'
         method_option :state, aliases: '-s', type: :string,
                               desc: 'Path to the state file'
+        method_option :destroy,  aliases: '-d', type: :boolean,
+                              desc: 'Destroy all data (eg. even DB)'
         def cleanup(*configPaths)
             handleCommand(:cleanup, configPaths, options)
         end
