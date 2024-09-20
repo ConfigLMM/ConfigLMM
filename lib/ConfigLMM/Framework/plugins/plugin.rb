@@ -124,11 +124,19 @@ module ConfigLMM
                 end
             end
 
-            def rm(path, dry)
+            def rm(path, dry, ssh = nil)
                 if dry
-                    prompt.say('Would remove ' + path)
+                    if ssh
+                        prompt.say("Would remove ssh://#{ssh.transport.host}:#{ssh.transport.port}" + path)
+                    else
+                        prompt.say('Would remove ' + path)
+                    end
                 else
-                    FileUtils.rm_r(path, noop: dry)
+                    if ssh
+                        self.class.sshExec!(ssh, "rm -rf #{path}")
+                    else
+                        FileUtils.rm_r(path, noop: dry)
+                    end
                 end
             end
 
@@ -248,8 +256,12 @@ module ConfigLMM
                 end
             end
 
-            def self.exec(command, ssh = nil, allowFailure = false)
+            def self.exec(command, ssh = nil, allowFailure = false, dry = false)
                 if ssh.nil?
+                    if dry
+                        puts "Would execute: #{command}"
+                        return
+                    end
                     stdout, stdeerr, status = Open3.capture3(command)
                     if !allowFailure && !status.success?
                         $stderr.puts(stdout)
@@ -258,7 +270,7 @@ module ConfigLMM
                     end
                     stdout + stdeerr
                 else
-                    self.sshExec!(ssh, command, allowFailure)
+                    self.sshExec!(ssh, command, allowFailure, dry)
                 end
             end
 
@@ -295,7 +307,11 @@ module ConfigLMM
                 end
             end
 
-            def self.sshExec!(ssh, command, allowFailure = false)
+            def self.sshExec!(ssh, command, allowFailure = false, dry = false)
+                if dry
+                    puts "Would execute: ssh #{ssh.transport.host} -p #{ssh.transport.port} '#{command}'"
+                    return
+                end
                 status = {}
                 output = ''
                 channel = ssh.exec(command, status: status) do |channel, stream, data|

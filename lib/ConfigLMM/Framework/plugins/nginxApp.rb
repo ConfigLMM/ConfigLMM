@@ -43,8 +43,8 @@ module ConfigLMM
                 end
             end
 
-            def cleanupNginxConfig(name, id, state, context, options)
-                rm('/etc/nginx/servers-lmm/' + name + '.conf', options['dry'])
+            def cleanupNginxConfig(name, id, state, context, options, ssh = nil)
+                rm('/etc/nginx/servers-lmm/' + name + '.conf', options['dry'], ssh)
             end
 
             def self.prepareNginxConfig(target, ssh = nil)
@@ -53,6 +53,10 @@ module ConfigLMM
                 else
                     target['NginxVersion'] = `nginx -v`.strip.split('/')[1].to_f
                 end
+            end
+
+            def self.reload(ssh = nil, dry = false)
+                self.exec("systemctl reload nginx", ssh, false, dry)
             end
 
             def useNginxProxy(dir, configName, id, target, activeState, state, context, options, ssh)
