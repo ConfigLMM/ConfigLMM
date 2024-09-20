@@ -183,9 +183,16 @@ module ConfigLMM
             end
 
             def self.createRemoteUserAndDBOverSSH(settings, user, password, ssh)
-                    self.executeRemotelyOverSSH(settings, ssh) do |ssh|
-                        self.createUserAndDBOverSSH(user, password, ssh)
-                    end
+                self.executeRemotelyOverSSH(settings, ssh) do |ssh|
+                    self.createUserAndDBOverSSH(user, password, ssh)
+                end
+            end
+
+            def self.dropUserAndDB(settings, user, ssh, dry)
+                self.executeRemotelyOverSSH(settings, ssh) do |ssh|
+                    self.exec("su --login #{USER_NAME} --command 'dropdb #{user}'", ssh, true, dry)
+                    self.exec("su --login #{USER_NAME} --command 'dropuser #{user}'", ssh, true, dry)
+                end
             end
 
             def self.createExtensions(settings, db, extensions, ssh)
