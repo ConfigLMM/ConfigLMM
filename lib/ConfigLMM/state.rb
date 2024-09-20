@@ -55,6 +55,7 @@ module ConfigLMM
             @State.each do |id, item|
                 items[id] = item if item[:Type] == type.to_s
             end
+            items
         end
 
         def save
