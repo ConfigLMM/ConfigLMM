@@ -2,15 +2,23 @@
 opensuse-leap:
     Name: openSUSE Leap
     InstallPackage: zypper install --no-confirm
+    RemovePackage: zypper remove --no-confirm
     AutoStartService: systemctl enable
     StartService: systemctl start
+    ReloadService: systemctl reload
     CreateServiceUser: useradd --system --shell /usr/sbin/nologin --user-group
     ModifyUser: usermod
+    DeleteUser: userdel --remove --force
+    DeleteGroup: groupdel
 
 arch:
     Name: Arch Linux
     InstallPackage: pacman -S --noconfirm --needed
+    RemovePackage: pacman --remove --noconfirm
     AutoStartService: systemctl enable
     StartService: systemctl start
+    ReloadService: systemctl reload
     CreateServiceUser: useradd --system --shell /usr/sbin/nologin --user-group
     ModifyUser: usermod
+    DeleteUser: userdel --remove --force
+    DeleteGroup: groupdel

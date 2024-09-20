@@ -29,8 +29,7 @@ module ConfigLMM
             end
 
             def self.ensurePackages(names, locationOrSSH)
-                distroInfo = nil
-                closure = Proc.new do |ssh|
+                self.doSSH(locationOrSSH) do |ssh|
                     distroInfo = self.currentDistroInfo(ssh)
                     reposPackages = self.mapPackages(names, distroInfo['Name'])
 
@@ -60,20 +59,43 @@ module ConfigLMM
                     end
                     distroInfo
                 end
+            end
 
-                if locationOrSSH.nil? || locationOrSSH == '@me'
-                    distroInfo = closure.call(nil)
-                elsif locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
-                    uri = Addressable::URI.parse(locationOrSSH)
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
+            def self.removePackage(name, locationOrSSH, dry = false)
+                self.doSSH(locationOrSSH) do |ssh|
+                    distroInfo = self.currentDistroInfo(ssh)
+                    reposPackages = self.mapPackages([name], distroInfo['Name'])
 
-                    self.sshStart(locationOrSSH) do |ssh|
-                        distroInfo = closure.call(ssh)
+                    pkgs = []
+                    reposPackages.each do |pkg|
+                        if pkg.include?('|')
+                            repoName, pkg = pkg.split('|')
+                            pkgs << pkg
+                        else
+                            pkgs << pkg
+                        end
                     end
-                else
-                    distroInfo = closure.call(locationOrSSH)
+
+                    command = distroInfo['RemovePackage'] + ' ' + pkgs.map { |pkg| pkg.shellescape }.join(' ')
+                    if ssh
+                        self.sshExec!(ssh, command, true, dry)
+                    else
+                        if `echo $EUID`.strip == '0'
+                            if dry
+                                puts "Would execute: #{command} >/dev/null"
+                            else
+                                `#{command} >/dev/null`
+                            end
+                        else
+                            if dry
+                                puts "Would execute: sudo #{command} >/dev/null"
+                            else
+                                `sudo #{command} >/dev/null`
+                            end
+                        end
+                    end
+                    distroInfo
                 end
-                distroInfo
             end
 
             def ensureServiceAutoStart(name, location)
@@ -87,49 +109,61 @@ module ConfigLMM
             end
 
             def self.ensureServiceAutoStartOverSSH(name, locationOrSSH)
-                closure = Proc.new do |ssh|
-                    distroInfo = self.currentDistroInfo(ssh)
-
-                    command = distroInfo['AutoStartService'] + ' ' + name.shellescape
-                    self.sshExec!(ssh, command)
-                end
-
-                if locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
-                    self.sshStart(locationOrSSH) do |ssh|
-                        closure.call(ssh)
-                    end
-                else
-                    closure.call(locationOrSSH)
-                end
+                self.execDistroCommand(name, 'AutoStartService', locationOrSSH)
             end
 
-            def startService(name, location)
+            def startService(name, location, dry = false)
                 if location && location != '@me'
                     uri = Addressable::URI.parse(location)
                     raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
-                    self.class.startServiceOverSSH(name, location)
+                    self.class.startService(name, location, dry = false)
                 else
                     # TODO
                 end
             end
 
-            def self.startServiceOverSSH(name, locationOrSSH)
-                 closure = Proc.new do |ssh|
-                     distroInfo = self.currentDistroInfo(ssh)
+            def self.startService(name, locationOrSSH, dry = false)
+                self.execDistroCommand(name, 'StartService', locationOrSSH, false, dry)
+            end
 
-                     command = distroInfo['StartService'] + ' ' + name.shellescape
-                     self.sshExec!(ssh, command)
-                 end
+            # Deprecated
+            def self.startServiceOverSSH(name, locationOrSSH, dry = false)
+                self.startService(name, locationOrSSH, dry)
+            end
 
-                if locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
-                    self.sshStart(locationOrSSH) do |ssh|
-                        closure.call(ssh)
-                    end
-                else
-                    closure.call(locationOrSSH)
+            def self.reloadService(name, locationOrSSH, dry = false)
+                self.execDistroCommand(name, 'ReloadService', locationOrSSH, false, dry)
+            end
+
+            def self.deleteUserAndGroup(name, locationOrSSH, dry = false)
+                self.execDistroCommand(name, 'DeleteUser', locationOrSSH, true, dry)
+                self.execDistroCommand(name, 'DeleteGroup', locationOrSSH, true, dry)
+            end
+
+            def self.execDistroCommand(param, commandName, locationOrSSH, allowFailure = false, dry = false)
+                self.doSSH(locationOrSSH) do |ssh|
+                    distroInfo = self.currentDistroInfo(ssh)
+
+                    command = distroInfo[commandName] + ' ' + param.shellescape
+                    self.exec(command, ssh, allowFailure, dry)
                 end
             end
 
+            def self.doSSH(locationOrSSH, &block)
+                if locationOrSSH.nil? || locationOrSSH == '@me'
+                    result = block.call(nil)
+                elsif locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
+                    uri = Addressable::URI.parse(locationOrSSH)
+                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
+
+                    self.sshStart(locationOrSSH) do |ssh|
+                        result = block.call(ssh)
+                    end
+                else
+                    result = block.call(locationOrSSH)
+                end
+                result
+            end
 
             def self.firewallAddServiceOverSSH(serviceName, locationOrSSH)
                  closure = Proc.new do |ssh|
