@@ -6,9 +6,18 @@ server {
         listen       <%= config['Port'] %>;
         listen  [::]:<%= config['Port'] %>;
     <% else %>
-        listen       <%= config['Port'] %> ssl;
-        listen  [::]:<%= config['Port'] %> ssl;
-        http2 on;
+        <% if config['NginxVersion'] >= 1.25 %>
+            listen <%= config['Port'] %> ssl;
+            listen [::]:<%= config['Port'] %> ssl;
+            http2 on;
+            http3 on;
+            quic_retry on;
+            add_header Alt-Svc 'h3=":<%= config['Port'] %>"; ma=86400';
+        <% else %>
+            listen <%= config['Port'] %> ssl http2;
+            listen [::]:<%= config['Port'] %> ssl http2;
+        <% end %>
+
         include config-lmm/ssl.conf;
     <% end %>
 

@@ -1,7 +1,7 @@
 
 [Unit]
 Description=GitLab container
-After=local-fs.target
+After=local-fs.target firewalld.service
 
 [Container]
 Image=docker.io/gitlab/gitlab-ce:latest

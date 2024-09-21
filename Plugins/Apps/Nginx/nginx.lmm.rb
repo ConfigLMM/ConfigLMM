@@ -98,18 +98,21 @@ module ConfigLMM
             end
 
             def actionNginxProxyBuild(id, target, activeState, context, options)
-                updateTargetConfig(target)
-
-                template = ERB.new(File.read(__dir__ + '/proxy.conf.erb'))
-                renderTemplate(template, target, options['output'] + '/nginx/servers-lmm/' + target['Name'] + '.conf', options)
-
+                target['ConfigName'] = target['Name']
+                writeNginxConfig(__dir__, 'proxy', id, target, activeState, context, options)
                 actionNginxBuild(id, target, activeState, context, options)
             end
 
             def actionNginxProxyDeploy(id, target, activeState, context, options)
-                if !target['Location'] || target['Location'] == '@me'
-                    deployNginxConfig(id, target, activeState, context, options)
-                    activeState['Location'] = '@me'
+                target['ConfigName'] = target['Name']
+                if target['Location'] && target['Location'] != '@me'
+                    uri = Addressable::URI.parse(target['Location'])
+                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
+                    self.class.sshStart(uri) do |ssh|
+                        useNginxProxy(__dir__, 'proxy', id, target, activeState, state, context, options, ssh)
+                    end
+                else
+                    useNginxProxy(__dir__, 'proxy', id, target, activeState, state, context, options, ssh)
                 end
             end
 

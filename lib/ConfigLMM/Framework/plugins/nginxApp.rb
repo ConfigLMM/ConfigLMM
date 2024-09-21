@@ -25,6 +25,7 @@ module ConfigLMM
                 target = target.dup
                 target['NginxVersion'] = 0 unless target['NginxVersion']
                 template = ERB.new(File.read(dir + '/' + name + '.conf.erb'))
+                name = target['ConfigName'] if target['ConfigName']
                 renderTemplate(template, target, outputFolder + '/nginx/servers-lmm/' + name + '.conf', options)
             end
 
@@ -36,7 +37,11 @@ module ConfigLMM
                     raise Framework::PluginProcessError.new("Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
                     self.class.sshStart(uri) do |ssh|
                         self.class.uploadFolder(outputFolder, CONFIG_DIR, ssh)
-                        Framework::LinuxApp.firewallAddServiceOverSSH('https', ssh)
+                        if target['TLS']
+                            Framework::LinuxApp.firewallAddServiceOverSSH('https', ssh)
+                        else
+                            Framework::LinuxApp.firewallAddServiceOverSSH('http', ssh)
+                        end
                     end
                 else
                     copy(outputFolder, CONFIG_DIR, options['dry'])
@@ -71,6 +76,14 @@ module ConfigLMM
                 self.deployNginxConfig(id, target, activeState, context, options)
                 Framework::LinuxApp.startServiceOverSSH(NGINX_PACKAGE, ssh)
                 self.class.reload(ssh)
+            end
+
+            def deployNginxProxyConfig(server, name, id, target, activeState, state, context, options, ssh)
+                target = target.dup
+                target['Proxy'] = server
+                target['Name'] = name if name
+                target['ConfigName'] = target['Name']
+                useNginxProxy(__dir__ + '/../../../../Plugins/Apps/Nginx', 'proxy', id, target, activeState, state, context, options, ssh)
             end
 
             private

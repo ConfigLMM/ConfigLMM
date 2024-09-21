@@ -4,6 +4,7 @@ module ConfigLMM
         class GitLab < Framework::NginxApp
 
             HOME_DIR = '/var/lib/gitlab'
+            IMAGE_ID = 'docker.io/gitlab/gitlab-ce:latest'
 
             def actionGitLabDeploy(id, target, activeState, context, options)
 
@@ -15,22 +16,25 @@ module ConfigLMM
                         self.prepareConfig(target, ssh)
 
                         distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
-                        self.class.sshExec!(ssh, "mkdir -p #{HOME_DIR}/config")
-                        self.class.sshExec!(ssh, "mkdir -p #{HOME_DIR}/logs")
-                        self.class.sshExec!(ssh, "mkdir -p #{HOME_DIR}/data")
-                        self.class.sshExec!(ssh, "mkdir -p #{HOME_DIR}/backups")
+                        self.class.exec("mkdir -p #{HOME_DIR}/config", ssh)
+                        self.class.exec("mkdir -p #{HOME_DIR}/logs", ssh)
+                        self.class.exec("mkdir -p #{HOME_DIR}/data", ssh)
+                        self.class.exec("mkdir -p #{HOME_DIR}/backups", ssh)
 
                         path = '/etc/containers/systemd'
                         ssh.scp.upload!(__dir__ + '/GitLab.container', path)
-                        self.class.sshExec!(ssh, "systemctl daemon-reload")
-                        self.class.sshExec!(ssh, "systemctl start GitLab")
 
-                        Framework::LinuxApp.ensureServiceAutoStartOverSSH(NGINX_PACKAGE, ssh)
-                        self.writeNginxConfig(__dir__, 'GitLab', id, target, state, context, options)
-                        self.deployNginxConfig(id, target, activeState, context, options)
-                        Framework::LinuxApp.startServiceOverSSH(NGINX_PACKAGE, ssh)
+                        if !target.key?('Proxy') || target['Proxy']
+                            deployNginxProxyConfig('http://127.0.0.1:18100', 'GitLab', id, target, activeState, state, context, options, ssh)
+                        elsif target.key?('Proxy') && target['Proxy'] == false
+                            self.class.exec("sed -i 's|PublishPort=127.0.0.1:18100:|PublishPort=0.0.0.0:18100:|' #{path}/GitLab.container", ssh)
+                            Framework::LinuxApp.firewallAddPort('18100/tcp', ssh)
+                        end
 
-                        configFile = '/var/lib/gitlab/config/gitlab.rb'
+                        Framework::LinuxApp.reloadServiceManager(ssh)
+                        Framework::LinuxApp.restartService('GitLab', ssh)
+
+                        configFile = HOME_DIR + '/config/gitlab.rb'
                         while !self.class.remoteFilePresent?(configFile, ssh)
                             sleep(2)
                         end
@@ -54,11 +58,12 @@ module ConfigLMM
                             end
                         end
 
-                        self.class.sshExec!(ssh, "systemctl restart GitLab")
+                        Framework::LinuxApp.restartService('GitLab', ssh)
                     end
                 else
                     # TODO
                 end
+                activeState['Status'] = State::STATUS_DEPLOYED
             end
 
             def prepareConfig(target, ssh)
@@ -66,6 +71,26 @@ module ConfigLMM
 
               Framework::LinuxApp.ensurePackages([NGINX_PACKAGE], ssh)
               self.class.prepareNginxConfig(target, ssh)
+            end
+
+            def cleanup(configs, state, context, options)
+                cleanupType(:GitLab, configs, state, context, options) do |item, id, state, context, options, ssh|
+                    if item['Proxy'].nil? || item['Proxy']
+                        self.cleanupNginxConfig('GitLab', id, state, context, options, ssh)
+                        self.class.reload(ssh, options[:dry])
+                    end
+                    Framework::LinuxApp.firewallRemovePort('18100/tcp', ssh, options[:dry])
+                    Framework::LinuxApp.stopService('GitLab', ssh, options[:dry])
+                    rm('/etc/containers/systemd/GitLab.container', options[:dry], ssh)
+                    self.class.exec("podman rmi #{IMAGE_ID}", ssh, true, options[:dry])
+                    state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
+                    if options[:destroy]
+                        rm('/var/lib/gitlab', options[:dry], ssh)
+                        rm('/var/log/nginx/gitlab.access.log', options[:dry], ssh)
+                        rm('/var/log/nginx/gitlab.error.log', options[:dry], ssh)
+                        state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                    end
+                end
             end
 
         end
