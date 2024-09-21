@@ -108,8 +108,13 @@ module ConfigLMM
                 end
             end
 
-            def self.ensureServiceAutoStartOverSSH(name, locationOrSSH)
+            def self.ensureServiceAutoStart(name, locationOrSSH)
                 self.execDistroCommand(name, 'AutoStartService', locationOrSSH)
+            end
+
+            # Deprecated
+            def self.ensureServiceAutoStartOverSSH(name, locationOrSSH)
+                self.ensureServiceAutoStart(name, locationOrSSH)
             end
 
             def startService(name, location, dry = false)
@@ -131,8 +136,24 @@ module ConfigLMM
                 self.startService(name, locationOrSSH, dry)
             end
 
+            def self.restartService(name, locationOrSSH, dry = false)
+                self.execDistroCommand(name, 'RestartService', locationOrSSH, false, dry)
+            end
+
             def self.reloadService(name, locationOrSSH, dry = false)
                 self.execDistroCommand(name, 'ReloadService', locationOrSSH, false, dry)
+            end
+
+            def self.stopService(name, locationOrSSH, dry = false)
+                self.execDistroCommand(name, 'StopService', locationOrSSH, true, dry)
+            end
+
+            def self.disableService(name, locationOrSSH, dry = false)
+                self.execDistroCommand(name, 'DisableService', locationOrSSH, true, dry)
+            end
+
+            def self.reloadServiceManager(locationOrSSH, dry = false)
+                self.execDistroCommand(nil, 'ReloadServiceManager', locationOrSSH, false, dry)
             end
 
             def self.deleteUserAndGroup(name, locationOrSSH, dry = false)
@@ -144,7 +165,8 @@ module ConfigLMM
                 self.doSSH(locationOrSSH) do |ssh|
                     distroInfo = self.currentDistroInfo(ssh)
 
-                    command = distroInfo[commandName] + ' ' + param.shellescape
+                    command = distroInfo[commandName]
+                    command += ' ' + param.shellescape unless param.nil?
                     self.exec(command, ssh, allowFailure, dry)
                 end
             end

@@ -5,7 +5,11 @@ opensuse-leap:
     RemovePackage: zypper remove --no-confirm
     AutoStartService: systemctl enable
     StartService: systemctl start
+    RestartService: systemctl restart
     ReloadService: systemctl reload
+    StopService: systemctl stop
+    DisableService: systemctl disable
+    ReloadServiceManager: systemctl daemon-reload
     CreateServiceUser: useradd --system --shell /usr/sbin/nologin --user-group
     ModifyUser: usermod
     DeleteUser: userdel --remove --force
@@ -17,7 +21,11 @@ arch:
     RemovePackage: pacman --remove --noconfirm
     AutoStartService: systemctl enable
     StartService: systemctl start
+    RestartService: systemctl restart
     ReloadService: systemctl reload
+    StopService: systemctl stop
+    DisableService: systemctl disable
+    ReloadServiceManager: systemctl daemon-reload
     CreateServiceUser: useradd --system --shell /usr/sbin/nologin --user-group
     ModifyUser: usermod
     DeleteUser: userdel --remove --force
