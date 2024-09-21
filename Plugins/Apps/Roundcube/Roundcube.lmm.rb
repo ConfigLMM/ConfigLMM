@@ -109,29 +109,21 @@ module ConfigLMM
             end
 
             def cleanup(configs, state, context, options)
-                items = state.selectType(:Roundcube)
-                items.each do |id, item|
-                    if !configs.key?(id) && item['Status'] != State::STATUS_DESTROYED && (item['Status'] != State::STATUS_DELETED || options[:destroy])
-                        if item['Location'] == '@me'
-                            cleanupConfig(item, id, state, context, options)
-                        else
-                            uri = Addressable::URI.parse(item['Location'])
-                            self.class.sshStart(uri) do |ssh|
-                                cleanupConfig(item, id, state, context, options, ssh)
-                            end
-                        end
-                    end
+                cleanupType(:Roundcube, configs, state, context, options) do |item, id, state, context, options, ssh|
+                    cleanupConfig(item, id, state, context, options, ssh)
                 end
             end
 
             def cleanupConfig(item, id, state, context, options, ssh = nil)
-                self.cleanupNginxConfig('Roundcube', id, state, context, options, ssh)
-                self.class.reload(ssh, options[:dry])
+                if item['Proxy'].nil? || item['Proxy']
+                    self.cleanupNginxConfig('Roundcube', id, state, context, options, ssh)
+                    self.class.reload(ssh, options[:dry])
+                end
                 distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
                 rm(PHP_FPM.configDir(distroInfo) + 'roundcube.conf', options[:dry], ssh)
                 Framework::LinuxApp.reloadService(PHP_FPM::PHPFPM_SERVICE, ssh, options[:dry])
                 Framework::LinuxApp.removePackage(PACKAGE_NAME, ssh, options[:dry])
-                state.item(id)['Status'] = State::STATUS_DELETED
+                state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
                 if options[:destroy]
                     item['Database'] ||= {}
                     if !item['Database']['Type'] || item['Database']['Type'] == 'pgsql'
@@ -142,7 +134,9 @@ module ConfigLMM
                     rm('/var/log/php/roundcube.access.log', options[:dry], ssh)
                     rm('/var/log/php/roundcube.errors.log', options[:dry], ssh)
                     rm('/var/log/php/roundcube.mail.log', options[:dry], ssh)
-                    state.item(id)['Status'] = State::STATUS_DESTROYED
+                    rm('/var/log/nginx/roundcube.access.log', options[:dry], ssh)
+                    rm('/var/log/nginx/roundcube.error.log', options[:dry], ssh)
+                    state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
                 end
             end
 

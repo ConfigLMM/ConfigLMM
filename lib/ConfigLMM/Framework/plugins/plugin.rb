@@ -344,6 +344,22 @@ module ConfigLMM
                 end
             end
 
+            def cleanupType(type, configs, state, context, options)
+                items = state.selectType(type)
+                items.each do |id, item|
+                    if !configs.key?(id) && item['Status'] != State::STATUS_DESTROYED && (item['Status'] != State::STATUS_DELETED || options[:destroy])
+                        if item['Location'].nil? || item['Location'] == '@me'
+                            yield(item, id, state, context, options, nil)
+                        else
+                            uri = Addressable::URI.parse(item['Location'])
+                            self.class.sshStart(uri) do |ssh|
+                                yield(item, id, state, context, options, ssh)
+                            end
+                        end
+                    end
+                end
+            end
+
             def self.normalizeId(id)
                 id = id.split('::').last
                 if id.downcase.end_with?('plugin')
