@@ -71,6 +71,33 @@ module ConfigLMM
                     deployNginxConfig(id, target, activeState, context, options)
                     activeState['Location'] = '@me'
                 end
+                activeState['Status'] = State::STATUS_DEPLOYED
+            end
+
+            def cleanup(configs, state, context, options)
+                cleanupType(:Nextcloud, configs, state, context, options) do |item, id, state, context, options, ssh|
+                    self.cleanupNginxConfig('Nextcloud', id, state, context, options, ssh)
+                    self.class.reload(ssh, options[:dry])
+                    distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
+                    rm(PHP_FPM.configDir(distroInfo) + 'nextcloud.conf', options[:dry], ssh)
+                    Framework::LinuxApp.reloadService(PHP_FPM::PHPFPM_SERVICE, ssh, options[:dry])
+                    Framework::LinuxApp.removePackage(PACKAGE_NAME, ssh, options[:dry])
+                    state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
+                    if options[:destroy]
+                        rm(PHP_FPM::webappsDir(distroInfo) + 'nextcloud', options[:dry], ssh)
+                        item['Database'] ||= {}
+                        if !item['Database']['Type'] || item['Database']['Type'] == 'pgsql'
+                            PostgreSQL.dropUserAndDB(item['Database'], USER, ssh, options[:dry])
+                        end
+                        Framework::LinuxApp.deleteUserAndGroup(USER, ssh, options[:dry])
+                        rm('/var/log/php/nextcloud.access.log', options[:dry], ssh)
+                        rm('/var/log/php/nextcloud.errors.log', options[:dry], ssh)
+                        rm('/var/log/php/nextcloud.mail.log', options[:dry], ssh)
+                        rm('/var/log/nginx/nextcloud.access.log', options[:dry], ssh)
+                        rm('/var/log/nginx/nextcloud.error.log', options[:dry], ssh)
+                        state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                    end
+                end
             end
 
         end
