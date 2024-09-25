@@ -104,6 +104,8 @@ module ConfigLMM
             end
 
             def actionNginxProxyDeploy(id, target, activeState, context, options)
+                raise Framework::PluginProcessError.new('Proxy field must be set!') unless target['Proxy']
+
                 target['ConfigName'] = target['Name']
                 if target['Location'] && target['Location'] != '@me'
                     uri = Addressable::URI.parse(target['Location'])
