@@ -187,37 +187,49 @@ module ConfigLMM
                 result
             end
 
+            # Deprecated
             def self.firewallAddServiceOverSSH(serviceName, locationOrSSH)
-                 closure = Proc.new do |ssh|
-                     command = 'firewall-cmd --permanent --add-service ' + serviceName.shellescape
-                     self.sshExec!(ssh, command, true)
-                     command = 'firewall-cmd --add-service ' + serviceName.shellescape
-                     self.sshExec!(ssh, command, true)
-                 end
+                self.firewallAddService(serviceName, locationOrSSH)
+            end
 
-                if locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
-                    self.sshStart(locationOrSSH) do |ssh|
-                        closure.call(ssh)
-                    end
-                else
-                    closure.call(locationOrSSH)
+            # Deprecated
+            def self.firewallAddPortOverSSH(portName, locationOrSSH)
+                self.firewallAddPort(portName, locationOrSSH)
+            end
+
+            def self.firewallAddService(serviceName, locationOrSSH = nil, dry = false)
+                self.doSSH(locationOrSSH) do |ssh|
+                     command = 'firewall-cmd --permanent --add-service ' + serviceName.shellescape
+                     self.sshExec!(ssh, command, true, dry)
+                     command = 'firewall-cmd --add-service ' + serviceName.shellescape
+                     self.sshExec!(ssh, command, true, dry)
                 end
             end
 
-            def self.firewallAddPortOverSSH(portName, locationOrSSH)
-                 closure = Proc.new do |ssh|
-                     command = 'firewall-cmd --permanent --add-port ' + portName.shellescape
-                     self.sshExec!(ssh, command, true)
-                     command = 'firewall-cmd --add-port ' + portName.shellescape
-                     self.sshExec!(ssh, command, true)
-                 end
+            def self.firewallRemoveService(serviceName, locationOrSSH = nil, dry = false)
+                self.doSSH(locationOrSSH) do |ssh|
+                     command = 'firewall-cmd --permanent --remove-service ' + serviceName.shellescape
+                     self.sshExec!(ssh, command, false, dry)
+                     command = 'firewall-cmd --remove-service ' + serviceName.shellescape
+                     self.sshExec!(ssh, command, false, dry)
+                end
+            end
 
-                if locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
-                    self.sshStart(locationOrSSH) do |ssh|
-                        closure.call(ssh)
-                    end
-                else
-                    closure.call(locationOrSSH)
+            def self.firewallAddPort(portName, locationOrSSH = nil, dry = false)
+                self.doSSH(locationOrSSH) do |ssh|
+                     command = 'firewall-cmd --permanent --add-port ' + portName.shellescape
+                     self.sshExec!(ssh, command, true, dry)
+                     command = 'firewall-cmd --add-port ' + portName.shellescape
+                     self.sshExec!(ssh, command, true, dry)
+                end
+            end
+
+            def self.firewallRemovePort(portName, locationOrSSH = nil, dry = false)
+                self.doSSH(locationOrSSH) do |ssh|
+                     command = 'firewall-cmd --permanent --remove-port ' + portName.shellescape
+                     self.sshExec!(ssh, command, false, dry)
+                     command = 'firewall-cmd --remove-port ' + portName.shellescape
+                     self.sshExec!(ssh, command, false, dry)
                 end
             end
 
