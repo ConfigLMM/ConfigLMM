@@ -39,6 +39,9 @@ module ConfigLMM
                                 configLines
                             end
                         end
+
+                        self.class.exec("chgrp redis #{CONFIG_FILE}", ssh)
+                        self.class.exec("chmod 640 #{CONFIG_FILE}", ssh)
                     end
                 else
                     if target['Settings']
@@ -50,6 +53,8 @@ module ConfigLMM
                             configLines
                         end
                     end
+                    self.class.exec("chgrp redis #{CONFIG_FILE}", ssh)
+                    self.class.exec("chmod 640 #{CONFIG_FILE}", nil)
                 end
 
                 self.ensureServiceAutoStart(serviceName, target['Location'])
