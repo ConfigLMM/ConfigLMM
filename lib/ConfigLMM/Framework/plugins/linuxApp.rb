@@ -200,36 +200,36 @@ module ConfigLMM
             def self.firewallAddService(serviceName, locationOrSSH = nil, dry = false)
                 self.doSSH(locationOrSSH) do |ssh|
                      command = 'firewall-cmd --permanent --add-service ' + serviceName.shellescape
-                     self.sshExec!(ssh, command, true, dry)
+                     self.exec(command, ssh, true, dry)
                      command = 'firewall-cmd --add-service ' + serviceName.shellescape
-                     self.sshExec!(ssh, command, true, dry)
+                     self.exec(command, ssh, true, dry)
                 end
             end
 
             def self.firewallRemoveService(serviceName, locationOrSSH = nil, dry = false)
                 self.doSSH(locationOrSSH) do |ssh|
                      command = 'firewall-cmd --permanent --remove-service ' + serviceName.shellescape
-                     self.sshExec!(ssh, command, false, dry)
+                     self.exec(command, ssh, false, dry)
                      command = 'firewall-cmd --remove-service ' + serviceName.shellescape
-                     self.sshExec!(ssh, command, false, dry)
+                     self.exec(command, ssh, false, dry)
                 end
             end
 
             def self.firewallAddPort(portName, locationOrSSH = nil, dry = false)
                 self.doSSH(locationOrSSH) do |ssh|
                      command = 'firewall-cmd --permanent --add-port ' + portName.shellescape
-                     self.sshExec!(ssh, command, true, dry)
+                     self.exec(command, ssh, true, dry)
                      command = 'firewall-cmd --add-port ' + portName.shellescape
-                     self.sshExec!(ssh, command, true, dry)
+                     self.exec(command, ssh, true, dry)
                 end
             end
 
             def self.firewallRemovePort(portName, locationOrSSH = nil, dry = false)
                 self.doSSH(locationOrSSH) do |ssh|
                      command = 'firewall-cmd --permanent --remove-port ' + portName.shellescape
-                     self.sshExec!(ssh, command, false, dry)
+                     self.exec(command, ssh, false, dry)
                      command = 'firewall-cmd --remove-port ' + portName.shellescape
-                     self.sshExec!(ssh, command, false, dry)
+                     self.exec(command, ssh, false, dry)
                 end
             end
 
