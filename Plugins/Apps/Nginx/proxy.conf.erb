@@ -27,6 +27,7 @@ server {
     error_log   /var/log/nginx/<%= config['Name'].downcase %>.error.log;
 
     include config-lmm/errors.conf;
+    include config-lmm/security.conf;
 
     <% if config['Private'] %>
         include config-lmm/private.conf;
