@@ -48,6 +48,7 @@ openSUSE Leap:
         - postgresql-contrib
     Postfix: postfix
     PowerDNS:
+        - pdns
         - pdns-backend-geoip
         - pdns-backend-sqlite3
         - pdns-backend-postgresql

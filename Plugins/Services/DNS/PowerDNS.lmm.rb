@@ -49,7 +49,7 @@ module ConfigLMM
             def actionPowerDNSDeploy(id, target, activeState, context, options)
                 #actionPowerDNSDiff(id, target, activeState, context, options)
 
-                deploySettings(target, options)
+                deploySettings(target, activeState, options)
                 connect(id, target, activeState, context, options) do |host, port, key|
                     if target['TSIG']
                         updateTSIG(host, port, key, target['TSIG'])
@@ -59,6 +59,27 @@ module ConfigLMM
                     end
                     if target['Metadata']
                         updateMetadata(host, port, key, target['Metadata'])
+                    end
+                end
+            end
+
+            def cleanup(configs, state, context, options)
+                cleanupType(:PowerDNS, configs, state, context, options) do |item, id, state, context, options, ssh|
+                    if item['Deploy']
+                        Framework::LinuxApp.stopService(SERVICE_NAME, ssh, options[:dry])
+                        Framework::LinuxApp.firewallRemoveService('dns', ssh, options[:dry])
+                        Framework::LinuxApp.removePackage(PACKAGE_NAME, ssh, options[:dry])
+
+                        state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
+
+                        if options[:destroy]
+                            item['Database'] ||= {}
+                            PostgreSQL.dropUserAndDB(item['Database'], USER, ssh, options[:dry])
+                            rm('/etc/pdns', options[:dry], ssh)
+                            state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                        end
+                    else
+                        # TODO
                     end
                 end
             end
@@ -208,15 +229,19 @@ module ConfigLMM
                 end
             end
 
-            def deploySettings(target, options)
+            def deploySettings(target, activeState, options)
                 if target['Location']
                     uri = Addressable::URI.parse(target['Location'])
                     params = {}
                     params = CGI.parse(uri.query) if uri.query
                     if uri.scheme == 'ssh' && !params.key?('host')
                         self.class.sshStart(uri) do |ssh|
-                            Framework::LinuxApp.ensurePackages([PACKAGE_NAME], ssh)
-                            Framework::LinuxApp.ensureServiceAutoStartOverSSH(SERVICE_NAME, ssh)
+                            target['Deploy'] = !!target['Settings'] unless target.key?('Deploy')
+                            activeState['Deploy'] = target['Deploy']
+                            if target['Deploy']
+                                Framework::LinuxApp.ensurePackages([PACKAGE_NAME], ssh)
+                                Framework::LinuxApp.ensureServiceAutoStartOverSSH(SERVICE_NAME, ssh)
+                            end
                             if target['Settings']
                                 prepareSettings(target)
                                 self.class.sshExec!(ssh, "mkdir -p #{CONFIG_DIR}")
@@ -233,10 +258,15 @@ module ConfigLMM
                                 end
                                 self.configurePostgreSQL(target['Settings'], ssh)
                             end
-                            Framework::LinuxApp.firewallAddServiceOverSSH('dns', ssh)
-                            Framework::LinuxApp.startServiceOverSSH(SERVICE_NAME, ssh)
+                            if target['Deploy']
+                                Framework::LinuxApp.firewallAddServiceOverSSH('dns', ssh)
+                                Framework::LinuxApp.startServiceOverSSH(SERVICE_NAME, ssh)
+                                activeState['Status'] = State::STATUS_DEPLOYED
+                            end
                         end
                     end
+                else
+                    # TODO
                 end
             end
 
