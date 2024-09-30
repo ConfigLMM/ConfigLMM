@@ -91,10 +91,10 @@ module ConfigLMM
                 !table.empty?
             end
 
-            def self.executeSQL(sql, db = nil, ssh = nil, allowFailure = false)
+            def self.executeSQL(sql, db = nil, ssh = nil, allowFailure = false, dry = false)
                 db = '' unless db
                 cmd = " mariadb #{db} --execute=\"#{sql.gsub('"', '\\"')};\""
-                self.exec(cmd, ssh, allowFailure)
+                self.exec(cmd, ssh, allowFailure, dry)
             end
 
         end

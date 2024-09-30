@@ -36,7 +36,7 @@ module ConfigLMM
             end
 
             def actionERPNextDeploy(id, target, activeState, context, options)
-                raise Framework::PluginProcessError.new('Domain field must be set!') unless target['Domain']
+                raise Framework::PluginProcessError.new('Domain field must be set!') if (!target.key?('Proxy') || target['Proxy']) && !target['Domain']
 
                 target['Database'] ||= {}
                 if target['Location'] && target['Location'] != '@me'
@@ -45,6 +45,7 @@ module ConfigLMM
 
                     self.class.sshStart(uri) do |ssh|
 
+                        activeState['Database'] = target['Database']
                         dbPassword = self.configureMariaDB(target['Database'], activeState, ssh)
                         distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
                         Framework::LinuxApp.configurePodmanServiceOverSSH(USER, HOME_DIR, 'ERPNext', distroInfo, ssh)
@@ -96,6 +97,14 @@ module ConfigLMM
                         self.class.exec("sed -i 's|$VERSION|#{VERSION}|' #{path}/ERPNext-Scheduler.container", ssh)
                         self.class.exec("sed -i 's|$VERSION|#{VERSION}|' #{path}/ERPNext-Websocket.container", ssh)
                         self.class.exec("sed -i 's|$VERSION|#{VERSION}|' #{path}/ERPNext-Frontend.container", ssh)
+
+                        if !target.key?('Proxy') || target['Proxy']
+                            deployNginxProxyConfig('http://127.0.0.1:18400', 'ERPNext', id, target, activeState, state, context, options, ssh)
+                        elsif target.key?('Proxy') && target['Proxy'] == false
+                            self.class.exec("sed -i 's|PublishPort=127.0.0.1:18400:|PublishPort=0.0.0.0:18400:|' #{path}ERPNext-Frontend.container", ssh)
+                            Framework::LinuxApp.firewallAddPort('18400/tcp', ssh)
+                        end
+
                         self.class.exec("systemctl --user --machine=#{USER}@ daemon-reload", ssh)
                         self.class.exec("systemctl --user --machine=#{USER}@ restart ERPNext-network", ssh)
                         self.class.exec("systemctl --user --machine=#{USER}@ restart ERPNext", ssh)
@@ -122,7 +131,7 @@ module ConfigLMM
                         self.class.exec("systemctl --user --machine=#{USER}@ restart ERPNext-Websocket", ssh)
                         self.class.exec("systemctl --user --machine=#{USER}@ restart ERPNext-Frontend", ssh)
 
-                        useNginxProxy(__dir__, 'ERPNext', id, target, activeState, state, context, options, ssh)
+
                     end
                 else
                     # TODO
@@ -133,6 +142,48 @@ module ConfigLMM
                 password = SecureRandom.alphanumeric(20)
                 MariaDB.createRemoteUserAndDB(settings, USER, password, ssh)
                 password
+            end
+
+            def cleanup(configs, state, context, options)
+                cleanupType(:ERPNext, configs, state, context, options) do |item, id, state, context, options, ssh|
+                    if item['Proxy'].nil? || item['Proxy']
+                        self.cleanupNginxConfig('ERPNext', id, state, context, options, ssh)
+                        self.class.reload(ssh, options[:dry])
+                    end
+                    Framework::LinuxApp.firewallRemovePort('18400/tcp', ssh, options[:dry])
+
+                    self.class.exec("systemctl --user --machine=#{USER}@ stop ERPNext", ssh, true, options[:dry])
+                    self.class.exec("systemctl --user --machine=#{USER}@ stop ERPNext-Frontend", ssh, true, options[:dry])
+                    self.class.exec("systemctl --user --machine=#{USER}@ stop ERPNext-Websocket", ssh, true, options[:dry])
+                    self.class.exec("systemctl --user --machine=#{USER}@ stop ERPNext-Scheduler", ssh, true, options[:dry])
+                    self.class.exec("systemctl --user --machine=#{USER}@ stop ERPNext-Queue", ssh, true, options[:dry])
+                    self.class.exec("systemctl --user --machine=#{USER}@ stop ERPNext-network", ssh, true, options[:dry])
+
+                    path = Framework::LinuxApp::SYSTEMD_CONTAINERS_PATH.gsub('~', HOME_DIR)
+                    rm(path + 'ERPNext.network', options[:dry], ssh)
+                    rm(path + 'ERPNext.container', options[:dry], ssh)
+                    rm(path + 'ERPNext-Queue.container', options[:dry], ssh)
+                    rm(path + 'ERPNext-Scheduler.container', options[:dry], ssh)
+                    rm(path + 'ERPNext-Websocket.container', options[:dry], ssh)
+                    rm(path + 'ERPNext-Frontend.container', options[:dry], ssh)
+
+                    self.class.exec("podman rmi #{IMAGE_ID}", ssh, true, options[:dry])
+
+                    state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
+
+                    if options[:destroy]
+                        item['Database'] ||= {}
+                        MariaDB.executeRemotely(item['Database'], ssh) do |sshDB|
+                            MariaDB.executeSQL("DROP DATABASE #{USER}", nil, sshDB, true, options[:dry])
+                        end
+                        Framework::LinuxApp.deleteUserAndGroup(USER, ssh, options[:dry])
+                        rm(HOME_DIR, options[:dry], ssh)
+                        rm('/var/log/nginx/erpnext.access.log', options[:dry], ssh)
+                        rm('/var/log/nginx/erpnext.error.log', options[:dry], ssh)
+
+                        state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                    end
+                end
             end
 
         end
