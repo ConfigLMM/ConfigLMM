@@ -59,6 +59,27 @@ module ConfigLMM
 
                 self.ensureServiceAutoStart(serviceName, target['Location'])
                 self.startService(serviceName, target['Location'])
+
+                activeState['Status'] = State::STATUS_DEPLOYED
+            end
+
+            def cleanup(configs, state, context, options)
+                cleanupType(:Valkey, configs, state, context, options) do |item, id, state, context, options, ssh|
+                    serviceName = 'redis'
+                    distroId = self.class.distroID(ssh)
+                    serviceName = 'redis@redis' if distroId == SUSE_ID
+
+                    Framework::LinuxApp.stopService(serviceName, ssh, options[:dry])
+                    Framework::LinuxApp.removePackage(PACKAGE_NAME, ssh, options[:dry])
+
+                    state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
+
+                    if options[:destroy]
+                        rm('/etc/redis', options[:dry], ssh)
+
+                        state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                    end
+                end
             end
 
         end
