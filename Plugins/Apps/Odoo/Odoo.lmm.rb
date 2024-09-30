@@ -71,7 +71,7 @@ module ConfigLMM
             def configurePostgreSQL(settings, ssh)
                 user = USER
                 password = SecureRandom.alphanumeric(20)
-                PostgreSQL.executeRemotelyOverSSH(settings, ssh) do |ssh|
+                PostgreSQL.executeRemotely(settings, ssh) do |ssh|
                     self.class.sshExec!(ssh, "su --login #{PostgreSQL::USER_NAME} --command 'createuser --createdb #{user}'", true)
                     PostgreSQL.executeSQL("ALTER USER #{user} WITH PASSWORD '#{password}'", nil, ssh)
                 end
