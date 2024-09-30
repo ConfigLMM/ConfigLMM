@@ -12,26 +12,60 @@ module ConfigLMM
             CONFIG_FILE = 'data/postgresql.conf'
 
             def actionPostgreSQLDeploy(id, target, activeState, context, options)
-                self.ensurePackage(PACKAGE_NAME, target['Location'])
-                self.ensureServiceAutoStart(SERVICE_NAME, target['Location'])
-                self.startService(SERVICE_NAME, target['Location'])
+                target['Deploy'] = !!(target['ListenAll'] || target['Listen'] || target['Settings']) unless target.key?('Deploy')
+                activeState['Deploy'] = target['Deploy']
+                activeState['Users'] = target['Users']
+                activeState['Databases'] = target['Databases']
+                activeState['Publications'] = target['Publications']
+                activeState['Subscriptions'] = target['Subscriptions']
+
+                if target['Deploy']
+                    self.ensurePackage(PACKAGE_NAME, target['Location'])
+                    self.ensureServiceAutoStart(SERVICE_NAME, target['Location'])
+                    self.startService(SERVICE_NAME, target['Location'])
+                end
 
                 if target['Location'] && target['Location'] != '@me'
                     uri = Addressable::URI.parse(target['Location'])
                     raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
 
                     self.class.sshStart(uri) do |ssh|
-                        self.updateSettingsOverSSH(target, ssh, options)
-                        self.class.sshExec!(ssh, "su --login #{USER_NAME} --command 'pg_ctl reload'")
+                        if target['Deploy']
+                            self.updateSettingsOverSSH(target, ssh, options)
+                            self.class.sshExec!(ssh, "su --login #{USER_NAME} --command 'pg_ctl reload'")
+                        end
                         self.class.createUsersOverSSH(target, ssh)
                         self.class.createDatabasesOverSSH(target, ssh)
                         self.class.createPublicationsOverSSH(target, ssh)
                         self.class.createSubscriptionsOverSSH(target, ssh)
                     end
                 else
-                    `pg_ctl reload`
+                    if target['Deploy']
+                        `pg_ctl reload`
+                    end
                 end
 
+                activeState['Status'] = State::STATUS_DEPLOYED
+            end
+
+            def cleanup(configs, state, context, options)
+                cleanupType(:PostgreSQL, configs, state, context, options) do |item, id, state, context, options, ssh|
+                    if item['Deploy']
+                        Framework::LinuxApp.stopService(SERVICE_NAME, ssh, options[:dry])
+                        Framework::LinuxApp.disableService(SERVICE_NAME, ssh, options[:dry])
+                        Framework::LinuxApp.removePackage(PACKAGE_NAME, ssh, options[:dry])
+
+                        state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
+
+                        if options[:destroy]
+                            Framework::LinuxApp.deleteUserAndGroup(USER_NAME, ssh, options[:dry])
+
+                            state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                        end
+                    else
+                        # TODO
+                    end
+                end
             end
 
             def updateListenLocal(target)
