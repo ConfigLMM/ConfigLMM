@@ -18,11 +18,14 @@ module ConfigLMM
 
                     self.class.sshStart(uri) do |ssh|
                         self.class.secureInstallation(ssh)
+                        if target['Listen']
+                            self.class.exec("sed -i 's|bind-address .*|bind-address = #{target['Listen']}|' /etc/my.cnf", ssh)
+                            self.class.restartService(SERVICE_NAME, ssh)
+                        end
                     end
                 else
                     # TODO
                 end
-
             end
 
             def self.secureInstallation(ssh)
