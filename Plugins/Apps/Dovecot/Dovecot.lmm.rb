@@ -74,8 +74,7 @@ module ConfigLMM
                             configLines << "}\n"
                         end
 
-                        self.class.sshExec!(ssh, "firewall-cmd -q --add-service='imaps'")
-                        self.class.sshExec!(ssh, "firewall-cmd -q --permanent --add-service='imaps'")
+                        Framework::LinuxApp.firewallAddService('imaps', ssh)
 
                         cmd = "sed -i 's|^!include auth-system.conf.ext|#!include auth-system.conf.ext|' #{DOVECOT_DIR}conf.d/10-auth.conf"
                         self.class.sshExec!(ssh, cmd)
@@ -143,6 +142,24 @@ module ConfigLMM
                 end
 
                 plugins[:Linux].startService(SERVICE_NAME, target['Location'])
+
+                activeState['Status'] = State::STATUS_DEPLOYED
+            end
+
+            def cleanup(configs, state, context, options)
+                cleanupType(:Dovecot, configs, state, context, options) do |item, id, state, context, options, ssh|
+                    Framework::LinuxApp.stopService(SERVICE_NAME, ssh, options[:dry])
+                    Framework::LinuxApp.firewallRemoveService('imaps', ssh, options[:dry])
+                    Framework::LinuxApp.removePackage(PACKAGE_NAME, ssh, options[:dry])
+
+                    state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
+
+                    if options[:destroy]
+                        Framework::LinuxApp.deleteUserAndGroup(EMAIL_USER, ssh, options[:dry])
+
+                        state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                    end
+                end
             end
 
             def self.cutConfigSection(file, sectionStart, options, ssh)
