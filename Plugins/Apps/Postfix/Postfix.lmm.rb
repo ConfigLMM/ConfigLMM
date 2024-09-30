@@ -12,9 +12,13 @@ module ConfigLMM
                 plugins[:Linux].ensurePackages([PACKAGE_NAME, 'CyrusSASL'], target['Location'])
                 plugins[:Linux].ensureServiceAutoStart(SERVICE_NAME, target['Location'])
 
+                activeState['Instance'] = target['Instance']
+                activeState['AlternativePort'] = target['AlternativePort']
                 deploySettings(target, target['Location'], options)
 
                 plugins[:Linux].startService(SERVICE_NAME, target['Location'])
+
+                activeState['Status'] = State::STATUS_DEPLOYED
             end
 
             def deploySettings(target, location, options)
@@ -91,14 +95,11 @@ module ConfigLMM
 
 
                         if target['AlternativePort']
-                            self.class.sshExec!(ssh, "firewall-cmd -q --add-port='#{target['AlternativePort']}/tcp'")
-                            self.class.sshExec!(ssh, "firewall-cmd -q --permanent --add-port='#{target['AlternativePort']}/tcp'")
+                            Framework::LinuxApp.firewallAddPort("#{target['AlternativePort']}/tcp", ssh)
                         else
-                            self.class.sshExec!(ssh, "firewall-cmd -q --add-service='smtp'")
-                            self.class.sshExec!(ssh, "firewall-cmd -q --permanent --add-service='smtp'")
+                            Framework::LinuxApp.firewallAddService('smtp', ssh)
                         end
-                        self.class.sshExec!(ssh, "firewall-cmd -q --add-service='smtps'")
-                        self.class.sshExec!(ssh, "firewall-cmd -q --permanent --add-service='smtps'")
+                        Framework::LinuxApp.firewallAddService('smtps', ssh)
 
                         ssh.scp.upload!(__dir__ + '/smtpd.conf', '/etc/sasl2/smtpd.conf')
                         self.class.sshExec!(ssh, "touch /etc/sasldb2")
@@ -178,6 +179,31 @@ module ConfigLMM
                 end
             end
 
+            def cleanup(configs, state, context, options)
+                cleanupType(:Postfix, configs, state, context, options) do |item, id, state, context, options, ssh|
+                    instances = self.class.exec('postmulti -l | wc -l', ssh, true).strip.to_i
+                    if instances <= 1
+                        Framework::LinuxApp.stopService(SERVICE_NAME, ssh, options[:dry])
+                        Framework::LinuxApp.firewallRemoveService('smtps', ssh, options[:dry])
+                        if item['AlternativePort']
+                            Framework::LinuxApp.firewallRemovePort("#{item['AlternativePort']}/tcp", ssh, options[:dry])
+                        else
+                            Framework::LinuxApp.firewallRemoveService('smtp', ssh, options[:dry])
+                        end
+                        Framework::LinuxApp.removePackage(PACKAGE_NAME, ssh, options[:dry])
+
+                        state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
+
+                        if options[:destroy]
+                            rm('/etc/postfix', options[:dry], ssh)
+
+                            state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                        end
+                    else
+                        prompt.say('Postfix multiple instance cleanup not implemented!', :color => :red)
+                    end
+                end
+            end
         end
 
     end
