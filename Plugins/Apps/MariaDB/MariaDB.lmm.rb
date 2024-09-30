@@ -26,6 +26,18 @@ module ConfigLMM
                 else
                     # TODO
                 end
+
+                activeState['Status'] = State::STATUS_DEPLOYED
+            end
+
+            def cleanup(configs, state, context, options)
+                cleanupType(:MariaDB, configs, state, context, options) do |item, id, state, context, options, ssh|
+                    Framework::LinuxApp.stopService(SERVICE_NAME, ssh, options[:dry])
+                    Framework::LinuxApp.disableService(SERVICE_NAME, ssh, options[:dry])
+                    Framework::LinuxApp.removePackage(PACKAGE_NAME, ssh, options[:dry])
+
+                    state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
+                end
             end
 
             def self.secureInstallation(ssh)
