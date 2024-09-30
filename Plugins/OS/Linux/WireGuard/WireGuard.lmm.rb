@@ -17,9 +17,12 @@ module ConfigLMM
                     uri = Addressable::URI.parse(target['Location'])
                     raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
                     self.class.sshStart(uri) do |ssh|
-                        sharedKey = self.class.sshExec!(ssh, "firewall-cmd -q --permanent --add-port='#{PORT}'/udp")
-                        sharedKey = self.class.sshExec!(ssh, "firewall-cmd -q --permanent --zone=trusted --add-source=#{SUBNET}")
-                        sharedKey = self.class.sshExec!(ssh, "firewall-cmd -q --permanent --direct --add-rule ipv4 nat POSTROUTING 0 -s #{SUBNET} ! -d #{SUBNET} -j MASQUERADE")
+                        self.class.sshExec!(ssh, "firewall-cmd -q --permanent --add-port='#{PORT}/udp'")
+                        self.class.sshExec!(ssh, "firewall-cmd -q --add-port='#{PORT}/udp'")
+                        self.class.sshExec!(ssh, "firewall-cmd -q --permanent --zone=trusted --add-source=#{SUBNET}")
+                        self.class.sshExec!(ssh, "firewall-cmd -q --zone=trusted --add-source=#{SUBNET}")
+                        self.class.sshExec!(ssh, "firewall-cmd -q --permanent --direct --add-rule ipv4 nat POSTROUTING 0 -s #{SUBNET} ! -d #{SUBNET} -j MASQUERADE")
+                        self.class.sshExec!(ssh, "firewall-cmd -q --direct --add-rule ipv4 nat POSTROUTING 0 -s #{SUBNET} ! -d #{SUBNET} -j MASQUERADE")
 
                         self.class.ensurePackages([WIREGUARD_PACKAGE], ssh)
                         self.class.ensureServiceAutoStartOverSSH(SERVICE_NAME, ssh)
@@ -83,6 +86,31 @@ module ConfigLMM
                     # TODO
                 end
                 self.startService(SERVICE_NAME, target['Location'])
+
+                activeState['Status'] = State::STATUS_DEPLOYED
+            end
+
+            def cleanup(configs, state, context, options)
+                cleanupType(:WireGuard, configs, state, context, options) do |item, id, state, context, options, ssh|
+                    Framework::LinuxApp.stopService(SERVICE_NAME, ssh, options[:dry])
+                    Framework::LinuxApp.disableService(SERVICE_NAME, ssh, options[:dry])
+                    Framework::LinuxApp.removePackage(WIREGUARD_PACKAGE, ssh, options[:dry])
+
+                    self.class.exec("firewall-cmd -q --permanent --remove-port='#{PORT}/udp'", ssh, false, options[:dry])
+                    self.class.exec("firewall-cmd -q --remove-port='#{PORT}/udp'", ssh, false, options[:dry])
+                    self.class.exec("firewall-cmd -q --permanent --zone=trusted --remove-source=#{SUBNET}", ssh, false, options[:dry])
+                    self.class.exec("firewall-cmd -q --zone=trusted --remove-source=#{SUBNET}", ssh, false, options[:dry])
+                    self.class.exec("firewall-cmd -q --permanent --direct --remove-rule ipv4 nat POSTROUTING 0 -s #{SUBNET} ! -d #{SUBNET} -j MASQUERADE", ssh, false, options[:dry])
+                    self.class.exec("firewall-cmd -q --direct --remove-rule ipv4 nat POSTROUTING 0 -s #{SUBNET} ! -d #{SUBNET} -j MASQUERADE", ssh, false, options[:dry])
+
+                    state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
+
+                    if options[:destroy]
+                        rm('/etc/wireguard', options[:dry], ssh)
+
+                        state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                    end
+                end
             end
 
             def genkeyOverSSH(ssh)
