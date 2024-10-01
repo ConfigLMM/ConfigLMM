@@ -273,15 +273,19 @@ module ConfigLMM
             end
 
             def buildAutoInstall(id, target, options)
-                if target['Distro'] == SUSE_NAME
-                    outputFolder = options['output'] + '/' + id + '/'
-                    template = ERB.new(File.read(__dir__ + '/openSUSE/autoinst.xml.erb'))
-                    renderTemplate(template, target, outputFolder + 'autoinst.xml', options)
-                elsif target['Flavour'] == PROXMOXVE_NAME
+                if target['Flavour'] == PROXMOXVE_NAME
                     outputFolder = options['output'] + '/' + id + '/'
                     template = ERB.new(File.read(__dir__ + '/Proxmox/answer.toml.erb'))
                     renderTemplate(template, target, outputFolder + 'answer.toml', options)
                     File.write("#{outputFolder}/auto-installer-mode.toml", 'mode = "iso"')
+                elsif target['Distro'] == SUSE_NAME
+                    outputFolder = options['output'] + '/' + id + '/'
+                    template = ERB.new(File.read(__dir__ + '/openSUSE/autoinst.xml.erb'))
+                    renderTemplate(template, target, outputFolder + 'autoinst.xml', options)
+                elsif target['Distro'] == DEBIAN_NAME
+                    outputFolder = options['output'] + '/' + id + '/'
+                    template = ERB.new(File.read(__dir__ + '/Debian/preseed.cfg.erb'))
+                    renderTemplate(template, target, outputFolder + 'preseed.cfg', options)
                 end
             end
 
@@ -322,6 +326,13 @@ module ConfigLMM
                     else
                         raise Framework::PluginProcessError.new("#{id}: Unimplemented!")
                     end
+                when DEBIAN_NAME
+                    if location.empty?
+                        # TODO automatically fetch latest version from website
+                        url = 'https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.7.0-amd64-netinst.iso'
+                    else
+                        raise Framework::PluginProcessError.new("#{id}: Unimplemented!")
+                    end
                 when PROXMOXVE_NAME
                     if location.empty?
                         # TODO automatically fetch latest version from website
@@ -350,10 +361,12 @@ module ConfigLMM
             end
 
             def buildAutoInstallISO(id, iso, target, options)
-                if target['Distro'] == SUSE_NAME
-                    iso = buildISOAutoYaST(id, iso, target, options)
-                elsif target['Flavour'] == PROXMOXVE_NAME
+                if target['Flavour'] == PROXMOXVE_NAME
                     iso = buildISOAutoProxmox(id, iso, target, options)
+                elsif target['Distro'] == SUSE_NAME
+                    iso = buildISOAutoYaST(id, iso, target, options)
+                elsif target['Distro'] == DEBIAN_NAME
+                    iso = buildISOPreseed(id, iso, target, options)
                 end
                 iso
             end
@@ -373,6 +386,22 @@ module ConfigLMM
 
                 patchedIso = File.dirname(iso) + '/patched.iso'
                 self.class.exec("xorriso -as mkisofs -no-emul-boot -boot-info-table -boot-load-size 4 -iso-level 4 -b boot/x86_64/loader/isolinux.bin -c boot/x86_64/loader/boot.cat -eltorito-alt-boot -no-emul-boot -e boot/x86_64/efi -o #{patchedIso} #{outputFolder}")
+                patchedIso
+            end
+
+            def buildISOPreseed(id, iso, target, options)
+                outputFolder = options['output'] + '/iso/'
+                mkdir(outputFolder, false)
+                self.class.exec("xorriso -osirrox on -indev #{iso} -extract / #{outputFolder}")
+                FileUtils.chmod_R(0750, outputFolder) # Need to make it writeable so it can be deleted
+                copy(options['output'] + '/' + id + '/preseed.cfg', outputFolder, false)
+
+                self.class.exec("sed -i 's|vga=788 --- quiet|auto=true file=/cdrom/preseed.cfg vga=788 --- quiet|' #{outputFolder + "boot/grub/grub.cfg"}")
+                self.class.exec("sed -i 's|--- quiet|file=/cdrom/preseed.cfg --- quiet|' #{outputFolder + "isolinux/adgtk.cfg"}")
+                self.class.exec("sed -i 's|default .*|default autogui|' #{outputFolder + "isolinux/isolinux.cfg"}")
+
+                patchedIso = File.dirname(iso) + '/patched.iso'
+                self.class.exec("xorriso -as mkisofs -no-emul-boot -boot-info-table -boot-load-size 4 -iso-level 4 -b isolinux/isolinux.bin -c isolinux/boot.cat -eltorito-alt-boot -o #{patchedIso} #{outputFolder}")
                 patchedIso
             end
 

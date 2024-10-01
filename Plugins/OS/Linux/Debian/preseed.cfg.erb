@@ -1,0 +1,62 @@
+#_preseed_V1
+
+d-i debian-installer/locale string en_US
+d-i keyboard-configuration/xkb-keymap select us
+
+<% if config['Network'].is_a?(Hash) %>
+d-i netcfg/disable_autoconfig boolean true
+d-i netcfg/dhcp_failed note
+d-i netcfg/dhcp_options select Configure network manually
+
+d-i netcfg/get_ipaddress string <%= config['Network']['IP'].split('/').first %>
+d-i netcfg/get_netmask string <%= [((1 << 32) - 1) << (32 - config['Network']['IP'].split('/').last.to_i)].pack('N').bytes.join('.') %>
+d-i netcfg/get_gateway string <%= config['Network']['Gateway'] %>
+d-i netcfg/get_nameservers string <%= config['Network']['DNS'] %>
+d-i netcfg/confirm_static boolean true
+<% end %>
+
+d-i netcfg/get_hostname string <%= Addressable::IDNA.to_ascii(config['Domain']) %>
+
+d-i passwd/make-user boolean false
+
+<% if config['Users'].to_h['root'].to_h['PasswordHash'] %>
+d-i passwd/root-password-crypted password <%= config['Users']['root']['PasswordHash'] %>
+<% elsif config['Users'].to_h['root'].to_h['Password'] %>
+d-i passwd/root-password password <%= config['Users']['root']['Password'] %>
+<% end %>
+
+d-i time/zone string UTC
+
+d-i partman-auto/method string regular
+d-i partman-auto/choose_recipe select atomic
+d-i partman/choose_partition select finish
+d-i partman/confirm_nooverwrite boolean true
+
+d-i base-installer/install-recommends boolean false
+d-i apt-setup/cdrom/set-first boolean false
+d-i apt-setup/non-free-firmware boolean true
+d-i apt-setup/non-free boolean true
+d-i apt-setup/contrib boolean true
+d-i apt-setup/use_mirror boolean true
+d-i mirror/country string US
+d-i mirror/http/mirror select deb.debian.org
+d-i mirror/http/proxy string
+
+d-i pkgsel/run_tasksel boolean false
+
+<% if !config['Apps'].to_a.empty? %>
+d-i pkgsel/include string <%= config['Apps'].map(&:downcase).join(' ') %>
+<% end %>
+
+d-i pkgsel/upgrade select full-upgrade
+
+popularity-contest popularity-contest/participate boolean false
+
+d-i grub-installer/only_debian boolean true
+d-i grub-installer/bootdev  string default
+
+d-i finish-install/reboot_in_progress note
+
+<% if !config['Users'].to_h['root'].to_h['AuthorizedKeys'].empty? %>
+d-i preseed/late_command string in-target sh -c "echo '<%= config['Users']['root']['AuthorizedKeys'].first %>' > /root/.ssh/authorized_keys"
+<% end %>
