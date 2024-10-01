@@ -20,7 +20,7 @@ module ConfigLMM
                 prepareConfig(target)
                 buildHostsFile(id, target, options)
                 buildSSHConfig(id, target, options)
-                buildAutoYaST(id, target, options)
+                buildAutoInstall(id, target, options)
             end
 
             def actionLinuxDeploy(id, target, activeState, context, options)
@@ -226,8 +226,8 @@ module ConfigLMM
 
             def deployOverLibvirt(id, target, activeState, context, options)
                 location = Libvirt.getLocation(target['Location'])
-                iso = installationISO(target['Distro'], location)
-                iso = buildISOAutoYaST(id, iso, target, options) if target['Distro'] == SUSE_NAME
+                iso = installationISO(target['Distro'], target['Flavour'], location)
+                iso = buildAutoInstallISO(id, iso, target, options)
                 plugins[:Libvirt].createVM(target['Name'], target, target['Location'], iso, activeState)
             end
 
@@ -272,11 +272,16 @@ module ConfigLMM
                 end
             end
 
-            def buildAutoYaST(id, target, options)
+            def buildAutoInstall(id, target, options)
                 if target['Distro'] == SUSE_NAME
                     outputFolder = options['output'] + '/' + id + '/'
                     template = ERB.new(File.read(__dir__ + '/openSUSE/autoinst.xml.erb'))
                     renderTemplate(template, target, outputFolder + 'autoinst.xml', options)
+                elsif target['Flavour'] == PROXMOXVE_NAME
+                    outputFolder = options['output'] + '/' + id + '/'
+                    template = ERB.new(File.read(__dir__ + '/Proxmox/answer.toml.erb'))
+                    renderTemplate(template, target, outputFolder + 'answer.toml', options)
+                    File.write("#{outputFolder}/auto-installer-mode.toml", 'mode = "iso"')
                 end
             end
 
@@ -306,9 +311,10 @@ module ConfigLMM
                 end
             end
 
-            def installationISO(distro, location)
+            def installationISO(distro, flavour, location)
                 url = nil
-                case distro
+                flavour = distro unless flavour
+                case flavour
                 when SUSE_NAME
                     if location.empty?
                         # TODO automatically fetch latest version from website
@@ -316,8 +322,15 @@ module ConfigLMM
                     else
                         raise Framework::PluginProcessError.new("#{id}: Unimplemented!")
                     end
+                when PROXMOXVE_NAME
+                    if location.empty?
+                        # TODO automatically fetch latest version from website
+                        url = 'https://enterprise.proxmox.com/iso/proxmox-ve_8.2-2.iso'
+                    else
+                        raise Framework::PluginProcessError.new("#{id}: Unimplemented!")
+                    end
                 else
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Linux Distro: #{distro}!")
+                    raise Framework::PluginProcessError.new("#{id}: Unknown Linux Distro: #{flavour}!")
                 end
 
                 filename = File.basename(Addressable::URI.parse(url).path)
@@ -336,21 +349,41 @@ module ConfigLMM
                 iso
             end
 
+            def buildAutoInstallISO(id, iso, target, options)
+                if target['Distro'] == SUSE_NAME
+                    iso = buildISOAutoYaST(id, iso, target, options)
+                elsif target['Flavour'] == PROXMOXVE_NAME
+                    iso = buildISOAutoProxmox(id, iso, target, options)
+                end
+                iso
+            end
+
             def buildISOAutoYaST(id, iso, target, options)
                 outputFolder = options['output'] + '/iso/'
                 mkdir(outputFolder, false)
-                `xorriso -osirrox on -indev #{iso} -extract / #{outputFolder} 2>&1 >/dev/null`
+                self.class.exec("xorriso -osirrox on -indev #{iso} -extract / #{outputFolder}")
                 FileUtils.chmod_R(0750, outputFolder) # Need to make it writeable so it can be deleted
                 copy(options['output'] + '/' + id + '/autoinst.xml', outputFolder, false)
 
                 cfg = outputFolder + "boot/x86_64/loader/isolinux.cfg"
-                `sed -i 's|default harddisk|default linux|' #{cfg}`
-                `sed -i 's|append initrd=initrd splash=silent showopts|append initrd=initrd splash=silent autoyast=device://sr0/autoinst.xml|' #{cfg}`
-                `sed -i 's|prompt		1|prompt		0|' #{cfg}`
-                `sed -i 's|timeout		600|timeout		1|' #{cfg}`
+                self.class.exec("sed -i 's|default harddisk|default linux|' #{cfg}")
+                self.class.exec("sed -i 's|append initrd=initrd splash=silent showopts|append initrd=initrd splash=silent autoyast=device://sr0/autoinst.xml|' #{cfg}")
+                self.class.exec("sed -i 's|prompt		1|prompt		0|' #{cfg}")
+                self.class.exec("sed -i 's|timeout		600|timeout		1|' #{cfg}")
 
                 patchedIso = File.dirname(iso) + '/patched.iso'
-                `xorriso -as mkisofs -no-emul-boot -boot-load-size 4 -boot-info-table -iso-level 4 -b boot/x86_64/loader/isolinux.bin -c boot/x86_64/loader/boot.cat -eltorito-alt-boot -e boot/x86_64/efi -no-emul-boot -o #{patchedIso} #{outputFolder} 2>&1 >/dev/null`
+                self.class.exec("xorriso -as mkisofs -no-emul-boot -boot-info-table -boot-load-size 4 -iso-level 4 -b boot/x86_64/loader/isolinux.bin -c boot/x86_64/loader/boot.cat -eltorito-alt-boot -no-emul-boot -e boot/x86_64/efi -o #{patchedIso} #{outputFolder}")
+                patchedIso
+            end
+
+            def buildISOAutoProxmox(id, iso, target, options)
+                outputFolder = options['output'] + '/iso/'
+                patchedIso = File.dirname(iso) + '/patched.iso'
+
+                copy(iso, patchedIso, false)
+
+                self.class.exec("xorriso -boot_image any keep -dev #{patchedIso} -map #{options['output'] + '/' + id + '/auto-installer-mode.toml'} /auto-installer-mode.toml")
+                self.class.exec("xorriso -boot_image any keep -dev #{patchedIso} -map #{options['output'] + '/' + id + '/answer.toml'} /answer.toml")
                 patchedIso
             end
 
@@ -365,12 +398,14 @@ module ConfigLMM
                     target['Users']['root']['PasswordHash'] = ENV['LINUX_ROOT_PASSWORD_HASH']
                 elsif ENV['LINUX_ROOT_PASSWORD']
                     target['Users']['root'] ||= {}
+                    target['Users']['root']['Password'] = ENV['LINUX_ROOT_PASSWORD']
                     target['Users']['root']['PasswordHash'] = self.class.linuxPasswordHash(ENV['LINUX_ROOT_PASSWORD'])
                 elsif target['Users'].key?('root')
                     if !target['Users']['root']['Password'] &&
                        !target['Users']['root']['PasswordHash']
                         rootPassword = SecureRandom.urlsafe_base64(12)
                         prompt.say("Root password: #{rootPassword}", :color => :magenta)
+                        target['Users']['root']['Password'] = rootPassword
                         target['Users']['root']['PasswordHash'] = self.class.linuxPasswordHash(rootPassword)
                     elsif target['Users']['root']['Password'] == 'no'
                         target['Users']['root'].delete('Password')
@@ -396,7 +431,7 @@ module ConfigLMM
                     target['Services'] << 'sshd'
                     target['Services'].uniq!
                 end
-                target['Apps'] = self.class.mapPackages(target['Apps'], target['Distro'])
+                target['Apps'] = self.class.mapPackages(target['Apps'], target['Distro']) if target['Distro']
             end
 
             def self.linuxPasswordHash(password)

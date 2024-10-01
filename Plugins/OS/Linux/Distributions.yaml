@@ -30,3 +30,19 @@ arch:
     ModifyUser: usermod
     DeleteUser: userdel --remove --force
     DeleteGroup: groupdel
+
+debian:
+    Name: Debian
+    InstallPackage: apt-get install --assume-yes
+    RemovePackage: apt-get remove --assume-yes
+    AutoStartService: systemctl enable
+    StartService: systemctl start
+    RestartService: systemctl restart
+    ReloadService: systemctl reload
+    StopService: systemctl stop
+    DisableService: systemctl disable
+    ReloadServiceManager: systemctl daemon-reload
+    CreateServiceUser: useradd --system --shell /usr/sbin/nologin --user-group
+    ModifyUser: usermod
+    DeleteUser: userdel --remove --force
+    DeleteGroup: groupdel

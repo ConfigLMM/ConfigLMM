@@ -10,6 +10,7 @@ module ConfigLMM
             LINUX_FOLDER = __dir__ + '/../../../../Plugins/OS/Linux/'
             SUSE_NAME = 'openSUSE Leap'
             SUSE_ID = 'opensuse-leap'
+            PROXMOXVE_NAME = 'Proxmox VE'
             PODMAN_PACKAGE = 'Podman'
             SYSTEMD_CONTAINERS_PATH = '~/.config/containers/systemd/'
 
@@ -234,10 +235,12 @@ module ConfigLMM
             end
 
             def self.mapPackages(packages, distroName)
-                distroPackages = YAML.load_file(LINUX_FOLDER + 'Packages.yaml')
+                allPackages = YAML.load_file(LINUX_FOLDER + 'Packages.yaml')
                 names = []
+                raise "Distro '#{distroName}' not implemented!" unless allPackages.key?(distroName)
+                distroPackages = allPackages[distroName].to_h
                 packages.to_a.each do |pkg|
-                    packageName = distroPackages[distroName][pkg]
+                    packageName = distroPackages[pkg]
                     if packageName
                         if packageName.is_a?(Array)
                             names += packageName

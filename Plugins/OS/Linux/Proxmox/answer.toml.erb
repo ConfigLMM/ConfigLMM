@@ -1,0 +1,30 @@
+[global]
+keyboard = "en-us"
+country = "us"
+fqdn = "<%= Addressable::IDNA.to_ascii(config['Domain']) %>"
+mailto = "<%= config['EMail'] %>"
+timezone = "UTC"
+root_password = "<%= config['Users'].to_h['root'].to_h['Password'] %>"
+<% if !config['Users'].to_h['root'].to_h['AuthorizedKeys'].to_a.empty? %>
+root_ssh_keys = [
+  <% config['Users']['root']['AuthorizedKeys'].each do |entry| %>
+    "<%= entry %>"
+  <% end %>
+]
+<% end %>
+
+[network]
+<% if config['Network'].is_a?(Hash) %>
+source = "from-answer"
+cidr = "<%= config['Network']['IP'] %>"
+dns = "<%= config['Network']['DNS'] %>"
+gateway = "<%= config['Network']['Gateway'] %>"
+filter.IFINDEX = "2"
+<% else %>
+source = "from-dhcp"
+<% end %>
+
+[disk-setup]
+filesystem = "btrfs"
+btrfs.raid = "raid1"
+disk_list = ["vda"]

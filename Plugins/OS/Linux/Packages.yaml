@@ -58,3 +58,39 @@ openSUSE Leap:
     Valkey: redis
     WireGuard: wireguard-tools
     Yarn: yarn
+
+Debian:
+    Cassandra: https://debian.cassandra.apache.org 41x main|cassandra
+    CertBotNginx:
+        - certbot
+        - python3-certbot-dns-rfc2136
+    CyrusSASL: libsasl2-modules
+    Dovecot:
+        - dovecot-imapd
+        - dovecot-lmtpd
+        - dovecot-submissiond
+    firewalld: firewalld
+    MariaDB: mariadb-server
+    Nextcloud:
+    nginx: nginx
+    PHP-FPM:
+        - php-mbstring
+        - php-fpm
+        - php-redis
+        - php-pgsql
+        - php-mysql
+    php-pecl:
+    Podman: podman
+    PostgreSQL: postgresql
+    Postfix: postfix-lmdb
+    PowerDNS:
+        - pdns-server
+        - pdns-backend-geoip
+        - pdns-backend-sqlite3
+        - pdns-backend-pgsql
+    Roundcube: roundcube-pgsql
+    socat: socat
+    sshd: openssh-server
+    Valkey: redis
+    WireGuard: wireguard
+    Yarn: yarnpkg
