@@ -318,32 +318,11 @@ module ConfigLMM
             def installationISO(distro, flavour, location)
                 url = nil
                 flavour = distro unless flavour
-                case flavour
-                when SUSE_NAME
-                    if location.empty?
-                        # TODO automatically fetch latest version from website
-                        url = 'https://download.opensuse.org/distribution/leap/15.6/iso/openSUSE-Leap-15.6-NET-x86_64-Media.iso'
-                    else
-                        raise Framework::PluginProcessError.new("#{id}: Unimplemented!")
-                    end
-                when DEBIAN_NAME
-                    if location.empty?
-                        # TODO automatically fetch latest version from website
-                        url = 'https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.7.0-amd64-netinst.iso'
-                    else
-                        raise Framework::PluginProcessError.new("#{id}: Unimplemented!")
-                    end
-                when PROXMOXVE_NAME
-                    if location.empty?
-                        # TODO automatically fetch latest version from website
-                        url = 'https://enterprise.proxmox.com/iso/proxmox-ve_8.2-2.iso'
-                    else
-                        raise Framework::PluginProcessError.new("#{id}: Unimplemented!")
-                    end
-                else
+                flavourInfo = YAML.load_file(__dir__ + '/Flavours.yaml')[flavour]
+                if flavourInfo.nil?
                     raise Framework::PluginProcessError.new("#{id}: Unknown Linux Distro: #{flavour}!")
                 end
-
+                url = flavourInfo['ISO']
                 filename = File.basename(Addressable::URI.parse(url).path)
                 iso = File.expand_path(ISO_LOCATION + filename)
                 if !File.exist?(iso)
