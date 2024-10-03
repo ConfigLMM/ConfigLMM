@@ -33,7 +33,7 @@ arch:
 
 debian:
     Name: Debian
-    InstallPackage: apt-get install --assume-yes
+    InstallPackage: DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes
     RemovePackage: apt-get remove --assume-yes
     AutoStartService: systemctl enable
     StartService: systemctl start

@@ -63,32 +63,8 @@ module ConfigLMM
                         end
                     end
                     distroInfo = self.class.currentDistroInfo(ssh)
-                    if target['Network']
-                        if distroInfo['Name'] == 'openSUSE Leap'
-                            updateNetworkInterface(target['Network'], 'eth0', ssh, options)
-                            if target['Network']['Interfaces']
-                                target['Network']['Interfaces'].each do |interface, config|
-                                    updateNetworkInterface(config, interface, ssh, options)
-                                end
-                            end
-                            if target['Network']['DNS']
-                                configFile = '/etc/sysconfig/network/config'
-                                dns = target['Network']['DNS']
-                                dns = [dns] unless dns.is_a?(Array)
-                                self.class.sshExec!(ssh, "sed -i 's|^NETCONFIG_DNS_STATIC_SERVERS=.*|NETCONFIG_DNS_STATIC_SERVERS=\"#{dns.join(' ')}\"|' #{configFile}")
-                            end
-                            if target['Network']['Gateway']
-                                routesFile = '/etc/sysconfig/network/routes'
-                                self.class.sshExec!(ssh, "sed -i 's|^default |#default |' #{routesFile}")
-                                updateRemoteFile(ssh, routesFile, options) do |fileLines|
-                                    fileLines << "default #{target['Network']['Gateway']}\n"
-                                end
-                            end
-                        else
-                            # TODO
-                            raise 'Not Unimplemented!'
-                        end
-                    end
+                    convertFlavour(distroInfo, target, ssh, options)
+                    configureNetwork(distroInfo, target, ssh, options)
                     if target['Tmpfs']
                         self.class.sshExec!(ssh, "sed -i '/ \\/tmp /d' #{FSTAB_FILE}")
                         updateRemoteFile(ssh, FSTAB_FILE, options, false) do |fileLines|
@@ -134,6 +110,151 @@ module ConfigLMM
                 end
             end
 
+            def convertFlavour(distroInfo, target, ssh, options)
+                if target['Flavour']
+                    if target['Flavour'] == PROXMOXVE_NAME
+                        if distroInfo['Name'] != DEBIAN_NAME
+                            raise 'Can\'t convert flavour!'
+                        end
+                        if self.class.filePresent?('/etc/apt/sources.list.d/pve-install-repo.list', ssh)
+                            needInstall = self.class.exec('dpkg --status proxmox-ve 2>/dev/null | grep Status | grep installed | wc -l', ssh).strip.to_i.zero?
+                            if needInstall
+                                self.class.exec('DEBIAN_FRONTEND=noninteractive apt install --assume-yes proxmox-ve postfix open-iscsi chrony', ssh)
+                                self.class.exec("apt remove --assume-yes os-prober linux-image-amd64 'linux-image-*'", ssh)
+                                self.class.exec('update-grub', ssh)
+                            end
+                        else
+                            self.class.exec('echo "deb [arch=amd64] http://download.proxmox.com/debian/pve bookworm pve-no-subscription" > /etc/apt/sources.list.d/pve-install-repo.list', ssh)
+                            File.write(options['output'] + 'proxmox-release-bookworm.gpg', HTTP.follow.get('https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg').body)
+                            ssh.scp.upload!(options['output'] + 'proxmox-release-bookworm.gpg', '/etc/apt/trusted.gpg.d/proxmox-release-bookworm.gpg')
+                            self.class.exec('apt update && apt full-upgrade --assume-yes', ssh)
+                            self.class.exec('apt install --assume-yes proxmox-default-kernel', ssh)
+                            self.class.exec('systemctl reboot', ssh)
+                        end
+                        target['Network'] = {} unless target['Network'].is_a?(Hash)
+                        target['Network']['Interfaces'] = {} unless target['Network']['Interfaces'].is_a?(Hash)
+                        if !target['Network']['Interfaces'].key?('vmbr0')
+                            if target['Network']['IP']
+                                target['Network']['Interfaces']['vmbr0'] = {}
+                                target['Network']['Interfaces']['vmbr0']['Type'] = 'Bridge'
+                                target['Network']['Interfaces']['vmbr0']['IP'] = target['Network']['IP']
+                                target['Network']['Interfaces']['vmbr0']['Gateway'] = target['Network']['Gateway']
+                                target['Network']['Interfaces']['vmbr0']['DNS'] = target['Network']['DNS']
+                            else
+                                target['Network']['Interfaces']['vmbr0'] = 'dhcp'
+                            end
+                        end
+                    else
+                        raise 'Unimplemented flavour!'
+                    end
+                end
+            end
+
+            def configureNetwork(distroInfo, target, ssh, options)
+                if target['Network']
+                    if distroInfo['Name'] == 'openSUSE Leap'
+                        updateNetworkInterface(target['Network'], 'eth0', ssh, options)
+                        if target['Network']['Interfaces']
+                            target['Network']['Interfaces'].each do |interface, config|
+                                updateNetworkInterface(config, interface, ssh, options)
+                            end
+                        end
+                        if target['Network']['DNS']
+                            configFile = '/etc/sysconfig/network/config'
+                            dns = target['Network']['DNS']
+                            dns = [dns] unless dns.is_a?(Array)
+                            self.class.sshExec!(ssh, "sed -i 's|^NETCONFIG_DNS_STATIC_SERVERS=.*|NETCONFIG_DNS_STATIC_SERVERS=\"#{dns.join(' ')}\"|' #{configFile}")
+                        end
+                        if target['Network']['Gateway']
+                            routesFile = '/etc/sysconfig/network/routes'
+                            self.class.sshExec!(ssh, "sed -i 's|^default |#default |' #{routesFile}")
+                            updateRemoteFile(ssh, routesFile, options) do |fileLines|
+                                fileLines << "default #{target['Network']['Gateway']}\n"
+                            end
+                        end
+                    elsif distroInfo['Name'] == 'Debian'
+                        links = self.networkLinks(ssh)
+                        raise 'Didn\'t find network links!' if links.empty?
+                        linkType = nil
+                        dnsSearch = self.class.exec('cat /etc/resolv.conf | grep search', ssh).strip.split(' ').last
+                        if target['Network'].is_a?(String)
+                            linkType = target['Network']
+                            target['Network'] = {}
+                        end
+                        if !target['Network'].key?('Interfaces') ||
+                           target['Network']['Interfaces'].to_h.empty? ||
+                           !target['Network']['Interfaces'].key?(links.first)
+                           target['Network']['Interfaces'] ||= {}
+                           if !linkType.nil?
+                               target['Network']['Interfaces'][links.first] = linkType
+                           else
+                               target['Network']['Interfaces'][links.first] = {}
+                               target['Network']['Interfaces'][links.first]['IP'] = target['Network']['IP']
+                               target['Network']['Interfaces'][links.first]['Gateway'] = target['Network']['Gateway']
+                               target['Network']['Interfaces'][links.first]['DNS'] = target['Network']['DNS']
+                           end
+                        end
+                        if target['Network']['Interfaces'].key?('vmbr0')
+                            if target['Network']['Interfaces']['vmbr0']['Ports'].nil?
+                                target['Network']['Interfaces']['vmbr0']['Ports'] = [links.first]
+                                target['Network']['Interfaces'][links.first] = 'manual'
+                            end
+                        end
+                        interfacesFile = '/etc/network/interfaces'
+                        localFile = options['output'] + '/' + SecureRandom.alphanumeric(10)
+                        ssh.scp.download!(interfacesFile, localFile)
+                        fileLines = File.read(localFile).lines
+                        if fileLines.index(CONFIGLMM_SECTION_BEGIN).nil?
+                            lines = []
+                            iface = false
+                            fileLines.each do |line|
+                                if line.start_with?('iface')
+                                    if line.strip.split(' ')[1].start_with?('enp')
+                                        iface = true
+                                    else
+                                        lines << line
+                                    end
+                                elsif iface && (line.start_with?(' ') || line.start_with?("\t"))
+                                    # Drop line
+                                else
+                                    iface = false
+                                    lines << line
+                                end
+                            end
+                            fileWrite(localFile, lines.join(), options[:dry])
+                            ssh.scp.upload!(localFile, interfacesFile)
+                        end
+                        self.updateRemoteFile(ssh, interfacesFile, options) do |fileLines|
+                            target['Network']['Interfaces'].each do |name, data|
+                                fileLines << "auto #{name}\n"
+                                if data.is_a?(String)
+                                    fileLines << "iface #{name} inet #{data}\n"
+                                else
+                                    fileLines << "iface #{name} inet static\n"
+                                    fileLines << "        address #{data['IP']}\n"
+                                    fileLines << "        gateway #{data['Gateway']}\n"
+                                    if data['Ports']
+                                        fileLines << "        bridge-ports #{data['Ports'].join(' ')}\n"
+                                        fileLines << "        bridge-stp off\n"
+                                        fileLines << "        bridge-fd 0\n"
+                                    end
+                                    fileLines << "        # dns-* options are implemented by the resolvconf package, if installed\n"
+                                    fileLines << "        dns-nameservers #{data['DNS']}\n"
+                                    if dnsSearch
+                                        fileLines << "        dns-search #{dnsSearch}\n"
+                                    end
+                                end
+                                fileLines << "\n"
+                            end
+                            fileLines
+                        end
+                    else
+                        # TODO
+                        raise 'Not Unimplemented!'
+                    end
+                end
+            end
+
             def updateNetworkInterface(config, interface, ssh, options)
                 baseFile = '/etc/sysconfig/network/ifcfg-'
                 networkFile = baseFile + interface
@@ -164,6 +285,10 @@ module ConfigLMM
                     end
                     fileLines
                 end
+            end
+
+            def networkLinks(ssh)
+                self.class.exec("ls /sys/class/net/", ssh).strip.split("\n").select { |name| name.start_with?('enp') }
             end
 
             def deployLocal(target, options)
