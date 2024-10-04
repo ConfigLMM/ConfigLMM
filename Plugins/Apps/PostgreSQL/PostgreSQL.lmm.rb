@@ -271,7 +271,7 @@ module ConfigLMM
             def self.executeSQL(sql, db, ssh = nil, allowFailure = false, options = [])
                 if ssh
                     db = 'postgres' unless db
-                    cmd = " su --login #{USER_NAME} --command ' psql #{options.join(' ')} --dbname=#{db} --command=\"#{sql.gsub("'", "\\\\'")};\"'"
+                    cmd = " su --login #{USER_NAME} --command ' psql #{options.join(' ')} --dbname=#{db} --command=\"#{sql.gsub("'", "'\"'\"'")};\"'"
                     self.sshExec!(ssh, cmd, allowFailure)
                 else
                     # TODO
