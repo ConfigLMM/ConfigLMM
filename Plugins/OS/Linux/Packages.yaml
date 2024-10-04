@@ -23,7 +23,7 @@ Arch Linux:
     Yarn: yarn
 
 openSUSE Leap:
-    Cassandra: home:davispuh:branches:server:database|cassandra
+    Cassandra: server:database|cassandra
     CertBotNginx:
         - python3-certbot-nginx
         - certbot-systemd-timer
