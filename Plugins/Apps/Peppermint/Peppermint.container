@@ -4,7 +4,7 @@ Description=Peppermint Ticket Management container
 After=local-fs.target
 
 [Container]
-Image=pepperlabs/peppermint:latest
+Image=docker.io/pepperlabs/peppermint:latest
 EnvironmentFile=/var/lib/peppermint/.config/containers/systemd/Peppermint.env
 Network=slirp4netns:allow_host_loopback=true
 PublishPort=127.0.0.1:13000:3000

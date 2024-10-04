@@ -4,7 +4,7 @@ Description=Odoo container
 After=local-fs.target
 
 [Container]
-Image=odoo:latest
+Image=docker.io/odoo:latest
 EnvironmentFile=/var/lib/odoo/.config/containers/systemd/Odoo.env
 Network=slirp4netns:allow_host_loopback=true
 PublishPort=0.0.0.0:8069:8069

@@ -3,7 +3,7 @@ Description=gollum container
 After=local-fs.target
 
 [Container]
-Image=gollumwiki/gollum:master
+Image=docker.io/gollumwiki/gollum:master
 Exec=--config=/config/config.rb
 PublishPort=0.0.0.0:14567:4567
 UserNS=keep-id:uid=1000,gid=1000
