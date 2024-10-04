@@ -38,7 +38,7 @@ module ConfigLMM
                         self.class.sshExec!(ssh, "mkdir -p #{WWW_DIR}errors")
                         ssh.scp.upload!(dir + 'nginx.conf', CONFIG_DIR + 'nginx.conf')
                         ssh.scp.upload!(dir + 'conf.d/configlmm.conf', CONFIG_DIR + 'conf.d/configlmm.conf')
-                        resolverIP = self.class.sshExec!(ssh, "cat /etc/resolv.conf | grep 'nameserver' | grep -v ':' | cut -d ' ' -f 2").strip
+                        resolverIP = self.class.sshExec!(ssh, "cat /etc/resolv.conf | grep 'nameserver' | grep -v ':' | head -n 1 | cut -d ' ' -f 2").strip
                         self.class.sshExec!(ssh, "sed -i 's|^resolver .*|resolver #{resolverIP};|' /etc/nginx/conf.d/configlmm.conf")
 
                         self.class.uploadFolder(dir + 'config-lmm', CONFIG_DIR, ssh)
