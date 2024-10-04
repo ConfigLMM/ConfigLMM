@@ -353,7 +353,9 @@ module ConfigLMM
                 location = Libvirt.getLocation(target['Location'])
                 iso = installationISO(target['Distro'], target['Flavour'], location)
                 iso = buildAutoInstallISO(id, iso, target, options)
-                plugins[:Libvirt].createVM(target['Name'], target, target['Location'], iso, activeState)
+                if plugins[:Libvirt].createVM(target['Name'], target, target['Location'], iso, activeState)
+                    prompt.say("Root password: #{target['Users']['root']['Password']}", :color => :magenta) if target['Users']['root'].key?('Password')
+                end
             end
 
             def buildHostsFile(id, target, options)
@@ -536,10 +538,8 @@ module ConfigLMM
                 elsif target['Users'].key?('root')
                     if !target['Users']['root']['Password'] &&
                        !target['Users']['root']['PasswordHash']
-                        rootPassword = SecureRandom.urlsafe_base64(12)
-                        prompt.say("Root password: #{rootPassword}", :color => :magenta)
-                        target['Users']['root']['Password'] = rootPassword
-                        target['Users']['root']['PasswordHash'] = self.class.linuxPasswordHash(rootPassword)
+                        target['Users']['root']['Password'] = SecureRandom.urlsafe_base64(12)
+                        target['Users']['root']['PasswordHash'] = self.class.linuxPasswordHash(target['Users']['root']['Password'])
                     elsif target['Users']['root']['Password'] == 'no'
                         target['Users']['root'].delete('Password')
                     end

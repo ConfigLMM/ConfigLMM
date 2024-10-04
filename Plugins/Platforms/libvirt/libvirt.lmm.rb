@@ -37,7 +37,7 @@ module ConfigLMM
                 server = compute.servers.all.find { |server| server.name == serverName }
                 if server
                     server.start
-                    return
+                    return false
                 end
                 settings = {
                     name: serverName,
@@ -80,6 +80,7 @@ module ConfigLMM
                 activeState['Status'] = State::STATUS_CREATED
                 state.save
                 server.start
+                true
             end
 
             def dirPoolXML(name, path)
