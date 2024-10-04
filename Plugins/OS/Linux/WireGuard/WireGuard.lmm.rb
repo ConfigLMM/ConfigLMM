@@ -128,7 +128,8 @@ module ConfigLMM
             def prepareConfig(target)
                 target['Address'] = '172.20.0.1' unless target['Address']
                 target['Peers'].each do |name, data|
-                    data['AllowedIPs'] = SUBNET unless data['AllowedIPs']
+                    target['Peers'][name] ||= {}
+                    target['Peers'][name]['AllowedIPs'] = SUBNET unless target['Peers'][name]['AllowedIPs']
                 end
             end
         end
