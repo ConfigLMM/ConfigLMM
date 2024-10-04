@@ -10,6 +10,29 @@ function admin {
     fi
 }
 
+if [ "$EUID" -ne "0" ]; then
+    if ! command -v sudo &> /dev/null; then
+        case $distro in
+
+        opensuse-leap)
+            echo "You don't have sudo! Enter root password to install it"
+            su root -c "zypper install --no-confirm sudo"
+            ;;
+
+        arch)
+            echo "You don't have sudo! Enter root password to install it"
+            admin pacman -S --noconfirm --needed sudo
+            ;;
+
+        *)
+            echo "Sudo not found but is needed!" >&2
+            echo "Don't know how to install it for your $distro distribution!" >&2
+            echo "Submit a PR :)" >&2
+            exit 3
+            ;;
+        esac
+    fi
+fi
 
 case $distro in
 
@@ -43,7 +66,12 @@ if [ "$rubyTooOld" -eq "1" ]; then
     echo "Ruby is too old! Will install RVM" >&2
     gpg2 --keyserver hkp://keyserver.ubuntu.com --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB >/dev/null
     curl -sSL https://get.rvm.io | bash -s stable --ruby=3.3.4
-    source /etc/profile.d/rvm.sh
+
+    if [ "$EUID" -eq "0" ]; then
+        source /etc/profile.d/rvm.sh
+    else
+        source ~/.rvm/scripts/rvm
+    fi
 
     if [ "$SHELL" = "/usr/bin/fish" ]; then
         curl -sSL --create-dirs -o ~/.config/fish/functions/rvm.fish https://raw.github.com/lunks/fish-nuggets/master/functions/rvm.fish
@@ -52,10 +80,12 @@ if [ "$rubyTooOld" -eq "1" ]; then
     fi
 fi
 
-# This shouldn't be needed but without it doesn't work
-export PATH=/usr/local/rvm/gems/ruby-3.3.4/bin:/usr/local/rvm/rubies/ruby-3.3.4/bin:$PATH
-export GEM_HOME=/usr/local/rvm/gems/ruby-3.3.4
-export GEM_PATH=/usr/local/rvm/gems/ruby-3.3.4
+if [ "$EUID" -eq "0" ]; then
+    # This shouldn't be needed but without it doesn't work
+    export PATH=/usr/local/rvm/gems/ruby-3.3.4/bin:/usr/local/rvm/rubies/ruby-3.3.4/bin:$PATH
+    export GEM_HOME=/usr/local/rvm/gems/ruby-3.3.4
+    export GEM_PATH=/usr/local/rvm/gems/ruby-3.3.4
+fi
 
 bash -lc 'gem install ConfigLMM'
 
