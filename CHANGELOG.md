@@ -1,3 +1,39 @@
+## [0.4.0] - 2024-10-04
+
+Implement:
+- Authentik: Outpost deployment
+- gollum: Authentik authentication
+- MariaDB - https://mariadb.org/
+- BookStack - https://www.bookstackapp.com/
+- Discourse - https://www.discourse.org/
+- OpenVidu - https://openvidu.io/
+- Matrix server - https://matrix.org/
+- Wiki.js - https://js.wiki/
+- ERPNext - https://erpnext.com/
+- Let's Encrypt - https://letsencrypt.org/
+- Roundcube - https://roundcube.net/
+- Tunnel support
+- Support Proxmox VE distro - https://www.proxmox.com/en/proxmox-virtual-environment/overview
+- Support Debian distro - https://www.debian.org/
+
+Other improvements:
+- bootstrap.sh script
+- Peppermint
+- Vaultwarden
+- Nginx
+- Valkey
+- PostgreSQL
+- Dovecot
+- GitLab
+- Linux
+- PowerDNS
+- GoDaddy
+- NginxProxy
+- Nextcloud
+- Cassandra
+- Postfix: Implement cleanup/uninstall functionality
+- WireGuard: Implement cleanup/uninstall functionality
+- Various other improvements
 
 ## [0.3.0] - 2024-08-13
 
