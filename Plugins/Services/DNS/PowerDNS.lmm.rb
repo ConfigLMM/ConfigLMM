@@ -151,7 +151,7 @@ module ConfigLMM
                                 records: []
                             }
                             records.each do |record|
-                                record[:content] = Addressable::IDNA.to_ascii(record[:content]) + '.' if type == 'CNAME' || type == 'ALIAS'
+                                record[:content] = Addressable::IDNA.to_ascii(record[:content]) + '.' if type == 'CNAME' || type == 'ALIAS' || type == 'NS'
                                 if type == 'MX'
                                     priority, name = record[:content].split(' ')
                                     name = Addressable::IDNA.to_ascii(name) + '.'
