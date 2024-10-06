@@ -65,7 +65,11 @@ module ConfigLMM
                     )
                     settings[:volumes] = [volume]
                 end
-                if serverInfo['NetworkBridge']
+                if serverInfo['NIC']
+                    nics = serverInfo['NIC']
+                    nics = [nics] unless nics.is_a?(Array)
+                    settings[:nics] = nics
+                elsif serverInfo['NetworkBridge']
                     nic = {
                         bridge: serverInfo['NetworkBridge'],
                     }
