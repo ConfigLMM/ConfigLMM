@@ -227,22 +227,25 @@ module ConfigLMM
                         self.updateRemoteFile(ssh, interfacesFile, options) do |fileLines|
                             target['Network']['Interfaces'].each do |name, data|
                                 fileLines << "auto #{name}\n"
+                                data = 'manual' if data.nil?
                                 if data.is_a?(String)
                                     fileLines << "iface #{name} inet #{data}\n"
                                 else
-                                    fileLines << "iface #{name} inet static\n"
-                                    fileLines << "        address #{data['IP']}\n"
-                                    fileLines << "        gateway #{data['Gateway']}\n"
+                                    if data['IP']
+                                        fileLines << "iface #{name} inet static\n"
+                                        fileLines << "        address #{data['IP']}\n"
+                                        fileLines << "        gateway #{data['Gateway']}\n"
+                                    else
+                                        fileLines << "iface #{name} inet manual\n"
+                                    end
                                     if data['Ports']
                                         fileLines << "        bridge-ports #{data['Ports'].join(' ')}\n"
                                         fileLines << "        bridge-stp off\n"
                                         fileLines << "        bridge-fd 0\n"
                                     end
-                                    fileLines << "        # dns-* options are implemented by the resolvconf package, if installed\n"
-                                    fileLines << "        dns-nameservers #{data['DNS']}\n"
-                                    if dnsSearch
-                                        fileLines << "        dns-search #{dnsSearch}\n"
-                                    end
+                                    fileLines << "        # dns-* options are implemented by the resolvconf package, if installed\n" if data['DNS']
+                                    fileLines << "        dns-nameservers #{data['DNS']}\n" if data['DNS']
+                                    fileLines << "        dns-search #{dnsSearch}\n" if dnsSearch
                                 end
                                 fileLines << "\n"
                             end
