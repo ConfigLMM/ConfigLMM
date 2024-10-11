@@ -490,6 +490,10 @@ module ConfigLMM
                 self.class.exec("sed -i 's|prompt		1|prompt		0|' #{cfg}")
                 self.class.exec("sed -i 's|timeout		600|timeout		1|' #{cfg}")
 
+                cfg = outputFolder + "EFI/BOOT/grub.cfg"
+                self.class.exec("sed -i 's|timeout=.*|timeout=1|' #{cfg}")
+                self.class.exec("sed -i 's|linux splash=silent|linux splash=silent autoyast=device://sr0/autoinst.xml|' #{cfg}")
+
                 patchedIso = File.dirname(iso) + '/patched.iso'
                 self.class.exec("xorriso -as mkisofs -no-emul-boot -boot-info-table -boot-load-size 4 -iso-level 4 -b boot/x86_64/loader/isolinux.bin -c boot/x86_64/loader/boot.cat -eltorito-alt-boot -no-emul-boot -e boot/x86_64/efi -o #{patchedIso} #{outputFolder}")
                 patchedIso
