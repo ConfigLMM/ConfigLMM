@@ -30,6 +30,8 @@ module ConfigLMM
                     case uri.scheme
                     when 'qemu'
                         deployOverLibvirt(id, target, activeState, context, options)
+                    when 'proxmox'
+                        deployOverProxmox(id, target, activeState, context, options)
                     when 'ssh'
                         deployOverSSH(uri, id, target, activeState, context, options)
                     else
@@ -361,6 +363,22 @@ module ConfigLMM
                 end
             end
 
+            def deployOverProxmox(id, target, activeState, context, options)
+                if target['LXC']
+                    info = flavourInfo(target['Distro'], target['Flavour'])
+                    if plugins[:Proxmox].createContainer(target, target['Location'], info, activeState)
+                        prompt.say("Root password: #{target['Users']['root']['Password']}", :color => :magenta) if target['Users']['root'].key?('Password')
+                    end
+                else
+                    location = Proxmox.getLocation(target['Location'])
+                    iso = installationISO(target['Distro'], target['Flavour'], location)
+                    iso = buildAutoInstallISO(id, iso, target, options)
+                    if plugins[:Proxmox].createVM(target['Name'], target, target['Location'], iso, activeState)
+                        prompt.say("Root password: #{target['Users']['root']['Password']}", :color => :magenta) if target['Users']['root'].key?('Password')
+                    end
+                end
+            end
+
             def buildHostsFile(id, target, options)
                 if target['Hosts']
                     hosts  = "#\n"
@@ -445,14 +463,19 @@ module ConfigLMM
                 end
             end
 
-            def installationISO(distro, flavour, location)
+            def flavourInfo(distro, flavour)
                 url = nil
                 flavour = distro unless flavour
                 flavourInfo = YAML.load_file(__dir__ + '/Flavours.yaml')[flavour]
                 if flavourInfo.nil?
                     raise Framework::PluginProcessError.new("#{id}: Unknown Linux Distro: #{flavour}!")
                 end
-                url = flavourInfo['ISO']
+                flavourInfo
+            end
+
+            def installationISO(distro, flavour, location)
+                info = flavourInfo(distro, flavour)
+                url = info['ISO']
                 filename = File.basename(Addressable::URI.parse(url).path)
                 iso = File.expand_path(ISO_LOCATION + filename)
                 if !File.exist?(iso)

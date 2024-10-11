@@ -1,11 +1,17 @@
 openSUSE Leap:
     ISO: https://download.opensuse.org/distribution/leap/15.6/iso/openSUSE-Leap-15.6-NET-x86_64-Media.iso
+    LXC: opensuse-15.6-default
+    Type: opensuse
 
 Arch Linux:
     ISO: https://mirror.rackspace.com/archlinux/iso/2024.10.01/archlinux-x86_64.iso
+    LXC: archlinux-base
+    Type: archlinux
 
 Debian:
     ISO: https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.7.0-amd64-netinst.iso
+    LXC: debian-12-standard
+    Type: debian
 
 Proxmox VE:
     ISO: https://enterprise.proxmox.com/iso/proxmox-ve_8.2-2.iso
