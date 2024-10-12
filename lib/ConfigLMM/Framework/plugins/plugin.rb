@@ -3,11 +3,6 @@
 require_relative 'errors'
 require_relative 'store'
 require 'addressable/uri'
-require 'http'
-require 'fileutils'
-require 'net/ssh'
-require 'net/scp'
-require 'open3'
 
 module ConfigLMM
     module Framework
@@ -54,6 +49,7 @@ module ConfigLMM
                 @Prompt = prompt
                 @Plugins = plugins
                 @Diff = {}
+                @Local = IO::Local.new(prompt, logger)
             end
 
             def id
@@ -92,6 +88,10 @@ module ConfigLMM
                 @Plugins
             end
 
+            def local
+                @Local
+            end
+
             def shouldMatch(id, targetKey, stateKey, target, activeState)
                 if target[targetKey] != activeState[stateKey]
                     @Diff.update({targetKey => [target[targetKey], activeState[stateKey]]})
@@ -99,61 +99,31 @@ module ConfigLMM
             end
 
             def fileWrite(target, data, dry)
-                if dry
-                    prompt.say('Would write file ' + target)
-                else
-                    File.write(target, data)
-                end
+                local.fileWrite(target, data, dry)
             end
 
             def copy(source, target, dry)
-                if dry
-                    prompt.say('Would copy ' + source + ' to ' + target)
-                else
-                    FileUtils.cp_r(source, target, noop: dry)
-                end
+                local.copy(source, target, dry)
             end
 
             def copyNotPresent(source, target, dry)
-                if !File.exist?(target + File.basename(source))
-                    if dry
-                        prompt.say('Would copy ' + source + ' to ' + target)
-                    else
-                        FileUtils.cp_r(source, target, noop: dry)
-                    end
-                end
+                local.copyNotPresent(source, target, dry)
             end
 
             def rm(path, dry, ssh = nil)
-                if dry
-                    if ssh
-                        prompt.say("Would remove ssh://#{ssh.transport.host}:#{ssh.transport.port}" + path)
-                    else
-                        prompt.say('Would remove ' + path)
-                    end
+                if ssh
+                    IO::SSH.new(prompt, logger, ssh).rm(path, dry)
                 else
-                    if ssh
-                        self.class.sshExec!(ssh, "rm -rf #{path}")
-                    else
-                        FileUtils.rm_r(path, noop: dry)
-                    end
+                    local.rm(path, dry)
                 end
             end
 
             def mkdir(target, dry)
-                if dry
-                    prompt.say('Would create ' + target)
-                else
-                    FileUtils.mkdir_p(target)
-                end
+                local.mkdir(target, dry)
             end
 
             def chown(user, group, target, dry)
-                if dry
-                    prompt.say("Would chown #{target} as #{user}:#{group}")
-                else
-                    FileUtils.chown_R(user, group, target)
-                end
+                local.chown(user, group, target, dry)
             end
 
             def self.loadVariable(value, target)
@@ -169,50 +139,14 @@ module ConfigLMM
                 value
             end
 
-            CONFIGLMM_SECTION_BEGIN = "# -----BEGIN CONFIGLMM-----\n"
-            CONFIGLMM_SECTION_END   = "# -----END CONFIGLMM-----\n"
-
             def updateLocalFile(file, options, atTop = false, comment = '#')
-                File.write(file, '') unless File.exist?(file)
-                sectionBegin = CONFIGLMM_SECTION_BEGIN.gsub('#', comment)
-                sectionEnd = CONFIGLMM_SECTION_END.gsub('#', comment)
-                fileLines = File.read(file).lines
-                sectionBeginIndex = fileLines.index(sectionBegin)
-                sectionEndIndex = fileLines.index(sectionEnd)
-                if sectionBeginIndex.nil?
-                    linesBefore = []
-                    linesBefore = fileLines unless atTop
-                    linesBefore << "\n"
-                    linesBefore << sectionBegin
-                    linesAfter = [sectionEnd]
-                    linesAfter << "\n"
-                    linesAfter += fileLines if atTop
-                else
-                    linesBefore = fileLines[0..sectionBeginIndex]
-                    if sectionEndIndex.nil?
-                        linesAfter = [sectionEnd]
-                        linesAfter << "\n"
-                    else
-                        linesAfter = fileLines[sectionEndIndex..fileLines.length]
-                    end
-                end
-
-                fileLines = linesBefore
-                fileLines = yield(fileLines)
-                fileLines += linesAfter
-
-                fileWrite(file, fileLines.join(), options[:dry])
+                local.updateFile(file, options, atTop, comment)
             end
 
+            # DEPRECATED
             def updateRemoteFile(locationOrSSH, file, options, atTop = false, comment = '#', &block)
-
                 closure = Proc.new do |ssh|
-                    localFile = options['output'] + '/' + SecureRandom.alphanumeric(10)
-                    File.write(localFile, '')
-                    self.class.sshExec!(ssh, "touch #{file}")
-                    ssh.scp.download!(file, localFile)
-                    updateLocalFile(localFile, options, atTop, comment, &block)
-                    ssh.scp.upload!(localFile, file)
+                    IO::SSH.new(prompt, logger, ssh).updateFile(file, options, atTop, comment, &block)
                 end
 
                 if locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
@@ -227,6 +161,7 @@ module ConfigLMM
                 end
             end
 
+            # DEPRECATED
             def self.filePresent?(file, ssh = nil)
                 result = self.exec("stat #{file}", ssh, true)
                 !result.start_with?('stat: cannot')
@@ -238,7 +173,7 @@ module ConfigLMM
             end
 
             def self.remoteFileContains?(file, content, ssh)
-                !self.sshExec!(ssh, "grep '#{content}' #{file}", true).strip.empty?
+                !IO::SSH.exec!(ssh, "grep '#{content}' #{file}", true).strip.empty?
             end
 
             def self.uploadNotPresent(file, target, ssh)
@@ -250,87 +185,32 @@ module ConfigLMM
 
             def self.uploadFolder(folder, target, ssh)
                 target += '/' + File.basename(folder) + '/'
-                self.sshExec!(ssh, "mkdir -p #{target}")
+                IO::SSH.exec!(ssh, "mkdir -p #{target}")
                 Dir[folder + '/*'].each do |file|
                     ssh.scp.upload!(file, target + File.basename(file), recursive: true)
                 end
             end
 
+            def withConnection(uri, target, &block)
+                IO::Connection.tunnel(uri, target, self.prompt, self.logger, &block)
+            end
+
+            # DEPRECATED
             def self.exec(command, ssh = nil, allowFailure = false, dry = false)
-                if ssh.nil?
-                    if dry
-                        puts "Would execute: #{command}"
-                        return
-                    end
-                    stdout, stdeerr, status = Open3.capture3(command)
-                    if !allowFailure && !status.success?
-                        $stderr.puts(stdout)
-                        $stderr.puts(stdeerr)
-                        raise Framework::PluginProcessError.new("Failed '#{command}'")
-                    end
-                    stdout + stdeerr
-                else
-                    self.sshExec!(ssh, command, allowFailure, dry)
-                end
+                IO::Connection.exec(command, ssh, allowFailure, { dry: dry })
             end
 
-            def self.cmdSuccess?(command, ssh = nil)
-                if ssh.nil?
-                    system(command, :out => File::NULL)
-                else
-                    self.sshSuccess?(ssh, command)
-                end
+            # DEPRECATED
+            def self.sshStart(uri, &block)
+                IO::SSH.tunnel(uri, &block)
             end
 
-            def self.toSSHparams(locationUri)
-                server = locationUri.hostname
-                params = {}
-                params[:port] = locationUri.port if locationUri.port
-                params[:user] = locationUri.user if locationUri.user
-                [server, params]
-            end
-
-            def self.cmdSSH(uri)
-                uri = Addressable::URI.parse(uri) if uri.is_a?(String)
-                server, sshParams = self.toSSHparams(uri)
-                cmd = 'ssh '
-                cmd += '-p ' + sshParams[:port] if sshParams[:port]
-                cmd += sshParams[:user] + '@' if sshParams[:port]
-                cmd + server
-            end
-
-            def self.sshStart(uri)
-                uri = Addressable::URI.parse(uri) if uri.is_a?(String)
-                server, sshParams = self.toSSHparams(uri)
-                Net::SSH.start(server, nil, sshParams) do |ssh|
-                    yield(ssh)
-                end
-            end
-
+            # DEPRECATED
             def self.sshExec!(ssh, command, allowFailure = false, dry = false)
-                if dry
-                    puts "Would execute: ssh #{ssh.transport.host} -p #{ssh.transport.port} '#{command}'"
-                    return
-                end
-                status = {}
-                output = ''
-                channel = ssh.exec(command, status: status) do |channel, stream, data|
-                    output += data
-                end
-                channel.wait
-                if !allowFailure && !status[:exit_code].zero?
-                    $stderr.puts(output)
-                    raise Framework::PluginProcessError.new("Failed '#{command}'")
-                end
-                output
+                IO::SSH.exec!(ssh, command, allowFailure, { dry: dry })
             end
 
-            def self.sshSuccess?(ssh, command)
-                status = {}
-                ssh.exec!(command, status)
-                status[:exit_code].zero?
-            end
-
+            # DEPRECATED
             def renderTemplate(template, target, outputPath, options)
                 variables = {
                     config: target,

@@ -23,16 +23,16 @@ module ConfigLMM
                 self.class.ensurePackages(names, location)
             end
 
-            def self.ensurePackage(name, location, binary = nil)
+            def self.ensurePackage(name, locationOrConnection, binary = nil)
                 if binary && TTY::Which.which(binary)
                     return
                 end
-                self.ensurePackages([name], location)
+                self.ensurePackages([name], locationOrConnection)
             end
 
-            def self.ensurePackages(names, locationOrSSH)
-                self.doSSH(locationOrSSH) do |ssh|
-                    distroInfo = self.currentDistroInfo(ssh)
+            def self.ensurePackages(names, locationOrConnection)
+                self.doConnection(locationOrConnection) do |connection|
+                    distroInfo = self.currentDistroInfo(connection)
                     reposPackages = self.mapPackages(names, distroInfo['Name'])
 
                     repos = []
@@ -47,25 +47,17 @@ module ConfigLMM
                         end
                     end
                     repos.each do |repoName|
-                        self.addRepo(repoName, distroInfo, ssh)
+                        self.addRepo(repoName, distroInfo, connection)
                     end
                     command = distroInfo['InstallPackage'] + ' ' + pkgs.map { |pkg| pkg.shellescape }.join(' ')
-                    if ssh
-                        self.sshExec!(ssh, command)
-                    else
-                        if `echo $EUID`.strip == '0'
-                            `#{command} >/dev/null`
-                        else
-                            `sudo #{command} >/dev/null`
-                        end
-                    end
+                    connection.adminExec(command)
                     distroInfo
                 end
             end
 
-            def self.removePackage(name, locationOrSSH, dry = false)
-                self.doSSH(locationOrSSH) do |ssh|
-                    distroInfo = self.currentDistroInfo(ssh)
+            def self.removePackage(name, locationOrConnection, dry = false)
+                self.doConnection(locationOrConnection) do |connection|
+                    distroInfo = self.currentDistroInfo(connection)
                     reposPackages = self.mapPackages([name], distroInfo['Name'])
 
                     pkgs = []
@@ -79,159 +71,134 @@ module ConfigLMM
                     end
 
                     command = distroInfo['RemovePackage'] + ' ' + pkgs.map { |pkg| pkg.shellescape }.join(' ')
-                    if ssh
-                        self.sshExec!(ssh, command, true, dry)
-                    else
-                        if `echo $EUID`.strip == '0'
-                            if dry
-                                puts "Would execute: #{command} >/dev/null"
-                            else
-                                `#{command} >/dev/null`
-                            end
-                        else
-                            if dry
-                                puts "Would execute: sudo #{command} >/dev/null"
-                            else
-                                `sudo #{command} >/dev/null`
-                            end
-                        end
-                    end
+                    connection.adminExec(command, true, dry)
                     distroInfo
                 end
             end
 
-            def ensureServiceAutoStart(name, location)
-                if location && location != '@me'
-                    uri = Addressable::URI.parse(location)
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
-                    self.class.ensureServiceAutoStartOverSSH(name, uri)
-                else
-                    # TODO
-                end
+            def ensureServiceAutoStart(name, locationOrConnection)
+                self.class.ensureServiceAutoStart(name, locationOrConnection)
             end
 
-            def self.ensureServiceAutoStart(name, locationOrSSH)
-                self.execDistroCommand(name, 'AutoStartService', locationOrSSH)
+            def self.ensureServiceAutoStart(name, locationOrConnection)
+                self.execDistroCommand(name, 'AutoStartService', locationOrConnection)
             end
 
             # Deprecated
-            def self.ensureServiceAutoStartOverSSH(name, locationOrSSH)
-                self.ensureServiceAutoStart(name, locationOrSSH)
+            def self.ensureServiceAutoStartOverSSH(name, locationOrConnection)
+                self.ensureServiceAutoStart(name, locationOrConnection)
             end
 
-            def startService(name, location, dry = false)
-                if location && location != '@me'
-                    uri = Addressable::URI.parse(location)
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
-                    self.class.startService(name, location, dry = false)
-                else
-                    # TODO
-                end
+            def startService(name, locationOrConnection, dry = false)
+                self.class.startService(name, locationOrConnection, dry = false)
             end
 
-            def self.startService(name, locationOrSSH, dry = false)
-                self.execDistroCommand(name, 'StartService', locationOrSSH, false, dry)
+            def self.startService(name, locationOrConnection, dry = false)
+                self.execDistroCommand(name, 'StartService', locationOrConnection, false, dry)
             end
 
             # Deprecated
-            def self.startServiceOverSSH(name, locationOrSSH, dry = false)
-                self.startService(name, locationOrSSH, dry)
+            def self.startServiceOverSSH(name, locationOrConnection, dry = false)
+                self.startService(name, locationOrConnection, dry)
             end
 
-            def self.restartService(name, locationOrSSH, dry = false)
-                self.execDistroCommand(name, 'RestartService', locationOrSSH, false, dry)
+            def self.restartService(name, locationOrConnection, dry = false)
+                self.execDistroCommand(name, 'RestartService', locationOrConnection, false, dry)
             end
 
-            def self.reloadService(name, locationOrSSH, dry = false)
-                self.execDistroCommand(name, 'ReloadService', locationOrSSH, false, dry)
+            def self.reloadService(name, locationOrConnection, dry = false)
+                self.execDistroCommand(name, 'ReloadService', locationOrConnection, false, dry)
             end
 
-            def self.stopService(name, locationOrSSH, dry = false)
-                self.execDistroCommand(name, 'StopService', locationOrSSH, true, dry)
+            def self.stopService(name, locationOrConnection, dry = false)
+                self.execDistroCommand(name, 'StopService', locationOrConnection, true, dry)
             end
 
-            def self.disableService(name, locationOrSSH, dry = false)
-                self.execDistroCommand(name, 'DisableService', locationOrSSH, true, dry)
+            def self.disableService(name, locationOrConnection, dry = false)
+                self.execDistroCommand(name, 'DisableService', locationOrConnection, true, dry)
             end
 
-            def self.reloadServiceManager(locationOrSSH, dry = false)
-                self.execDistroCommand(nil, 'ReloadServiceManager', locationOrSSH, false, dry)
+            def self.reloadServiceManager(locationOrConnection, dry = false)
+                self.execDistroCommand(nil, 'ReloadServiceManager', locationOrConnection, false, dry)
             end
 
-            def self.deleteUserAndGroup(name, locationOrSSH, dry = false)
-                self.execDistroCommand(name, 'DeleteUser', locationOrSSH, true, dry)
-                self.execDistroCommand(name, 'DeleteGroup', locationOrSSH, true, dry)
+            def self.deleteUserAndGroup(name, locationOrConnection, dry = false)
+                self.execDistroCommand(name, 'DeleteUser', locationOrConnection, true, dry)
+                self.execDistroCommand(name, 'DeleteGroup', locationOrConnection, true, dry)
             end
 
-            def self.execDistroCommand(param, commandName, locationOrSSH, allowFailure = false, dry = false)
-                self.doSSH(locationOrSSH) do |ssh|
-                    distroInfo = self.currentDistroInfo(ssh)
+            def self.execDistroCommand(param, commandName, locationOrConnection, allowFailure = false, dry = false)
+                self.doConnection(locationOrConnection) do |connection|
+                    distroInfo = self.currentDistroInfo(connection)
 
                     command = distroInfo[commandName]
                     command += ' ' + param.shellescape unless param.nil?
-                    self.exec(command, ssh, allowFailure, dry)
+                    connection.exec(command, allowFailure, dry)
                 end
             end
 
-            def self.doSSH(locationOrSSH, &block)
-                if locationOrSSH.nil? || locationOrSSH == '@me'
+            def self.doConnection(locationOrConnection, &block)
+                if locationOrConnection.nil? || locationOrConnection == '@me'
                     result = block.call(nil)
-                elsif locationOrSSH.is_a?(String) || locationOrSSH.is_a?(Addressable::URI)
-                    uri = Addressable::URI.parse(locationOrSSH)
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
-
-                    self.sshStart(locationOrSSH) do |ssh|
-                        result = block.call(ssh)
-                    end
+                elsif locationOrConnection.is_a?(String) || locationOrConnection.is_a?(Addressable::URI)
+                    prompt = TTY::Prompt.new
+                    logger = TTY::Logger.new
+                    IO::Connection.tunnel(locationOrConnection, {}, prompt, logger, &block)
                 else
-                    result = block.call(locationOrSSH)
+                    if locationOrConnection.is_a?(IO::Connection)
+                        result = block.call(locationOrConnection)
+                    else
+                        prompt = TTY::Prompt.new
+                        logger = TTY::Logger.new
+                        result = block.call(IO::Connection.new(:SSH, IO::SSH.new(prompt, logger, locationOrConnection), prompt, logger))
+                    end
                 end
                 result
             end
 
             # Deprecated
-            def self.firewallAddServiceOverSSH(serviceName, locationOrSSH)
-                self.firewallAddService(serviceName, locationOrSSH)
+            def self.firewallAddServiceOverSSH(serviceName, locationOrConnection)
+                self.firewallAddService(serviceName, locationOrConnection)
             end
 
             # Deprecated
-            def self.firewallAddPortOverSSH(portName, locationOrSSH)
-                self.firewallAddPort(portName, locationOrSSH)
+            def self.firewallAddPortOverSSH(portName, locationOrConnection)
+                self.firewallAddPort(portName, locationOrConnection)
             end
 
-            def self.firewallAddService(serviceName, locationOrSSH = nil, dry = false)
-                self.doSSH(locationOrSSH) do |ssh|
+            def self.firewallAddService(serviceName, locationOrConnection = nil, dry = false)
+                self.doConnection(locationOrConnection) do |connection|
                      command = 'firewall-cmd --permanent --add-service ' + serviceName.shellescape
-                     self.exec(command, ssh, true, dry)
+                     connection.exec(command, true, dry)
                      command = 'firewall-cmd --add-service ' + serviceName.shellescape
-                     self.exec(command, ssh, true, dry)
+                     connection.exec(command, true, dry)
                 end
             end
 
-            def self.firewallRemoveService(serviceName, locationOrSSH = nil, dry = false)
-                self.doSSH(locationOrSSH) do |ssh|
+            def self.firewallRemoveService(serviceName, locationOrConnection = nil, dry = false)
+                self.doConnection(locationOrConnection) do |connection|
                      command = 'firewall-cmd --permanent --remove-service ' + serviceName.shellescape
-                     self.exec(command, ssh, false, dry)
+                     connection.exec(command, false, dry)
                      command = 'firewall-cmd --remove-service ' + serviceName.shellescape
-                     self.exec(command, ssh, false, dry)
+                     connection.exec(command, false, dry)
                 end
             end
 
-            def self.firewallAddPort(portName, locationOrSSH = nil, dry = false)
-                self.doSSH(locationOrSSH) do |ssh|
+            def self.firewallAddPort(portName, locationOrConnection = nil, dry = false)
+                self.doConnection(locationOrConnection) do |connection|
                      command = 'firewall-cmd --permanent --add-port ' + portName.shellescape
-                     self.exec(command, ssh, true, dry)
+                     connection.exec(command, true, dry)
                      command = 'firewall-cmd --add-port ' + portName.shellescape
-                     self.exec(command, ssh, true, dry)
+                     connection.exec(command, true, dry)
                 end
             end
 
-            def self.firewallRemovePort(portName, locationOrSSH = nil, dry = false)
-                self.doSSH(locationOrSSH) do |ssh|
+            def self.firewallRemovePort(portName, locationOrConnection = nil, dry = false)
+                self.doConnection(locationOrConnection) do |connection|
                      command = 'firewall-cmd --permanent --remove-port ' + portName.shellescape
-                     self.exec(command, ssh, false, dry)
+                     connection.exec(command, false, dry)
                      command = 'firewall-cmd --remove-port ' + portName.shellescape
-                     self.exec(command, ssh, false, dry)
+                     connection.exec(command, false, dry)
                 end
             end
 
@@ -276,17 +243,11 @@ module ConfigLMM
                 self.sshExec!(ssh, "su --login #{user} --shell /bin/sh --command 'mkdir -p #{SYSTEMD_CONTAINERS_PATH}'")
             end
 
-            def self.addRepo(name, distroInfo, ssh = nil)
+            def self.addRepo(name, distroInfo, connection)
                 if distroInfo['Name'] == 'openSUSE Leap'
-                    if ssh
-                        versionId = ssh.exec!('cat /etc/os-release | grep "^VERSION_ID=" | cut -d "=" -f 2').strip.gsub('"', '')
-                        self.sshExec!(ssh, "zypper addrepo https://download.opensuse.org/repositories/#{name}/#{versionId}/#{name}.repo", true)
-                        self.sshExec!(ssh, "zypper --gpg-auto-import-keys refresh")
-                    else
-                        versionId = `cat /etc/os-release | grep "^VERSION_ID=" | cut -d "=" -f 2`.strip.gsub('"', '')
-                        `zypper addrepo https://download.opensuse.org/repositories/#{name}/#{versionId}/#{name}.repo`
-                        `zypper --gpg-auto-import-keys refresh`
-                    end
+                    versionId = connection.exec('cat /etc/os-release | grep "^VERSION_ID=" | cut -d "=" -f 2').strip.gsub('"', '')
+                    connection.exec("zypper addrepo https://download.opensuse.org/repositories/#{name}/#{versionId}/#{name}.repo", true)
+                    connection.exec("zypper --gpg-auto-import-keys refresh")
                 else
                     # TODO
                 end
@@ -296,16 +257,21 @@ module ConfigLMM
                 self.sshExec!(ssh, "#{distroInfo['ModifyUser']} --add-subuids 100000-165535 --add-subgids 100000-165535 #{user}")
             end
 
-            def self.distroID(ssh = nil)
-                if ssh
-                    ssh.exec!('cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2').strip.gsub('"', '')
+            def self.distroID(connection = nil)
+                cmd = 'cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2'
+                if connection
+                    if connection.is_a?(IO::Connection)
+                        connection.exec(cmd).strip.gsub('"', '')
+                    else
+                        connection.exec!(cmd).strip.gsub('"', '')
+                    end
                 else
-                    `cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2`.strip.gsub('"', '')
+                    `#{cmd}`.strip.gsub('"', '')
                 end
             end
 
-            def self.currentDistroInfo(ssh)
-                self.distroInfo(self.distroID(ssh))
+            def self.currentDistroInfo(connection)
+                self.distroInfo(self.distroID(connection))
             end
 
             def self.distroInfo(distroID)

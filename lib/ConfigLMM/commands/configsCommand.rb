@@ -2,11 +2,11 @@
 
 require_relative '../command'
 require_relative '../utils/filters'
-require_relative '../io/configList'
 require_relative '../context'
 require_relative '../state'
 require_relative '../Framework'
 require_relative '../LMM'
+require_relative '../io'
 require 'xdg'
 require 'tmpdir'
 

@@ -33,105 +33,112 @@ module ConfigLMM
                     when 'proxmox'
                         deployOverProxmox(id, target, activeState, context, options)
                     when 'ssh'
-                        deployOverSSH(uri, id, target, activeState, context, options)
+                        self.withConnection(uri, target) do |connection|
+                            self.class.withConnection(connection) do |connection|
+                                deployOverConnection(connection, id, target, activeState, context, options)
+                            end
+                        end
                     else
                         raise Framework::PluginProcessError.new("#{id}: Unknown protocol: #{uri.scheme}!")
                     end
                 else
-                    deployLocal(target, options)
+                    self.class.withConnection(Local.new(prompt, logger)) do |connection|
+                        deployLocal(connection, target, options)
+                    end
                 end
                 if target['AlternativeLocation']
-                    uri = Addressable::URI.parse(target['AlternativeLocation'])
-                    raise Framework::PluginProcessError.new("#{id}: Unsupported protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
-                    deployOverSSH(uri, id, target, activeState, context, options)
+                    self.withConnection(target['AlternativeLocation'], target) do |connection|
+                        self.class.withConnection(connection) do |connection|
+                            deployOverConnection(connection, id, target, activeState, context, options)
+                        end
+                    end
                 end
             end
 
-            def deployOverSSH(locationUri, id, target, activeState, context, options)
-                self.class.sshStart(locationUri) do |ssh|
-                    if target['Domain'] || target['Hosts']
-                        hostsLines = []
-                        if target['Domain']
-                            envs = self.class.sshExec!(ssh, "env").split("\n")
-                            envVars = Hash[envs.map { |vars| vars.split('=', 2) }]
-                            ipAddr = envVars['SSH_CONNECTION'].split[-2]
-                            hostsLines << ipAddr.ljust(16) + Addressable::IDNA.to_ascii(target['Domain']) + ' ' + target['Name'] + "\n"
-                        end
-                        target['Hosts'].to_a.each do |ip, entries|
-                            hostsLines << ip.ljust(16) + entries.join(' ') + "\n"
-                        end
-                        updateRemoteFile(ssh, HOSTS_FILE, options, false) do |fileLines|
-                            fileLines + hostsLines
-                        end
+            def deployOverConnection(connection, id, target, activeState, context, options)
+                if target['Domain'] || target['Hosts']
+                    hostsLines = []
+                    if target['Domain']
+                        envs = connection.exec("env").split("\n")
+                        envVars = Hash[envs.map { |vars| vars.split('=', 2) }]
+                        raise 'Not implemented!' unless envVars['SSH_CONNECTION']
+                        ipAddr = envVars['SSH_CONNECTION'].split[-2]
+                        hostsLines << ipAddr.ljust(16) + Addressable::IDNA.to_ascii(target['Domain']) + ' ' + target['Name'] + "\n"
                     end
-                    distroInfo = self.class.currentDistroInfo(ssh)
-                    convertFlavour(distroInfo, target, ssh, options)
-                    configureNetwork(distroInfo, target, ssh, options)
-                    if target['Tmpfs']
-                        self.class.sshExec!(ssh, "sed -i '/ \\/tmp /d' #{FSTAB_FILE}")
-                        updateRemoteFile(ssh, FSTAB_FILE, options, false) do |fileLines|
-                            fileLines << "tmpfs                                      /tmp                    tmpfs  nodev,nosuid,size=#{target['Tmpfs']}          0  0\n"
-                        end
+                    target['Hosts'].to_a.each do |ip, entries|
+                        hostsLines << ip.ljust(16) + entries.join(' ') + "\n"
                     end
-                    if target['Sysctl']
-                        updateRemoteFile(ssh, SYSCTL_FILE, options, false) do |fileLines|
-                            target['Sysctl'].each do |name, value|
-                                fileLines << "#{name} = #{value}\n"
-                                self.class.sshExec!(ssh, "sysctl #{name}=#{value}")
-                            end
-                            fileLines
-                        end
+                    connection.updateFile(HOSTS_FILE, options, false) do |fileLines|
+                        fileLines + hostsLines
                     end
-                    if target['Users']
-                        target['Users'].each do |name, info|
-                            userId = ssh.exec!("id -u #{name} 2>/dev/null").strip
-                            if userId.empty?
-                                shell = ''
-                                if info['Shell']
-                                    shell = "--shell '/usr/bin/#{info['Shell']}'"
-                                end
-                                badname = '--badname'
-                                badname = '--badnames' if distroInfo['Name'] == 'openSUSE Leap'
-                                self.class.sshExec!(ssh, "useradd #{badname} --create-home --user-group #{shell} #{name}")
-                            end
-                            homeDir = self.class.sshExec!(ssh, "getent passwd #{name} | cut -d ':' -f 6").strip
-                            keyFile = homeDir + "/.ssh/id_ed25519"
-                            if info['SSHKey'] && !self.class.remoteFilePresent?(keyFile, ssh)
-                                self.class.sshExec!(ssh, "mkdir -p #{homeDir}/.ssh")
-                                self.class.sshExec!(ssh, "ssh-keygen -t ed25519 -f #{keyFile} -P ''")
-                                self.class.sshExec!(ssh, "chown -R #{name}:#{name} #{homeDir}/.ssh")
-                            end
-                        end
-                    end
-                    self.executeCommands(target['Execute'], ssh)
                 end
+                distroInfo = connection.distroInfo
+                convertFlavour(distroInfo, target, connection, options)
+                configureNetwork(distroInfo, target, connection, options)
+                if target['Tmpfs']
+                    connection.exec("sed -i '/ \\/tmp /d' #{FSTAB_FILE}")
+                    connection.updateFile(FSTAB_FILE, options, false) do |fileLines|
+                        fileLines << "tmpfs                                      /tmp                    tmpfs  nodev,nosuid,size=#{target['Tmpfs']}          0  0\n"
+                    end
+                end
+                if target['Sysctl']
+                    connection.updateFile(SYSCTL_FILE, options, false) do |fileLines|
+                        target['Sysctl'].each do |name, value|
+                            fileLines << "#{name} = #{value}\n"
+                            connection.exec("sysctl #{name}=#{value}")
+                        end
+                        fileLines
+                    end
+                end
+                if target['Users']
+                    target['Users'].each do |name, info|
+                        userId = connection.exec("id -u #{name} 2>/dev/null").strip
+                        if userId.empty?
+                            shell = ''
+                            if info['Shell']
+                                shell = "--shell '/usr/bin/#{info['Shell']}'"
+                            end
+                            badname = '--badname'
+                            badname = '--badnames' if distroInfo['Name'] == 'openSUSE Leap'
+                            connection.exec("useradd #{badname} --create-home --user-group #{shell} #{name}")
+                        end
+                        homeDir = connection.exec("getent passwd #{name} | cut -d ':' -f 6").strip
+                        keyFile = homeDir + "/.ssh/id_ed25519"
+                        if info['SSHKey'] && !connection.filePresent?(keyFile)
+                            connection.exec("mkdir -p #{homeDir}/.ssh")
+                            connection.exec("ssh-keygen -t ed25519 -f #{keyFile} -P ''")
+                            connection.exec("chown -R #{name}:#{name} #{homeDir}/.ssh")
+                        end
+                    end
+                end
+                self.executeCommands(target['Execute'], connection)
                 if target['Firewall'] && target['Firewall'] != 'no'
-                    self.ensurePackage(FIREWALL_PACKAGE, locationUri)
-                    self.ensureServiceAutoStart(FIREWALL_SERVICE, locationUri)
-                    self.startService(FIREWALL_SERVICE, locationUri)
+                    connection.ensurePackage(FIREWALL_PACKAGE, options)
+                    connection.ensureServiceAutoStart(FIREWALL_SERVICE, options)
+                    connection.startService(FIREWALL_SERVICE, options)
                 end
             end
 
-            def convertFlavour(distroInfo, target, ssh, options)
+            def convertFlavour(distroInfo, target, connection, options)
                 if target['Flavour']
                     if target['Flavour'] == PROXMOXVE_NAME
                         if distroInfo['Name'] != DEBIAN_NAME
                             raise 'Can\'t convert flavour!'
                         end
-                        if self.class.filePresent?('/etc/apt/sources.list.d/pve-install-repo.list', ssh)
-                            needInstall = self.class.exec('dpkg --status proxmox-ve 2>/dev/null | grep Status | grep installed | wc -l', ssh).strip.to_i.zero?
+                        if connection.filePresent?('/etc/apt/sources.list.d/pve-install-repo.list')
+                            needInstall = connection.exec('dpkg --status proxmox-ve 2>/dev/null | grep Status | grep installed | wc -l').strip.to_i.zero?
                             if needInstall
-                                self.class.exec('DEBIAN_FRONTEND=noninteractive apt install --assume-yes proxmox-ve postfix open-iscsi chrony', ssh)
-                                self.class.exec("apt remove --assume-yes os-prober linux-image-amd64 'linux-image-*'", ssh)
-                                self.class.exec('update-grub', ssh)
+                                connection.exec('DEBIAN_FRONTEND=noninteractive apt install --assume-yes proxmox-ve postfix open-iscsi chrony')
+                                connection.exec("apt remove --assume-yes os-prober linux-image-amd64 'linux-image-*'")
+                                connection.exec('update-grub')
                             end
                         else
-                            self.class.exec('echo "deb [arch=amd64] http://download.proxmox.com/debian/pve bookworm pve-no-subscription" > /etc/apt/sources.list.d/pve-install-repo.list', ssh)
+                            connection.exec('echo "deb [arch=amd64] http://download.proxmox.com/debian/pve bookworm pve-no-subscription" > /etc/apt/sources.list.d/pve-install-repo.list')
                             File.write(options['output'] + 'proxmox-release-bookworm.gpg', HTTP.follow.get('https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg').body)
-                            ssh.scp.upload!(options['output'] + 'proxmox-release-bookworm.gpg', '/etc/apt/trusted.gpg.d/proxmox-release-bookworm.gpg')
-                            self.class.exec('apt update && apt full-upgrade --assume-yes', ssh)
-                            self.class.exec('apt install --assume-yes proxmox-default-kernel', ssh)
-                            self.class.exec('systemctl reboot', ssh)
+                            connection.upload(options['output'] + 'proxmox-release-bookworm.gpg', '/etc/apt/trusted.gpg.d/proxmox-release-bookworm.gpg')
+                            connection.exec('apt update && apt full-upgrade --assume-yes')
+                            connection.exec('apt install --assume-yes proxmox-default-kernel')
+                            connection.exec('systemctl reboot')
                         end
                         target['Network'] = {} unless target['Network'].is_a?(Hash)
                         target['Network']['Interfaces'] = {} unless target['Network']['Interfaces'].is_a?(Hash)
@@ -152,33 +159,33 @@ module ConfigLMM
                 end
             end
 
-            def configureNetwork(distroInfo, target, ssh, options)
+            def configureNetwork(distroInfo, target, connection, options)
                 if target['Network']
                     if distroInfo['Name'] == 'openSUSE Leap'
-                        updateNetworkInterface(target['Network'], 'eth0', ssh, options)
+                        updateNetworkInterface(target['Network'], 'eth0', connection, options)
                         if target['Network']['Interfaces']
                             target['Network']['Interfaces'].each do |interface, config|
-                                updateNetworkInterface(config, interface, ssh, options)
+                                updateNetworkInterface(config, interface, connection, options)
                             end
                         end
                         if target['Network']['DNS']
                             configFile = '/etc/sysconfig/network/config'
                             dns = target['Network']['DNS']
                             dns = [dns] unless dns.is_a?(Array)
-                            self.class.sshExec!(ssh, "sed -i 's|^NETCONFIG_DNS_STATIC_SERVERS=.*|NETCONFIG_DNS_STATIC_SERVERS=\"#{dns.join(' ')}\"|' #{configFile}")
+                            connection.exec("sed -i 's|^NETCONFIG_DNS_STATIC_SERVERS=.*|NETCONFIG_DNS_STATIC_SERVERS=\"#{dns.join(' ')}\"|' #{configFile}")
                         end
                         if target['Network']['Gateway']
                             routesFile = '/etc/sysconfig/network/routes'
-                            self.class.sshExec!(ssh, "sed -i 's|^default |#default |' #{routesFile}")
-                            updateRemoteFile(ssh, routesFile, options) do |fileLines|
+                            connection.exec("sed -i 's|^default |#default |' #{routesFile}")
+                            connection.updateFile(routesFile, options) do |fileLines|
                                 fileLines << "default #{target['Network']['Gateway']}\n"
                             end
                         end
                     elsif distroInfo['Name'] == 'Debian'
-                        links = self.networkLinks(ssh)
+                        links = self.networkLinks(connection)
                         raise 'Didn\'t find network links!' if links.empty?
                         linkType = nil
-                        dnsSearch = self.class.exec('cat /etc/resolv.conf | grep search', ssh).strip.split(' ').last
+                        dnsSearch = connection.exec('cat /etc/resolv.conf | grep search').strip.split(' ').last
                         if target['Network'].is_a?(String)
                             linkType = target['Network']
                             target['Network'] = {}
@@ -204,9 +211,9 @@ module ConfigLMM
                         end
                         interfacesFile = '/etc/network/interfaces'
                         localFile = options['output'] + '/' + SecureRandom.alphanumeric(10)
-                        ssh.scp.download!(interfacesFile, localFile)
+                        connection.download(interfacesFile, localFile)
                         fileLines = File.read(localFile).lines
-                        if fileLines.index(CONFIGLMM_SECTION_BEGIN).nil?
+                        if fileLines.index(IO::Local::CONFIGLMM_SECTION_BEGIN).nil?
                             lines = []
                             iface = false
                             fileLines.each do |line|
@@ -224,9 +231,9 @@ module ConfigLMM
                                 end
                             end
                             fileWrite(localFile, lines.join(), options[:dry])
-                            ssh.scp.upload!(localFile, interfacesFile)
+                            connection.upload(localFile, interfacesFile)
                         end
-                        self.updateRemoteFile(ssh, interfacesFile, options) do |fileLines|
+                        connection.updateFile(interfacesFile, options) do |fileLines|
                             target['Network']['Interfaces'].each do |name, data|
                                 fileLines << "auto #{name}\n"
                                 data = 'manual' if data.nil?
@@ -260,14 +267,14 @@ module ConfigLMM
                 end
             end
 
-            def updateNetworkInterface(config, interface, ssh, options)
+            def updateNetworkInterface(config, interface, connection, options)
                 baseFile = '/etc/sysconfig/network/ifcfg-'
                 networkFile = baseFile + interface
-                self.class.sshExec!(ssh, "touch #{networkFile}")
-                self.class.sshExec!(ssh, "sed -i \"/^BOOTPROTO=.*/d\" #{networkFile}")
-                self.class.sshExec!(ssh, "sed -i \"/^STARTMODE=.*/d\" #{networkFile}")
-                self.class.sshExec!(ssh, "sed -i \"/^ZONE=.*/d\" #{networkFile}")
-                updateRemoteFile(ssh, networkFile, options, false) do |fileLines|
+                connection.exec("touch #{networkFile}")
+                connection.exec("sed -i \"/^BOOTPROTO=.*/d\" #{networkFile}")
+                connection.exec("sed -i \"/^STARTMODE=.*/d\" #{networkFile}")
+                connection.exec("sed -i \"/^ZONE=.*/d\" #{networkFile}")
+                connection.updateFile(networkFile, options, false) do |fileLines|
                     fileLines << "STARTMODE=auto\n"
                     fileLines << "ZONE=public\n"
                     if config == 'dhcp'
@@ -276,7 +283,7 @@ module ConfigLMM
                         fileLines << "BOOTPROTO=static\n"
                         fileLines << "\n"
                         if config['IP']
-                            self.class.sshExec!(ssh, "sed -i 's|^IPADDR=|#IPADDR=|' #{networkFile}")
+                            connection.exec("sed -i 's|^IPADDR=|#IPADDR=|' #{networkFile}")
                             if config['IP'].is_a?(Array)
                                 config['IP'].each_with_index do |ip, i|
                                     c = "_#{i}"
@@ -292,11 +299,11 @@ module ConfigLMM
                 end
             end
 
-            def networkLinks(ssh)
-                self.class.exec("ls /sys/class/net/", ssh).strip.split("\n").select { |name| name.start_with?('enp') }
+            def networkLinks(connection)
+                connection.exec("ls /sys/class/net/").strip.split("\n").select { |name| name.start_with?('enp') }
             end
 
-            def deployLocal(target, options)
+            def deployLocal(connection, target, options)
                 deployLocalHostsFile(target, options)
                 deployLocalSSHConfig(target, options)
                 if target['Sysctl']
@@ -310,35 +317,34 @@ module ConfigLMM
                 end
                 if target['Users']
                     target['Users'].each do |name, info|
-                        userId = self.class.exec("id -u #{name} 2>/dev/null", nil, true).strip
+                        userId = connection.exec("id -u #{name} 2>/dev/null", true).strip
                         if userId.empty?
                             shell = ''
                             if info['Shell']
                                 shell = "--shell '/usr/bin/#{info['Shell']}'"
                             end
-                            distroInfo = self.class.currentDistroInfo(nil)
                             badname = '--badname'
-                            badname = '--badnames' if distroInfo['Name'] == 'openSUSE Leap'
-                            self.class.exec("useradd #{badname} --create-home --user-group #{shell} #{name}")
+                            badname = '--badnames' if connection.distroName == 'openSUSE Leap'
+                            connection.exec("useradd #{badname} --create-home --user-group #{shell} #{name}", false, options)
                         end
-                        homeDir = self.class.exec("getent passwd #{name} | cut -d ':' -f 6").strip
+                        homeDir = connection.exec("getent passwd #{name} | cut -d ':' -f 6", false, options).strip
                         keyFile = homeDir + "/.ssh/id_ed25519"
-                        if info['SSHKey'] && !self.class.filePresent?(keyFile)
-                            self.class.exec("mkdir -p #{homeDir}/.ssh")
-                            self.class.exec("ssh-keygen -t ed25519 -f #{keyFile} -P ''")
-                            self.class.exec("chown -R #{name}:#{name} #{homeDir}/.ssh")
+                        if info['SSHKey'] && !connection.filePresent?(keyFile, options)
+                            connection.exec("mkdir -p #{homeDir}/.ssh", false, options)
+                            connection.exec("ssh-keygen -t ed25519 -f #{keyFile} -P ''", false, options)
+                            connection.exec("chown -R #{name}:#{name} #{homeDir}/.ssh", false, options)
                         end
                     end
                 end
                 if target['Firewall'] && target['Firewall'] != 'no'
-                    self.ensurePackage(FIREWALL_PACKAGE, locationUri)
-                    self.ensureServiceAutoStart(FIREWALL_SERVICE, locationUri)
-                    self.startService(FIREWALL_SERVICE, locationUri)
+                    connection.ensurePackage(FIREWALL_PACKAGE, options)
+                    connection.ensureServiceAutoStart(FIREWALL_SERVICE, options)
+                    connection.startService(FIREWALL_SERVICE, options)
                 end
                 self.executeCommands(target['Execute'])
             end
 
-            def executeCommands(commands, ssh = nil)
+            def executeCommands(commands, connection)
                 return unless commands
 
                 commands.each do |type, data|
@@ -346,7 +352,7 @@ module ConfigLMM
                     when 'sh'
                         data = [data] unless data.is_a?(Array)
                         data.each do |cmd|
-                            self.class.exec(cmd, ssh)
+                            connection.exec(cmd)
                         end
                     else
                         raise 'Unimplemented!'
@@ -387,11 +393,11 @@ module ConfigLMM
                     hosts += "#<ip-address>   <hostname.domain.org>   <hostname>\n"
                     hosts += "127.0.0.1       localhost\n"
                     hosts += "::1             localhost\n\n"
-                    hosts += CONFIGLMM_SECTION_BEGIN
+                    hosts += IO::Local::CONFIGLMM_SECTION_BEGIN
                     target['Hosts'].each do |ip, entries|
                         hosts += ip.ljust(16) + entries.join(' ') + "\n"
                     end
-                    hosts += CONFIGLMM_SECTION_END
+                    hosts += IO::Local::CONFIGLMM_SECTION_END
 
                     path = options['output'] + '/' + id
                     mkdir(path + '/etc', options[:dry])
@@ -402,7 +408,7 @@ module ConfigLMM
             def buildSSHConfig(id, target, options)
                 if !target['SSH']['Config'].empty?
                     sshConfig  = "\n"
-                    sshConfig += CONFIGLMM_SECTION_BEGIN
+                    sshConfig += IO::Local::CONFIGLMM_SECTION_BEGIN
                     target['SSH']['Config'].each do |name, info|
                         sshConfig += "Host #{name} #{info['HostName']}\n"
                         sshConfig += "    HostName " + info['HostName'] + "\n" if info['HostName']
@@ -411,7 +417,7 @@ module ConfigLMM
                         sshConfig += "    IdentityFile " + info['IdentityFile'] + "\n" if info['IdentityFile']
                         sshConfig += "\n"
                     end
-                    sshConfig += CONFIGLMM_SECTION_END
+                    sshConfig += IO::Local::CONFIGLMM_SECTION_END
                     sshConfig += "\n"
 
                     configPath = options['output'] + '/' + id

@@ -29,7 +29,7 @@ module ConfigLMM
                 end
                 self.class.exec('cd #{REPOS_CACHE}/frappe_docker && git checkout . --quiet')
 
-                if !self.class.cmdSuccess?("podman image exists #{IMAGE_ID}")
+                if !IO::Connection.cmdSuccess?("podman image exists #{IMAGE_ID}")
                     appsJSON = Base64.urlsafe_encode64(File.read(__dir__ + '/sites/apps.json').gsub('$VERSION', VERSION))
                     self.class.exec("cd #{REPOS_CACHE}/frappe_docker && podman build --tag=#{IMAGE_ID} --build-arg APPS_JSON_BASE64=#{appsJSON} --build-arg FRAPPE_BRANCH=version-#{VERSION}  --file images/custom/Containerfile .")
                 end
@@ -51,7 +51,7 @@ module ConfigLMM
                         Framework::LinuxApp.configurePodmanServiceOverSSH(USER, HOME_DIR, 'ERPNext', distroInfo, ssh)
                         self.class.exec("su --login #{USER} --shell /bin/sh --command 'mkdir -p ~/sites ~/logs'", ssh)
 
-                        cmd = self.class.cmdSSH(uri)
+                        cmd = IO::SSH.cmd(uri)
                         self.class.exec("podman image save ConfigLM.moe/erpnext:v#{VERSION} | #{cmd} 'cat > #{HOME_DIR}/erpnext.tar'")
                         self.class.exec("su --login #{USER} --shell /usr/bin/sh --command 'podman image load --input erpnext.tar'", ssh)
                         self.class.exec("rm -f #{HOME_DIR}/erpnext.tar", ssh)
