@@ -275,6 +275,9 @@ module ConfigLMM
                 connection.exec("sed -i \"/^BOOTPROTO=.*/d\" #{networkFile}")
                 connection.exec("sed -i \"/^STARTMODE=.*/d\" #{networkFile}")
                 connection.exec("sed -i \"/^ZONE=.*/d\" #{networkFile}")
+                if config['IP']
+                    connection.exec("sed -i 's|^IPADDR=|#IPADDR=|' #{networkFile}")
+                end
                 connection.updateFile(networkFile, options, false) do |fileLines|
                     fileLines << "STARTMODE=auto\n"
                     fileLines << "ZONE=public\n"
@@ -284,7 +287,6 @@ module ConfigLMM
                         fileLines << "BOOTPROTO=static\n"
                         fileLines << "\n"
                         if config['IP']
-                            connection.exec("sed -i 's|^IPADDR=|#IPADDR=|' #{networkFile}")
                             if config['IP'].is_a?(Array)
                                 config['IP'].each_with_index do |ip, i|
                                     c = "_#{i}"
