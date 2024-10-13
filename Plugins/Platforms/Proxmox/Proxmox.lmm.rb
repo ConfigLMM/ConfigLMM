@@ -1,21 +1,29 @@
 
+require_relative 'XTerm'
 require 'fog/proxmox'
+require 'cgi'
 
 module ConfigLMM
     module LMM
         class Proxmox < Framework::Plugin
 
-            def getNode(targetUri)
-                uri = Addressable::URI.parse(targetUri)
-                raise 'Invalid Proxmox URL!' unless uri.scheme == 'proxmox'
+            def self.buildURI(uri)
+                uri = uri.dup
                 uri.scheme = 'https'
                 uri.port = 8006 if uri.port.nil?
                 uri.path = '/api2/json' if uri.path.to_s.empty? || uri.path == '/'
+                uri.query = nil
+                uri
+            end
+
+            def self.getNode(uri)
+                uri = Addressable::URI.parse(uri) if uri.is_a?(String)
+                raise 'Invalid Proxmox URL!' unless uri.scheme == 'proxmox'
                 connectionOptions = { }
                 if uri.query.to_s.include?('insecure')
                     connectionOptions[:ssl_verify_peer] = false
                 end
-                uri.query = nil
+                uri = self.buildURI(uri)
 
                 # For some reason Proxmox doesn't handle SSL shutdown correctly so we use this workaround
                 OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] |= OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
@@ -31,13 +39,13 @@ module ConfigLMM
                 compute = Fog::Compute.new(provider: :proxmox, **authParams)
                 node = compute.nodes.find { |node| node.node == 'pve' }
                 raise 'Couldn\'t find pve node!' unless node
-                [node, authParams]
+                [node, compute, authParams]
             ensure
                 OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] &= ~OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
             end
 
             def createVM(serverName, serverInfo, targetUri, iso, activeState)
-                node, authParams = getNode(targetUri)
+                node, compute, authParams = self.class.getNode(targetUri)
                 OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] |= OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
                 server = node.servers.find { |server| server.name == serverName }
                 if server
@@ -123,7 +131,7 @@ module ConfigLMM
             end
 
             def createContainer(serverInfo, targetUri, flavourInfo, activeState)
-                node, authParams = getNode(targetUri)
+                node, compute, authParams = self.class.getNode(targetUri)
                 OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] |= OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
 
                 serverInfo['Domain'] = serverInfo['Name'] unless serverInfo['Domain']
@@ -240,6 +248,62 @@ module ConfigLMM
                     container.wait_for { container.ready? }
                 end
                 true
+            ensure
+                OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] &= ~OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
+            end
+
+            def self.withXTerm(targetUri, target, prompt, logger, &block)
+                targetUri.scheme = 'proxmox'
+                node, compute, authParams = getNode(targetUri)
+                name = nil
+                name = CGI.parse(targetUri.query)['name'] if targetUri.query
+                name = name.first if name
+
+                lxc = target['LXC']
+                if targetUri.query
+                    parsedQuery = CGI.parse(targetUri.query)
+                    name = parsedQuery['name']
+                    name = name.first if name
+                    lxc = true if parsedQuery['lxc'] && lxc.nil?
+                end
+
+                OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] |= OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
+
+                if lxc
+                    unless name
+                        name = target['Name']
+                        name = Addressable::IDNA.to_ascii(target['Domain']) if target['Domain']
+                    end
+                    server = node.containers.find { |container| container.name == name }
+                    type = 'lxc'
+                else
+                    name = target['Name'] unless name
+                    server = node.servers.find { |server| server.name == name }
+                    type = 'qemu'
+                end
+                raise "Couldn't find server with name #{name}" unless server
+
+                self.xtermTunnel(targetUri, target, compute, node.node, type, server.vmid, prompt, logger, &block)
+            ensure
+                OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] &= ~OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
+            end
+
+            def self.xtermTunnel(targetUri, target, compute, node, type, vmid, prompt, logger, &block)
+                OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] |= OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
+                term = compute.create_term({ node: node, type: type, vmid: vmid }, {})
+
+                insecure = targetUri.query.to_s.include?('insecure')
+
+                uri = self.buildURI(targetUri)
+                uri.scheme = 'wss'
+                if type.nil? && vmid.nil?
+                    uri.path += "/nodes/#{node}/vncwebsocket"
+                else
+                    uri.path += "/nodes/#{node}/#{type}/#{vmid}/vncwebsocket"
+                end
+                uri.query = URI.encode_www_form({ port: term['port'], vncticket: term['ticket'] })
+
+                ProxmoxXTerm.tunnel(uri.to_s, insecure, compute.token, term, target, prompt, logger, &block)
             ensure
                 OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] &= ~OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
             end

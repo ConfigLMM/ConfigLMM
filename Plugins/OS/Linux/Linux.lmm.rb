@@ -61,9 +61,10 @@ module ConfigLMM
                     if target['Domain']
                         envs = connection.exec("env").split("\n")
                         envVars = Hash[envs.map { |vars| vars.split('=', 2) }]
-                        raise 'Not implemented!' unless envVars['SSH_CONNECTION']
-                        ipAddr = envVars['SSH_CONNECTION'].split[-2]
-                        hostsLines << ipAddr.ljust(16) + Addressable::IDNA.to_ascii(target['Domain']) + ' ' + target['Name'] + "\n"
+                        if envVars['SSH_CONNECTION']
+                            ipAddr = envVars['SSH_CONNECTION'].split[-2]
+                            hostsLines << ipAddr.ljust(16) + Addressable::IDNA.to_ascii(target['Domain']) + ' ' + target['Name'] + "\n"
+                        end
                     end
                     target['Hosts'].to_a.each do |ip, entries|
                         hostsLines << ip.ljust(16) + entries.join(' ') + "\n"

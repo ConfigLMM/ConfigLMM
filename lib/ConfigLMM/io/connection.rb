@@ -103,6 +103,10 @@ module ConfigLMM
                     SSH.tunnel(uri) do |ssh|
                         yield(Connection.new(:SSH, SSH.new(prompt, logger, ssh), prompt, logger))
                     end
+                when 'proxmox+xterm'
+                    LMM::Proxmox.withXTerm(uri, target, prompt, logger) do |xterm|
+                        yield(Connection.new(:Proxmox, xterm, prompt, logger))
+                    end
                 else
                     raise ConnectionError.new("Unsupported protocol: #{scheme}!")
                 end
