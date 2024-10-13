@@ -112,12 +112,19 @@ module ConfigLMM
                         end
                     end
                 end
-                self.executeCommands(target['Execute'], connection)
                 if target['Firewall'] && target['Firewall'] != 'no'
                     connection.ensurePackage(FIREWALL_PACKAGE, options)
                     connection.ensureServiceAutoStart(FIREWALL_SERVICE, options)
                     connection.startService(FIREWALL_SERVICE, options)
                 end
+                if !target['Packages'].to_a.empty?
+                    connection.ensurePackages(target['Packages'], options)
+                end
+                target['Services'].to_a.each do |service|
+                    connection.ensureServiceAutoStart(service, options)
+                    connection.startService(service, options)
+                end
+                self.executeCommands(target['Execute'], connection)
             end
 
             def convertFlavour(distroInfo, target, connection, options)
@@ -599,6 +606,7 @@ module ConfigLMM
                 packages = YAML.load_file(__dir__ + '/Packages.yaml')
                 newApps = []
                 target['Services'] ||= []
+                target['Packages'] = target['Apps'].dup
                 if target['Apps'].to_a.include?('sshd')
                     target['Services'] << 'sshd'
                     target['Services'].uniq!
