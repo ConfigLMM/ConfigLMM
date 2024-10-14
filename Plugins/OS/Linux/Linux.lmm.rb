@@ -608,7 +608,7 @@ module ConfigLMM
                 target['Services'] ||= []
                 target['Packages'] = target['Apps'].dup
                 if target['Apps'].to_a.include?('sshd')
-                    target['Services'] << 'sshd'
+                    target['Services'] << :sshd
                     target['Services'].uniq!
                 end
                 target['Apps'] = self.class.mapPackages(target['Apps'], target['Distro']) if target['Distro']

@@ -1,0 +1,8 @@
+Arch Linux:
+    sshd: sshd
+
+openSUSE Leap:
+    sshd: sshd
+
+Debian:
+    sshd: ssh

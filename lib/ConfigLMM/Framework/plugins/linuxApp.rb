@@ -81,6 +81,7 @@ module ConfigLMM
             end
 
             def self.ensureServiceAutoStart(name, locationOrConnection)
+                name = self.convertServiceName(name, locationOrConnection)
                 self.execDistroCommand(name, 'AutoStartService', locationOrConnection)
             end
 
@@ -94,6 +95,7 @@ module ConfigLMM
             end
 
             def self.startService(name, locationOrConnection, dry = false)
+                name = self.convertServiceName(name, locationOrConnection)
                 self.execDistroCommand(name, 'StartService', locationOrConnection, false, dry)
             end
 
@@ -103,18 +105,22 @@ module ConfigLMM
             end
 
             def self.restartService(name, locationOrConnection, dry = false)
+                name = self.convertServiceName(name, locationOrConnection)
                 self.execDistroCommand(name, 'RestartService', locationOrConnection, false, dry)
             end
 
             def self.reloadService(name, locationOrConnection, dry = false)
+                name = self.convertServiceName(name, locationOrConnection)
                 self.execDistroCommand(name, 'ReloadService', locationOrConnection, false, dry)
             end
 
             def self.stopService(name, locationOrConnection, dry = false)
+                name = self.convertServiceName(name, locationOrConnection)
                 self.execDistroCommand(name, 'StopService', locationOrConnection, true, dry)
             end
 
             def self.disableService(name, locationOrConnection, dry = false)
+                name = self.convertServiceName(name, locationOrConnection)
                 self.execDistroCommand(name, 'DisableService', locationOrConnection, true, dry)
             end
 
@@ -135,6 +141,19 @@ module ConfigLMM
                     command += ' ' + param.shellescape unless param.nil?
                     connection.exec(command, allowFailure, dry)
                 end
+            end
+
+            def self.convertServiceName(name, connection)
+                self.doConnection(connection) do |connection|
+                    if name.is_a?(Symbol)
+                        distroInfo = self.currentDistroInfo(connection)
+                        allServices = YAML.load_file(LINUX_FOLDER + 'Services.yaml')
+                        distroName = distroInfo['Name']
+                        raise "Distro '#{distroName}' not implemented!" unless allServices.key?(distroName)
+                        name = allServices[distroName][name.to_s]
+                    end
+                end
+                name
             end
 
             def self.doConnection(locationOrConnection, &block)

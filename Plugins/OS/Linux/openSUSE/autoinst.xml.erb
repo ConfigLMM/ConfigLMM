@@ -49,7 +49,7 @@
       <% if !config['Services'].to_a.empty? %>
         <enable t="list">
           <% config['Services'].each do |service| %>
-            <service><%= service %></service>
+            <service><%= service.to_s %></service>
           <% end %>
         </enable>
       <% end %>
