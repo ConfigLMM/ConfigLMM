@@ -11,6 +11,8 @@ module ConfigLMM
             ISO_LOCATION = '~/.cache/configlmm/images/'
             HOSTS_FILE = '/etc/hosts'
             FSTAB_FILE = '/etc/fstab'
+            SUBUID_FILE = '/etc/subuid'
+            SUBGID_FILE = '/etc/subgid'
             SSH_CONFIG = '~/.ssh/config'
             SYSCTL_FILE = '/etc/sysctl.d/90-configlmm.conf'
             FIREWALL_PACKAGE = 'firewalld'
@@ -102,6 +104,18 @@ module ConfigLMM
                             badname = '--badname'
                             badname = '--badnames' if distroInfo['Name'] == 'openSUSE Leap'
                             connection.exec("useradd #{badname} --create-home --user-group #{shell} #{name}")
+                        end
+                        if info['Subuids']
+                            connection.exec("sed -i '/^#{name}:.*/d' #{SUBUID_FILE}")
+                            info['Subuids'].each do |id|
+                                connection.exec("#{distroInfo['ModifyUser']} --add-subuids #{id} #{name}")
+                            end
+                        end
+                        if info['Subgids']
+                            connection.exec("sed -i '/^#{name}:.*/d' #{SUBGID_FILE}")
+                            info['Subgids'].each do |id|
+                                connection.exec("#{distroInfo['ModifyUser']} --add-subgids #{id} #{name}")
+                            end
                         end
                         homeDir = connection.exec("getent passwd #{name} | cut -d ':' -f 6").strip
                         keyFile = homeDir + "/.ssh/id_ed25519"
