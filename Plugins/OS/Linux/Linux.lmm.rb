@@ -69,7 +69,7 @@ module ConfigLMM
                         end
                     end
                     target['Hosts'].to_a.each do |ip, entries|
-                        hostsLines << ip.ljust(16) + entries.join(' ') + "\n"
+                        hostsLines << ip.ljust(16) + entries.map { |entry| Addressable::IDNA.to_ascii(entry) }.join(' ') + "\n"
                     end
                     connection.updateFile(HOSTS_FILE, options, false) do |fileLines|
                         fileLines + hostsLines
