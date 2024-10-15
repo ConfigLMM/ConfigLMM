@@ -9,7 +9,7 @@ Image=ConfigLM.moe/erpnext:v$VERSION
 Exec=nginx-entrypoint.sh
 EnvironmentFile=/var/lib/erpnext/.config/containers/systemd/ERPNext.env
 PublishPort=127.0.0.1:18400:8080
-Network=ERPNext
+Network=ERPNext.network
 HostName=ERPNext-Frontend
 UserNS=keep-id:uid=1000,gid=1000
 Volume=/var/lib/erpnext/sites:/home/frappe/frappe-bench/sites

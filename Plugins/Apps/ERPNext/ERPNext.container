@@ -7,7 +7,7 @@ After=local-fs.target
 ContainerName=ERPNext
 Image=ConfigLM.moe/erpnext:v$VERSION
 EnvironmentFile=/var/lib/erpnext/.config/containers/systemd/ERPNext.env
-Network=ERPNext
+Network=ERPNext.network
 IP=10.90.50.10
 HostName=ERPNext
 UserNS=keep-id:uid=1000,gid=1000
