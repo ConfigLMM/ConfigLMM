@@ -107,7 +107,7 @@ module ConfigLMM
                     output += data
                 end
                 channel.wait
-                if !allowFailure && !status[:exit_code].zero?
+                if !allowFailure && (status[:exit_code].nil? || !status[:exit_code].zero?) && status[:exit_signal].to_i != 4 # SIGILL... Sometimes this happens for unknown reason
                     raise ExecError.new("Failed '#{command}'", command, output, output, status)
                 end
                 output
