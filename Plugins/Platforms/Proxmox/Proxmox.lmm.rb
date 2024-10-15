@@ -243,6 +243,10 @@ module ConfigLMM
 
                 container = node.containers.create(settings)
 
+                if serverInfo['LXC'].is_a?(Array)
+                    self.addLXCOptions(serverInfo, targetUri, compute, node.node, container.vmid)
+                end
+
                 if container.status != 'running'
                     container.action('start')
                     container.wait_for { container.ready? }
@@ -250,6 +254,16 @@ module ConfigLMM
                 true
             ensure
                 OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] &= ~OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
+            end
+
+            def addLXCOptions(serverInfo, uri, compute, node, vmid)
+                options = serverInfo['LXC'].map { |option| 'lxc.' + option.map { |name, value| "#{name}: #{value}" }.first }.join("\n")
+
+                uri = Addressable::URI.parse(uri) if uri.is_a?(String)
+                self.class.xtermTunnel(uri, serverInfo, compute, node, nil, nil, prompt, logger) do |xterm|
+                    connection = IO::Connection.new(:Proxmox, xterm, prompt, logger)
+                    connection.exec("echo \"#{options}\" >> /etc/pve/lxc/#{vmid}.conf")
+                end
             end
 
             def self.withXTerm(targetUri, target, prompt, logger, &block)
