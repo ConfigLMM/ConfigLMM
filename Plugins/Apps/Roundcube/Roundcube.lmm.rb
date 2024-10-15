@@ -109,33 +109,33 @@ module ConfigLMM
             end
 
             def cleanup(configs, state, context, options)
-                cleanupType(:Roundcube, configs, state, context, options) do |item, id, state, context, options, ssh|
-                    cleanupConfig(item, id, state, context, options, ssh)
+                cleanupType(:Roundcube, configs, state, context, options) do |item, id, state, context, options, connection|
+                    cleanupConfig(item, id, state, context, options, connection)
                 end
             end
 
-            def cleanupConfig(item, id, state, context, options, ssh = nil)
+            def cleanupConfig(item, id, state, context, options, connection)
                 if item['Proxy'].nil? || item['Proxy']
-                    self.cleanupNginxConfig('Roundcube', id, state, context, options, ssh)
-                    self.class.reload(ssh, options[:dry])
+                    self.cleanupNginxConfig('Roundcube', id, state, context, options, connection)
+                    self.class.reload(connection, options[:dry])
                 end
-                distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
-                rm(PHP_FPM.configDir(distroInfo) + 'roundcube.conf', options[:dry], ssh)
-                Framework::LinuxApp.reloadService(PHP_FPM::PHPFPM_SERVICE, ssh, options[:dry])
-                Framework::LinuxApp.removePackage(PACKAGE_NAME, ssh, options[:dry])
+                distroInfo = Framework::LinuxApp.currentDistroInfo(connection)
+                connection.rm(PHP_FPM.configDir(distroInfo) + 'roundcube.conf', options[:dry])
+                Framework::LinuxApp.reloadService(PHP_FPM::PHPFPM_SERVICE, connection, options[:dry])
+                Framework::LinuxApp.removePackage(PACKAGE_NAME, connection, options[:dry])
                 state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
                 if options[:destroy]
                     item['Database'] ||= {}
                     if !item['Database']['Type'] || item['Database']['Type'] == 'pgsql'
-                        PostgreSQL.dropUserAndDB(item['Database'], USER, ssh, options[:dry])
+                        PostgreSQL.dropUserAndDB(item['Database'], USER, connection, options[:dry])
                     end
-                    Framework::LinuxApp.deleteUserAndGroup(USER, ssh, options[:dry])
-                    rm('/var/log/roundcubemail', options[:dry], ssh)
-                    rm('/var/log/php/roundcube.access.log', options[:dry], ssh)
-                    rm('/var/log/php/roundcube.errors.log', options[:dry], ssh)
-                    rm('/var/log/php/roundcube.mail.log', options[:dry], ssh)
-                    rm('/var/log/nginx/roundcube.access.log', options[:dry], ssh)
-                    rm('/var/log/nginx/roundcube.error.log', options[:dry], ssh)
+                    Framework::LinuxApp.deleteUserAndGroup(USER, connection, options[:dry])
+                    connection.rm('/var/log/roundcubemail', options[:dry])
+                    connection.rm('/var/log/php/roundcube.access.log', options[:dry])
+                    connection.rm('/var/log/php/roundcube.errors.log', options[:dry])
+                    connection.rm('/var/log/php/roundcube.mail.log', options[:dry])
+                    connection.rm('/var/log/nginx/roundcube.access.log', options[:dry])
+                    connection.rm('/var/log/nginx/roundcube.error.log', options[:dry])
                     state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
                 end
             end

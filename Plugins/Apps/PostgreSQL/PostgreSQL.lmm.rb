@@ -49,16 +49,16 @@ module ConfigLMM
             end
 
             def cleanup(configs, state, context, options)
-                cleanupType(:PostgreSQL, configs, state, context, options) do |item, id, state, context, options, ssh|
+                cleanupType(:PostgreSQL, configs, state, context, options) do |item, id, state, context, options, connection|
                     if item['Deploy']
-                        Framework::LinuxApp.stopService(SERVICE_NAME, ssh, options[:dry])
-                        Framework::LinuxApp.disableService(SERVICE_NAME, ssh, options[:dry])
-                        Framework::LinuxApp.removePackage(PACKAGE_NAME, ssh, options[:dry])
+                        Framework::LinuxApp.stopService(SERVICE_NAME, connection, options[:dry])
+                        Framework::LinuxApp.disableService(SERVICE_NAME, connection, options[:dry])
+                        Framework::LinuxApp.removePackage(PACKAGE_NAME, connection, options[:dry])
 
                         state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
 
                         if options[:destroy]
-                            Framework::LinuxApp.deleteUserAndGroup(USER_NAME, ssh, options[:dry])
+                            Framework::LinuxApp.deleteUserAndGroup(USER_NAME, connection, options[:dry])
 
                             state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
                         end
@@ -216,44 +216,69 @@ module ConfigLMM
                 dir
             end
 
+            def self.createRemoteUserAndDB(settings, user, password, connection)
+                self.executeRemotely(settings, connection) do |connection|
+                    self.createUserAndDB(user, password, connection)
+                end
+            end
+
+            # DEPRECATED
             def self.createRemoteUserAndDBOverSSH(settings, user, password, ssh)
-                self.executeRemotely(settings, ssh) do |ssh|
-                    self.createUserAndDBOverSSH(user, password, ssh)
+                self.executeRemotely(settings, ssh) do |connection|
+                    self.createUserAndDBOverSSH(user, password, connection)
                 end
             end
 
-            def self.dropUserAndDB(settings, user, ssh, dry)
-                self.executeRemotely(settings, ssh) do |ssh|
-                    self.exec("su --login #{USER_NAME} --command 'dropdb #{user}'", ssh, true, dry)
-                    self.exec("su --login #{USER_NAME} --command 'dropuser #{user}'", ssh, true, dry)
+            def self.dropUserAndDB(settings, user, connection, dry)
+                self.executeRemotely(settings, connection) do |connection|
+                    connection.exec("su --login #{USER_NAME} --command 'dropdb #{user}'", true, dry)
+                    connection.exec("su --login #{USER_NAME} --command 'dropuser #{user}'", true, dry)
                 end
             end
 
-            def self.createExtensions(settings, db, extensions, ssh)
-                self.executeRemotely(settings, ssh) do |ssh|
+            def self.createExtensions(settings, db, extensions, connectionOrSSH)
+                self.executeRemotely(settings, ssh) do |connection|
                     extensions.each do |extension|
-                        self.executeSQL("CREATE EXTENSION #{extension}", db, ssh, true)
+                        self.executeSQL("CREATE EXTENSION #{extension}", db, connection, true)
                     end
                 end
             end
 
-            def self.executeRemotely(settings, ssh = nil)
+            def self.executeRemotely(settings, connectionOrSSH = nil)
+                prompt = TTY::Prompt.new
+                logger = TTY::Logger.new
                 settings['HostName'] = 'localhost' unless settings['HostName']
                 if settings['HostName'] == 'localhost'
-                    yield(ssh)
+                    connection = connectionOrSSH
+                    if connectionOrSSH.nil?
+                        connection = IO::Connection.new(:Local, IO::Local.new(prompt, logger), prompt, logger)
+                    elsif !connectionOrSSH.is_a?(IO::Connection)
+                        connection = IO::Connection.new(:SSH, SSH.new(prompt, logger, connectionOrSSH), prompt, logger)
+                    end
+                    yield(connection)
                 else
                     self.sshStart("ssh://#{settings['HostName']}/") do |ssh|
-                        yield(ssh)
+                        yield(IO::Connection.new(:SSH, SSH.new(prompt, logger, ssh), prompt, logger))
                     end
                 end
             end
 
-            def self.createUserAndDBOverSSH(user, password, ssh)
-                self.sshExec!(ssh, "su --login #{USER_NAME} --command 'createuser #{user}'", true)
-                self.sshExec!(ssh, "su --login #{USER_NAME} --command 'createdb --owner=#{user} #{user}'", true)
+            def self.createUserAndDB(user, password, connection)
+                self.createUserAndDBOverSSH(user, password, connection)
+            end
+
+            # DEPRECATED
+            def self.createUserAndDBOverSSH(user, password, connectionOrSSH)
+                if connectionOrSSH.is_a?(IO::Connection)
+                    connectionOrSSH.exec("su --login #{USER_NAME} --command 'createuser #{user}'", true)
+                    connectionOrSSH.exec("su --login #{USER_NAME} --command 'createdb --owner=#{user} #{user}'", true)
+                else
+                    self.sshExec!(connectionOrSSH, "su --login #{USER_NAME} --command 'createuser #{user}'", true)
+                    self.sshExec!(connectionOrSSH, "su --login #{USER_NAME} --command 'createdb --owner=#{user} #{user}'", true)
+                end
                 if password
                     sql = "ALTER USER #{user} WITH PASSWORD '#{password}'"
-                    self.executeSQL(sql, nil, ssh)
+                    self.executeSQL(sql, nil, connectionOrSSH)
                 end
             end
 
@@ -268,13 +293,13 @@ module ConfigLMM
                 end
             end
 
-            def self.executeSQL(sql, db, ssh = nil, allowFailure = false, options = [])
-                if ssh
-                    db = 'postgres' unless db
-                    cmd = " su --login #{USER_NAME} --command ' psql #{options.join(' ')} --dbname=#{db} --command=\"#{sql.gsub("'", "'\"'\"'")};\"'"
-                    self.sshExec!(ssh, cmd, allowFailure)
+            def self.executeSQL(sql, db, connectionOrSSH = nil, allowFailure = false, options = [], dry = false)
+                db = 'postgres' unless db
+                cmd = " su --login #{USER_NAME} --command ' psql #{options.join(' ')} --dbname=#{db} --command=\"#{sql.gsub("'", "'\"'\"'")};\"'"
+                if connectionOrSSH.is_a?(IO::Connection)
+                    connectionOrSSH.exec(cmd, allowFailure, dry)
                 else
-                    # TODO
+                    self.exec(cmd, connectionOrSSH, allowFailure, dry)
                 end
             end
 

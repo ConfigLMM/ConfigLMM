@@ -64,18 +64,18 @@ module ConfigLMM
             end
 
             def cleanup(configs, state, context, options)
-                cleanupType(:Valkey, configs, state, context, options) do |item, id, state, context, options, ssh|
+                cleanupType(:Valkey, configs, state, context, options) do |item, id, state, context, options, connection|
                     serviceName = 'redis'
-                    distroId = self.class.distroID(ssh)
+                    distroId = self.class.distroID(connection)
                     serviceName = 'redis@redis' if distroId == SUSE_ID
 
-                    Framework::LinuxApp.stopService(serviceName, ssh, options[:dry])
-                    Framework::LinuxApp.removePackage(PACKAGE_NAME, ssh, options[:dry])
+                    Framework::LinuxApp.stopService(serviceName, connection, options[:dry])
+                    Framework::LinuxApp.removePackage(PACKAGE_NAME, connection, options[:dry])
 
                     state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
 
                     if options[:destroy]
-                        rm('/etc/redis', options[:dry], ssh)
+                        connection.rm('/etc/redis', options[:dry])
 
                         state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
                     end

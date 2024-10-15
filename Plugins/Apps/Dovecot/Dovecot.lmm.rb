@@ -147,15 +147,15 @@ module ConfigLMM
             end
 
             def cleanup(configs, state, context, options)
-                cleanupType(:Dovecot, configs, state, context, options) do |item, id, state, context, options, ssh|
-                    Framework::LinuxApp.stopService(SERVICE_NAME, ssh, options[:dry])
-                    Framework::LinuxApp.firewallRemoveService('imaps', ssh, options[:dry])
-                    Framework::LinuxApp.removePackage(PACKAGE_NAME, ssh, options[:dry])
+                cleanupType(:Dovecot, configs, state, context, options) do |item, id, state, context, options, connection|
+                    Framework::LinuxApp.stopService(SERVICE_NAME, connection, options[:dry])
+                    Framework::LinuxApp.firewallRemoveService('imaps', connection, options[:dry])
+                    Framework::LinuxApp.removePackage(PACKAGE_NAME, connection, options[:dry])
 
                     state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
 
                     if options[:destroy]
-                        Framework::LinuxApp.deleteUserAndGroup(EMAIL_USER, ssh, options[:dry])
+                        Framework::LinuxApp.deleteUserAndGroup(EMAIL_USER, connection, options[:dry])
 
                         state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
                     end

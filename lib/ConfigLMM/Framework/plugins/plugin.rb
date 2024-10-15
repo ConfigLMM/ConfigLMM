@@ -228,12 +228,17 @@ module ConfigLMM
                 items = state.selectType(type)
                 items.each do |id, item|
                     if !configs.key?(id) && item['Status'] != State::STATUS_DESTROYED && (item['Status'] != State::STATUS_DELETED || options[:destroy])
-                        if item['Location'].nil? || item['Location'] == '@me'
-                            yield(item, id, state, context, options, nil)
-                        else
-                            uri = Addressable::URI.parse(item['Location'])
-                            self.class.sshStart(uri) do |ssh|
-                                yield(item, id, state, context, options, ssh)
+                        begin
+                            self.withConnection(item['Location'], item) do |connection|
+                                yield(item, id, state, context, options, connection)
+                            end
+                        rescue SystemCallError => error
+                            if error.errno == Errno::EHOSTUNREACH::Errno
+                                prompt.say("#{id}: #{item[:Type].to_s} failed to connect #{item['Config'].to_h['Location'].to_s}", color: :red)
+                                prompt.say(error, color: :red)
+                                prompt.say("Skipping!", color: :red)
+                            else
+                                raise
                             end
                         end
                     end

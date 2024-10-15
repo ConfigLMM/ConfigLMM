@@ -64,18 +64,18 @@ module ConfigLMM
             end
 
             def cleanup(configs, state, context, options)
-                cleanupType(:PowerDNS, configs, state, context, options) do |item, id, state, context, options, ssh|
+                cleanupType(:PowerDNS, configs, state, context, options) do |item, id, state, context, options, connection|
                     if item['Deploy']
-                        Framework::LinuxApp.stopService(SERVICE_NAME, ssh, options[:dry])
-                        Framework::LinuxApp.firewallRemoveService('dns', ssh, options[:dry])
-                        Framework::LinuxApp.removePackage(PACKAGE_NAME, ssh, options[:dry])
+                        Framework::LinuxApp.stopService(SERVICE_NAME, connection, options[:dry])
+                        Framework::LinuxApp.firewallRemoveService('dns', connection, options[:dry])
+                        Framework::LinuxApp.removePackage(PACKAGE_NAME, connection, options[:dry])
 
                         state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
 
                         if options[:destroy]
                             item['Database'] ||= {}
-                            PostgreSQL.dropUserAndDB(item['Database'], USER, ssh, options[:dry])
-                            rm('/etc/pdns', options[:dry], ssh)
+                            PostgreSQL.dropUserAndDB(item['Database'], USER, connection, options[:dry])
+                            connection.rm('/etc/pdns', options[:dry])
                             state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
                         end
                     else

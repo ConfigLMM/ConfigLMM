@@ -48,42 +48,48 @@ module ConfigLMM
                 end
             end
 
-            def cleanupNginxConfig(name, id, state, context, options, ssh = nil)
-                rm('/etc/nginx/servers-lmm/' + name + '.conf', options['dry'], ssh)
+            def cleanupNginxConfig(name, id, state, context, options, connection)
+                connection.rm('/etc/nginx/servers-lmm/' + name + '.conf', options['dry'])
             end
 
-            def self.prepareNginxConfig(target, ssh = nil)
-                if ssh
-                    target['NginxVersion'] = self.sshExec!(ssh, 'nginx -v').strip.split('/')[1].to_f
+            def self.prepareNginxConfig(target, connectionOrSSH = nil)
+                if connectionOrSSH.is_a?(IO::Connection)
+                    target['NginxVersion'] = connectionOrSSH.exec('nginx -v').strip.split('/')[1].to_f
+                elsif connectionOrSSH
+                    target['NginxVersion'] = self.sshExec!(connectionOrSSH, 'nginx -v').strip.split('/')[1].to_f
                 else
                     target['NginxVersion'] = `nginx -v`.strip.split('/')[1].to_f
                 end
             end
 
-            def self.reload(ssh = nil, dry = false)
-                self.exec("systemctl reload nginx", ssh, false, dry)
+            def self.reload(connection = nil, dry = false)
+                if connection.is_a?(IO::Connection)
+                    connection.exec("systemctl reload nginx", false, { 'dry' => dry })
+                else
+                    self.exec("systemctl reload nginx", connection, false, dry)
+                end
             end
 
-            def self.ensurePackage(ssh = nil)
-                Framework::LinuxApp.ensurePackages([NGINX_PACKAGE], ssh)
-                Framework::LinuxApp.ensureServiceAutoStartOverSSH(NGINX_PACKAGE, ssh)
+            def self.ensurePackage(connection = nil)
+                Framework::LinuxApp.ensurePackages([NGINX_PACKAGE], connection)
+                Framework::LinuxApp.ensureServiceAutoStartOverSSH(NGINX_PACKAGE, connection)
             end
 
-            def useNginxProxy(dir, configName, id, target, activeState, state, context, options, ssh)
-                self.class.ensurePackage(ssh)
-                self.class.prepareNginxConfig(target, ssh)
+            def useNginxProxy(dir, configName, id, target, activeState, state, context, options, connectionOrSSH)
+                self.class.ensurePackage(connectionOrSSH)
+                self.class.prepareNginxConfig(target, connectionOrSSH)
                 self.writeNginxConfig(dir, configName, id, target, state, context, options)
                 self.deployNginxConfig(id, target, activeState, context, options)
-                Framework::LinuxApp.startServiceOverSSH(NGINX_PACKAGE, ssh)
-                self.class.reload(ssh)
+                Framework::LinuxApp.startServiceOverSSH(NGINX_PACKAGE, connectionOrSSH)
+                self.class.reload(connectionOrSSH)
             end
 
-            def deployNginxProxyConfig(server, name, id, target, activeState, state, context, options, ssh)
+            def deployNginxProxyConfig(server, name, id, target, activeState, state, context, options, connectionOrSSH)
                 target = target.dup
                 target['Proxy'] = server
                 target['Name'] = name if name
                 target['ConfigName'] = target['Name']
-                useNginxProxy(__dir__ + '/../../../../Plugins/Apps/Nginx', 'proxy', id, target, activeState, state, context, options, ssh)
+                useNginxProxy(__dir__ + '/../../../../Plugins/Apps/Nginx', 'proxy', id, target, activeState, state, context, options, connectionOrSSH)
             end
 
             private

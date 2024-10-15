@@ -252,14 +252,29 @@ module ConfigLMM
                 dir
             end
 
-            def self.configurePodmanServiceOverSSH(user, homedir, userComment, distroInfo, ssh)
-                Framework::LinuxApp.ensurePackages([PODMAN_PACKAGE], ssh)
-                addUserCmd = "#{distroInfo['CreateServiceUser']} --home-dir '#{homedir}' --create-home --comment '#{userComment}' #{user}"
-                self.sshExec!(ssh, addUserCmd, true)
-                self.sshExec!(ssh, "chmod o-rwx #{homedir}")
-                self.createSubuidsOverSSH(user, distroInfo, ssh)
-                self.sshExec!(ssh, "loginctl enable-linger #{user}")
-                self.sshExec!(ssh, "su --login #{user} --shell /bin/sh --command 'mkdir -p #{SYSTEMD_CONTAINERS_PATH}'")
+            def self.configurePodmanService(user, homedir, userComment, distroInfo, connection)
+                self.configurePodmanServiceOverSSH(user, homedir, userComment, distroInfo, connection)
+            end
+
+            # DEPRECATED
+            def self.configurePodmanServiceOverSSH(user, homedir, userComment, distroInfo, connectionOrSSH)
+                if connectionOrSSH.is_a?(IO::Connection)
+                    Framework::LinuxApp.ensurePackages([PODMAN_PACKAGE], connectionOrSSH)
+                    addUserCmd = "#{distroInfo['CreateServiceUser']} --home-dir '#{homedir}' --create-home --comment '#{userComment}' #{user}"
+                    connectionOrSSH.exec(addUserCmd, true)
+                    connectionOrSSH.exec("chmod o-rwx #{homedir}")
+                    self.createSubuids(user, distroInfo, connectionOrSSH)
+                    connectionOrSSH.exec("loginctl enable-linger #{user}")
+                    connectionOrSSH.exec("su --login #{user} --shell /bin/sh --command 'mkdir -p #{SYSTEMD_CONTAINERS_PATH}'")
+                else
+                    Framework::LinuxApp.ensurePackages([PODMAN_PACKAGE], connectionOrSSH)
+                    addUserCmd = "#{distroInfo['CreateServiceUser']} --home-dir '#{homedir}' --create-home --comment '#{userComment}' #{user}"
+                    self.sshExec!(connectionOrSSH, addUserCmd, true)
+                    self.sshExec!(connectionOrSSH, "chmod o-rwx #{homedir}")
+                    self.createSubuidsOverSSH(user, distroInfo, connectionOrSSH)
+                    self.sshExec!(connectionOrSSH, "loginctl enable-linger #{user}")
+                    self.sshExec!(connectionOrSSH, "su --login #{user} --shell /bin/sh --command 'mkdir -p #{SYSTEMD_CONTAINERS_PATH}'")
+                end
             end
 
             def self.addRepo(name, distroInfo, connection)
@@ -272,6 +287,11 @@ module ConfigLMM
                 end
             end
 
+            def self.createSubuids(user, distroInfo, connection)
+                connection.exec("#{distroInfo['ModifyUser']} --add-subuids 100000-165535 --add-subgids 100000-165535 #{user}")
+            end
+
+            # DEPRECATED
             def self.createSubuidsOverSSH(user, distroInfo, ssh)
                 self.sshExec!(ssh, "#{distroInfo['ModifyUser']} --add-subuids 100000-165535 --add-subgids 100000-165535 #{user}")
             end

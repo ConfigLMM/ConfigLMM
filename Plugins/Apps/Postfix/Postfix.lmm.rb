@@ -180,22 +180,22 @@ module ConfigLMM
             end
 
             def cleanup(configs, state, context, options)
-                cleanupType(:Postfix, configs, state, context, options) do |item, id, state, context, options, ssh|
-                    instances = self.class.exec('postmulti -l | wc -l', ssh, true).strip.to_i
+                cleanupType(:Postfix, configs, state, context, options) do |item, id, state, context, options, connection|
+                    instances = connection.exec('postmulti -l | wc -l', true).strip.to_i
                     if instances <= 1
-                        Framework::LinuxApp.stopService(SERVICE_NAME, ssh, options[:dry])
-                        Framework::LinuxApp.firewallRemoveService('smtps', ssh, options[:dry])
+                        Framework::LinuxApp.stopService(SERVICE_NAME, connection, options[:dry])
+                        Framework::LinuxApp.firewallRemoveService('smtps', connection, options[:dry])
                         if item['AlternativePort']
-                            Framework::LinuxApp.firewallRemovePort("#{item['AlternativePort']}/tcp", ssh, options[:dry])
+                            Framework::LinuxApp.firewallRemovePort("#{item['AlternativePort']}/tcp", connection, options[:dry])
                         else
-                            Framework::LinuxApp.firewallRemoveService('smtp', ssh, options[:dry])
+                            Framework::LinuxApp.firewallRemoveService('smtp', connection, options[:dry])
                         end
-                        Framework::LinuxApp.removePackage(PACKAGE_NAME, ssh, options[:dry])
+                        Framework::LinuxApp.removePackage(PACKAGE_NAME, connection, options[:dry])
 
                         state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
 
                         if options[:destroy]
-                            rm('/etc/postfix', options[:dry], ssh)
+                            connection.rm('/etc/postfix', options[:dry])
 
                             state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
                         end

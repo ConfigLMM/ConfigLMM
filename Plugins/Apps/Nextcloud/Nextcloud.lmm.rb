@@ -75,26 +75,26 @@ module ConfigLMM
             end
 
             def cleanup(configs, state, context, options)
-                cleanupType(:Nextcloud, configs, state, context, options) do |item, id, state, context, options, ssh|
-                    self.cleanupNginxConfig('Nextcloud', id, state, context, options, ssh)
-                    self.class.reload(ssh, options[:dry])
-                    distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
-                    rm(PHP_FPM.configDir(distroInfo) + 'nextcloud.conf', options[:dry], ssh)
-                    Framework::LinuxApp.reloadService(PHP_FPM::PHPFPM_SERVICE, ssh, options[:dry])
-                    Framework::LinuxApp.removePackage(PACKAGE_NAME, ssh, options[:dry])
+                cleanupType(:Nextcloud, configs, state, context, options) do |item, id, state, context, options, connection|
+                    self.cleanupNginxConfig('Nextcloud', id, state, context, options, connection)
+                    self.class.reload(connection, options[:dry])
+                    distroInfo = Framework::LinuxApp.currentDistroInfo(connection)
+                    connection.rm(PHP_FPM.configDir(distroInfo) + 'nextcloud.conf', options[:dry])
+                    Framework::LinuxApp.reloadService(PHP_FPM::PHPFPM_SERVICE, connection, options[:dry])
+                    Framework::LinuxApp.removePackage(PACKAGE_NAME, connection, options[:dry])
                     state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
                     if options[:destroy]
-                        rm(PHP_FPM::webappsDir(distroInfo) + 'nextcloud', options[:dry], ssh)
+                        connection.rm(PHP_FPM::webappsDir(distroInfo) + 'nextcloud', options[:dry])
                         item['Database'] ||= {}
                         if !item['Database']['Type'] || item['Database']['Type'] == 'pgsql'
-                            PostgreSQL.dropUserAndDB(item['Database'], USER, ssh, options[:dry])
+                            PostgreSQL.dropUserAndDB(item['Database'], USER, connection, options[:dry])
                         end
-                        Framework::LinuxApp.deleteUserAndGroup(USER, ssh, options[:dry])
-                        rm('/var/log/php/nextcloud.access.log', options[:dry], ssh)
-                        rm('/var/log/php/nextcloud.errors.log', options[:dry], ssh)
-                        rm('/var/log/php/nextcloud.mail.log', options[:dry], ssh)
-                        rm('/var/log/nginx/nextcloud.access.log', options[:dry], ssh)
-                        rm('/var/log/nginx/nextcloud.error.log', options[:dry], ssh)
+                        Framework::LinuxApp.deleteUserAndGroup(USER, connection, options[:dry])
+                        connection.rm('/var/log/php/nextcloud.access.log', options[:dry])
+                        connection.rm('/var/log/php/nextcloud.errors.log', options[:dry])
+                        connection.rm('/var/log/php/nextcloud.mail.log', options[:dry])
+                        connection.rm('/var/log/nginx/nextcloud.access.log', options[:dry])
+                        connection.rm('/var/log/nginx/nextcloud.error.log', options[:dry])
                         state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
                     end
                 end

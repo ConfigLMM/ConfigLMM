@@ -91,22 +91,22 @@ module ConfigLMM
             end
 
             def cleanup(configs, state, context, options)
-                cleanupType(:WireGuard, configs, state, context, options) do |item, id, state, context, options, ssh|
-                    Framework::LinuxApp.stopService(SERVICE_NAME, ssh, options[:dry])
-                    Framework::LinuxApp.disableService(SERVICE_NAME, ssh, options[:dry])
-                    Framework::LinuxApp.removePackage(WIREGUARD_PACKAGE, ssh, options[:dry])
+                cleanupType(:WireGuard, configs, state, context, options) do |item, id, state, context, options, connection|
+                    Framework::LinuxApp.stopService(SERVICE_NAME, connection, options[:dry])
+                    Framework::LinuxApp.disableService(SERVICE_NAME, connection, options[:dry])
+                    Framework::LinuxApp.removePackage(WIREGUARD_PACKAGE, connection, options[:dry])
 
-                    self.class.exec("firewall-cmd -q --permanent --remove-port='#{PORT}/udp'", ssh, false, options[:dry])
-                    self.class.exec("firewall-cmd -q --remove-port='#{PORT}/udp'", ssh, false, options[:dry])
-                    self.class.exec("firewall-cmd -q --permanent --zone=trusted --remove-source=#{SUBNET}", ssh, false, options[:dry])
-                    self.class.exec("firewall-cmd -q --zone=trusted --remove-source=#{SUBNET}", ssh, false, options[:dry])
-                    self.class.exec("firewall-cmd -q --permanent --direct --remove-rule ipv4 nat POSTROUTING 0 -s #{SUBNET} ! -d #{SUBNET} -j MASQUERADE", ssh, false, options[:dry])
-                    self.class.exec("firewall-cmd -q --direct --remove-rule ipv4 nat POSTROUTING 0 -s #{SUBNET} ! -d #{SUBNET} -j MASQUERADE", ssh, false, options[:dry])
+                    connection.exec("firewall-cmd -q --permanent --remove-port='#{PORT}/udp'", false, options[:dry])
+                    connection.exec("firewall-cmd -q --remove-port='#{PORT}/udp'", false, options[:dry])
+                    connection.exec("firewall-cmd -q --permanent --zone=trusted --remove-source=#{SUBNET}", false, options[:dry])
+                    connection.exec("firewall-cmd -q --zone=trusted --remove-source=#{SUBNET}", false, options[:dry])
+                    connection.exec("firewall-cmd -q --permanent --direct --remove-rule ipv4 nat POSTROUTING 0 -s #{SUBNET} ! -d #{SUBNET} -j MASQUERADE", false, options[:dry])
+                    connection.exec("firewall-cmd -q --direct --remove-rule ipv4 nat POSTROUTING 0 -s #{SUBNET} ! -d #{SUBNET} -j MASQUERADE", false, options[:dry])
 
                     state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
 
                     if options[:destroy]
-                        rm('/etc/wireguard', options[:dry], ssh)
+                        connection.rm('/etc/wireguard', options[:dry])
 
                         state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
                     end

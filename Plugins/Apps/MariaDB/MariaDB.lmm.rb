@@ -31,10 +31,10 @@ module ConfigLMM
             end
 
             def cleanup(configs, state, context, options)
-                cleanupType(:MariaDB, configs, state, context, options) do |item, id, state, context, options, ssh|
-                    Framework::LinuxApp.stopService(SERVICE_NAME, ssh, options[:dry])
-                    Framework::LinuxApp.disableService(SERVICE_NAME, ssh, options[:dry])
-                    Framework::LinuxApp.removePackage(PACKAGE_NAME, ssh, options[:dry])
+                cleanupType(:MariaDB, configs, state, context, options) do |item, id, state, context, options, connection|
+                    Framework::LinuxApp.stopService(SERVICE_NAME, connection, options[:dry])
+                    Framework::LinuxApp.disableService(SERVICE_NAME, connection, options[:dry])
+                    Framework::LinuxApp.removePackage(PACKAGE_NAME, connection, options[:dry])
 
                     state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
                 end
@@ -61,52 +61,64 @@ module ConfigLMM
             end
 
             def self.createRemoteUserAndDB(settings, user, password, ssh = nil)
-                self.executeRemotely(settings, ssh) do |ssh|
+                self.executeRemotely(settings, ssh) do |connection|
                     host = 'localhost'
                     host = '%' if settings['HostName'] != 'localhost'
-                    self.createUserAndDB(user, password, host, ssh)
+                    self.createUserAndDB(user, password, host, connection)
                 end
             end
 
-            def self.executeRemotely(settings, ssh = nil)
+            def self.executeRemotely(settings, connectionOrSSH = nil)
+                prompt = TTY::Prompt.new
+                logger = TTY::Logger.new
                 settings['HostName'] = 'localhost' unless settings['HostName']
                 if settings['HostName'] == 'localhost'
-                    yield(ssh)
+                    connection = connectionOrSSH
+                    if connectionOrSSH.nil?
+                        connection = IO::Connection.new(:Local, IO::Local.new(prompt, logger), prompt, logger)
+                    elsif !connectionOrSSH.is_a?(IO::Connection)
+                        connection = IO::Connection.new(:SSH, SSH.new(prompt, logger, connectionOrSSH), prompt, logger)
+                    end
+                    yield(connection)
                 else
                     self.sshStart("ssh://#{settings['HostName']}/") do |ssh|
-                        yield(ssh)
+                        yield(IO::Connection.new(:SSH, SSH.new(prompt, logger, ssh), prompt, logger))
                     end
                 end
             end
 
-            def self.createUserAndDB(user, password, host, ssh = nil)
-                self.executeSQL("CREATE USER '#{user}'@'#{host}'", nil, ssh, true)
-                self.executeSQL("ALTER USER '#{user}'@'#{host}' IDENTIFIED BY '#{password}'", nil, ssh)
-                self.executeSQL("CREATE DATABASE #{user}", nil, ssh, true)
-                self.executeSQL("GRANT ALL PRIVILEGES ON #{user}.* TO '#{user}'@'#{host}'", nil, ssh)
+            def self.createUserAndDB(user, password, host, connectionOrSSH = nil)
+                self.executeSQL("CREATE USER '#{user}'@'#{host}'", nil, connectionOrSSH, true)
+                self.executeSQL("ALTER USER '#{user}'@'#{host}' IDENTIFIED BY '#{password}'", nil, connectionOrSSH)
+                self.executeSQL("CREATE DATABASE #{user}", nil, connectionOrSSH, true)
+                self.executeSQL("GRANT ALL PRIVILEGES ON #{user}.* TO '#{user}'@'#{host}'", nil, connectionOrSSH)
             end
 
-            def self.createAdmin(ssh)
-                self.executeSQL("CREATE USER 'admin'@'%'", nil, ssh, true)
+            def self.createAdmin(connectionOrSSH)
+                self.executeSQL("CREATE USER 'admin'@'%'", nil, connectionOrSSH, true)
                 password = SecureRandom.alphanumeric(20)
-                self.executeSQL("ALTER USER 'admin'@'%' IDENTIFIED BY '#{password}'", nil, ssh)
-                self.executeSQL("GRANT ALL PRIVILEGES ON *.* TO 'admin'@'%' WITH GRANT OPTION", nil, ssh)
+                self.executeSQL("ALTER USER 'admin'@'%' IDENTIFIED BY '#{password}'", nil, connectionOrSSH)
+                self.executeSQL("GRANT ALL PRIVILEGES ON *.* TO 'admin'@'%' WITH GRANT OPTION", nil, connectionOrSSH)
                 password
             end
 
-            def self.dropAdmin(ssh)
-                self.executeSQL("DROP USER 'admin'@'%'", nil, ssh, true)
+            def self.dropAdmin(connectionOrSSH)
+                self.executeSQL("DROP USER 'admin'@'%'", nil, connectionOrSSH, true)
             end
 
-            def self.tableExist?(db, table, ssh)
-                table = self.executeSQL("SHOW TABLES LIKE '#{table}'", db, ssh).strip
+            def self.tableExist?(db, table, connectionOrSSH)
+                table = self.executeSQL("SHOW TABLES LIKE '#{table}'", db, connectionOrSSH).strip
                 !table.empty?
             end
 
-            def self.executeSQL(sql, db = nil, ssh = nil, allowFailure = false, dry = false)
+            def self.executeSQL(sql, db = nil, connectionOrSSH = nil, allowFailure = false, dry = false)
                 db = '' unless db
                 cmd = " mariadb #{db} --execute=\"#{sql.gsub('"', '\\"')};\""
-                self.exec(cmd, ssh, allowFailure, dry)
+                if connectionOrSSH.is_a?(IO::Connection)
+                    connectionOrSSH.exec(cmd, allowFailure, dry)
+                else
+                    self.exec(cmd, connectionOrSSH, allowFailure, dry)
+                end
             end
 
         end

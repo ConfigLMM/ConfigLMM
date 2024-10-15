@@ -44,16 +44,16 @@ module ConfigLMM
             end
 
             def cleanup(configs, state, context, options)
-                cleanupType(:Tunnel, configs, state, context, options) do |item, id, state, context, options, ssh|
+                cleanupType(:Tunnel, configs, state, context, options) do |item, id, state, context, options, connection|
                     if item['UDP']
                         name = "tunnelUDP-#{item['Port']}"
                     else
                         name = "tunnelTCP-#{item['Port']}"
                     end
-                    Framework::LinuxApp.stopService(name + '.socket', ssh)
-                    Framework::LinuxApp.disableService(name + '.socket', ssh)
-                    rm("/etc/systemd/system/#{name}.service", options[:dry], ssh)
-                    rm("/etc/systemd/system/#{name}.socket", options[:dry], ssh)
+                    Framework::LinuxApp.stopService(name + '.socket', connection)
+                    Framework::LinuxApp.disableService(name + '.socket', connection)
+                    connection.rm("/etc/systemd/system/#{name}.service", options[:dry])
+                    connection.rm("/etc/systemd/system/#{name}.socket", options[:dry])
                     state.item(id)['Status'] = State::STATUS_DESTROYED
                 end
             end

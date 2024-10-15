@@ -74,20 +74,20 @@ module ConfigLMM
             end
 
             def cleanup(configs, state, context, options)
-                cleanupType(:GitLab, configs, state, context, options) do |item, id, state, context, options, ssh|
+                cleanupType(:GitLab, configs, state, context, options) do |item, id, state, context, options, connection|
                     if item['Proxy'].nil? || item['Proxy']
-                        self.cleanupNginxConfig('GitLab', id, state, context, options, ssh)
-                        self.class.reload(ssh, options[:dry])
+                        self.cleanupNginxConfig('GitLab', id, state, context, options, connection)
+                        self.class.reload(connection, options[:dry])
                     end
-                    Framework::LinuxApp.firewallRemovePort('18100/tcp', ssh, options[:dry])
-                    Framework::LinuxApp.stopService('GitLab', ssh, options[:dry])
-                    rm('/etc/containers/systemd/GitLab.container', options[:dry], ssh)
-                    self.class.exec("podman rmi #{IMAGE_ID}", ssh, true, options[:dry])
+                    Framework::LinuxApp.firewallRemovePort('18100/tcp', connection, options[:dry])
+                    Framework::LinuxApp.stopService('GitLab', connection, options[:dry])
+                    connection.rm('/etc/containers/systemd/GitLab.container', options[:dry])
+                    connection.exec("podman rmi #{IMAGE_ID}", true, options[:dry])
                     state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
                     if options[:destroy]
-                        rm('/var/lib/gitlab', options[:dry], ssh)
-                        rm('/var/log/nginx/gitlab.access.log', options[:dry], ssh)
-                        rm('/var/log/nginx/gitlab.error.log', options[:dry], ssh)
+                        connection.rm('/var/lib/gitlab', options[:dry])
+                        connection.rm('/var/log/nginx/gitlab.access.log', options[:dry])
+                        connection.rm('/var/log/nginx/gitlab.error.log', options[:dry])
                         state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
                     end
                 end

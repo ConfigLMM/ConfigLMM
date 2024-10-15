@@ -112,15 +112,15 @@ module ConfigLMM
                         containers = JSON.parse(self.class.exec("su --login #{USER} --shell /usr/bin/sh --command 'podman ps --format json --filter name=^ERPNext$'", ssh).strip)
                         raise 'Failed to find container!' if containers.empty?
 
-                        MariaDB.executeRemotely(target['Database'], ssh) do |sshDB|
-                            if !MariaDB.tableExist?(USER, 'tabUser', sshDB)
+                        MariaDB.executeRemotely(target['Database'], connection) do |connectionDB|
+                            if !MariaDB.tableExist?(USER, 'tabUser', connectionDB)
                                 adminPassword = SecureRandom.alphanumeric(20)
                                 self.class.exec("rm -rf " + HOME_DIR + '/sites/erpnext', ssh)
                                 #self.class.exec(" su --login #{USER} --shell /usr/bin/sh --command \"podman exec #{containers.first['Id']} sh -c 'bench new-site --no-setup-db --db-name erpnext --db-user erpnext --admin-password #{adminPassword} --install-app erpnext --set-default erpnext'\"", ssh)
-                                dbAdminPassword = MariaDB.createAdmin(sshDB)
-                                MariaDB.executeSQL("DROP DATABASE #{USER}", nil, sshDB)
+                                dbAdminPassword = MariaDB.createAdmin(connectionDB)
+                                MariaDB.executeSQL("DROP DATABASE #{USER}", nil, connectionDB)
                                 self.class.exec(" su --login #{USER} --shell /usr/bin/sh --command \" podman exec #{containers.first['Id']} sh -c ' bench new-site --db-root-username admin --db-root-password #{dbAdminPassword} --db-name erpnext --admin-password #{adminPassword} --install-app erpnext --set-default erpnext'\"", ssh)
-                                MariaDB.dropAdmin(sshDB)
+                                MariaDB.dropAdmin(connectionDB)
                                 self.class.exec("su --login #{USER} --shell /usr/bin/sh --command \"podman exec #{containers.first['Id']} sh -c 'bench --site erpnext install-app hrms'\"", ssh)
                                 prompt.say("Administrator password: #{adminPassword}", :color => :magenta)
                             end
@@ -145,41 +145,41 @@ module ConfigLMM
             end
 
             def cleanup(configs, state, context, options)
-                cleanupType(:ERPNext, configs, state, context, options) do |item, id, state, context, options, ssh|
+                cleanupType(:ERPNext, configs, state, context, options) do |item, id, state, context, options, connection|
                     if item['Proxy'].nil? || item['Proxy']
-                        self.cleanupNginxConfig('ERPNext', id, state, context, options, ssh)
-                        self.class.reload(ssh, options[:dry])
+                        self.cleanupNginxConfig('ERPNext', id, state, context, options, connection)
+                        self.class.reload(connection, options[:dry])
                     end
-                    Framework::LinuxApp.firewallRemovePort('18400/tcp', ssh, options[:dry])
+                    Framework::LinuxApp.firewallRemovePort('18400/tcp', connection, options[:dry])
 
-                    self.class.exec("systemctl --user --machine=#{USER}@ stop ERPNext", ssh, true, options[:dry])
-                    self.class.exec("systemctl --user --machine=#{USER}@ stop ERPNext-Frontend", ssh, true, options[:dry])
-                    self.class.exec("systemctl --user --machine=#{USER}@ stop ERPNext-Websocket", ssh, true, options[:dry])
-                    self.class.exec("systemctl --user --machine=#{USER}@ stop ERPNext-Scheduler", ssh, true, options[:dry])
-                    self.class.exec("systemctl --user --machine=#{USER}@ stop ERPNext-Queue", ssh, true, options[:dry])
-                    self.class.exec("systemctl --user --machine=#{USER}@ stop ERPNext-network", ssh, true, options[:dry])
+                    connection.exec("systemctl --user --machine=#{USER}@ stop ERPNext", connection, true, options[:dry])
+                    connection.exec("systemctl --user --machine=#{USER}@ stop ERPNext-Frontend", connection, true, options[:dry])
+                    connection.exec("systemctl --user --machine=#{USER}@ stop ERPNext-Websocket", connection, true, options[:dry])
+                    connection.exec("systemctl --user --machine=#{USER}@ stop ERPNext-Scheduler", connection, true, options[:dry])
+                    connection.exec("systemctl --user --machine=#{USER}@ stop ERPNext-Queue", connection, true, options[:dry])
+                    connection.exec("systemctl --user --machine=#{USER}@ stop ERPNext-network", connection, true, options[:dry])
 
                     path = Framework::LinuxApp::SYSTEMD_CONTAINERS_PATH.gsub('~', HOME_DIR)
-                    rm(path + 'ERPNext.network', options[:dry], ssh)
-                    rm(path + 'ERPNext.container', options[:dry], ssh)
-                    rm(path + 'ERPNext-Queue.container', options[:dry], ssh)
-                    rm(path + 'ERPNext-Scheduler.container', options[:dry], ssh)
-                    rm(path + 'ERPNext-Websocket.container', options[:dry], ssh)
-                    rm(path + 'ERPNext-Frontend.container', options[:dry], ssh)
+                    connection.rm(path + 'ERPNext.network', options[:dry])
+                    connection.rm(path + 'ERPNext.container', options[:dry])
+                    connection.rm(path + 'ERPNext-Queue.container', options[:dry])
+                    connection.rm(path + 'ERPNext-Scheduler.container', options[:dry])
+                    connection.rm(path + 'ERPNext-Websocket.container', options[:dry])
+                    connection.rm(path + 'ERPNext-Frontend.container', options[:dry])
 
-                    self.class.exec("podman rmi #{IMAGE_ID}", ssh, true, options[:dry])
+                    connection.exec("podman rmi #{IMAGE_ID}", true, options[:dry])
 
                     state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
 
                     if options[:destroy]
                         item['Database'] ||= {}
-                        MariaDB.executeRemotely(item['Database'], ssh) do |sshDB|
-                            MariaDB.executeSQL("DROP DATABASE #{USER}", nil, sshDB, true, options[:dry])
+                        MariaDB.executeRemotely(item['Database'], connection) do |connection|
+                            MariaDB.executeSQL("DROP DATABASE #{USER}", nil, connection, true, options[:dry])
                         end
-                        Framework::LinuxApp.deleteUserAndGroup(USER, ssh, options[:dry])
-                        rm(HOME_DIR, options[:dry], ssh)
-                        rm('/var/log/nginx/erpnext.access.log', options[:dry], ssh)
-                        rm('/var/log/nginx/erpnext.error.log', options[:dry], ssh)
+                        Framework::LinuxApp.deleteUserAndGroup(USER, connection, options[:dry])
+                        connection.rm(HOME_DIR, options[:dry])
+                        connection.rm('/var/log/nginx/erpnext.access.log', options[:dry])
+                        connection.rm('/var/log/nginx/erpnext.error.log', options[:dry])
 
                         state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
                     end
