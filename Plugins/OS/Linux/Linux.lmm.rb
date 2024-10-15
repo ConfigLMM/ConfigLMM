@@ -104,6 +104,9 @@ module ConfigLMM
                             badname = '--badname'
                             badname = '--badnames' if distroInfo['Name'] == 'openSUSE Leap'
                             connection.exec("useradd #{badname} --create-home --user-group #{shell} #{name}")
+                        elsif info['Shell']
+                            shell = "--shell '/usr/bin/#{info['Shell']}'"
+                            connection.exec("chsh #{shell} #{name}")
                         end
                         if info['Subuids']
                             connection.exec("sed -i '/^#{name}:.*/d' #{SUBUID_FILE}")
