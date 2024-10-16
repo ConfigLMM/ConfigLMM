@@ -1,0 +1,24 @@
+
+[Unit]
+Description=Apache ZooKeeper container
+After=local-fs.target
+
+[Container]
+ContainerName=ZooKeeper
+Image=docker.io/bitnami/zookeeper:latest
+EnvironmentFile=/var/lib/zookeeper/.config/containers/systemd/ZooKeeper.env
+PublishPort=127.0.0.1:2181:2181
+PublishPort=127.0.0.1:2888:2888
+PublishPort=127.0.0.1:3888:3888
+PublishPort=127.0.0.1:18500:8080
+UserNS=keep-id:uid=1001,gid=1001
+Volume=/var/lib/zookeeper/data:/bitnami/zookeeper/data
+LogDriver=journald
+AutoUpdate=registry
+
+[Service]
+TimeoutStartSec=6min
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
