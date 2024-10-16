@@ -1,0 +1,28 @@
+
+[Unit]
+Description=ClickHouse container
+After=local-fs.target
+
+[Container]
+ContainerName=ClickHouse
+Image=docker.io/clickhouse/clickhouse-server:latest
+EnvironmentFile=/var/lib/clickhouse/.config/containers/systemd/ClickHouse.env
+Network=slirp4netns:allow_host_loopback=true
+PublishPort=0.0.0.0:8123:8123
+PublishPort=0.0.0.0:19100:9000
+UserNS=keep-id:uid=1000,gid=1000
+Volume=/var/lib/clickhouse/server/config.d:/etc/clickhouse-server/config.d
+Volume=/var/lib/clickhouse/server/users.d:/etc/clickhouse-server/users.d
+Volume=/var/lib/clickhouse/data:/var/lib/clickhouse
+Volume=/var/lib/clickhouse/logs:/var/log/clickhouse-server
+LogDriver=journald
+AddCapability=IPC_LOCK
+AddCapability=SYS_NICE
+AutoUpdate=registry
+
+[Service]
+TimeoutStartSec=6min
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target

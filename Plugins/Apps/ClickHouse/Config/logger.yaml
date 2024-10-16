@@ -1,0 +1,8 @@
+
+logger:
+    log:
+    errorlog:
+    console: true
+    level: information
+    formatting:
+        type: json
