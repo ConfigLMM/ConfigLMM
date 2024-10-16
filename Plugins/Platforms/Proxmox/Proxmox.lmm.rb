@@ -98,10 +98,15 @@ module ConfigLMM
                     nics = serverInfo['NIC']
                     nics = [nics] unless nics.is_a?(Array)
                     nics.each_with_index do |nic, i|
+                        nic.transform_keys!(&:downcase)
                         nic['model'] = 'virtio' unless nic['model']
                         if nic['mac']
                             nic['macaddr'] = nic['mac']
                             nic.delete('mac')
+                        end
+                        if nic['vlan']
+                            nic['tag'] = nic['vlan']
+                            nic.delete('vlan')
                         end
                         settings["net#{i}"] = nic.map { |name_value| name_value.join('=') }.join(',')
                     end
@@ -169,6 +174,10 @@ module ConfigLMM
                     settings[:memory] = Filesize.from(serverInfo['RAM']).to_f('MiB').to_i
                 end
 
+                if serverInfo['Swap']
+                    settings[:swap] = Filesize.from(serverInfo['Swap']).to_f('MiB').to_i
+                end
+
                 if serverInfo['Storage']
                     storages = node.storages.list_by_content_type('rootdir')
                     settings[:rootfs] = storages.first.storage + ':' + Filesize.from(serverInfo['Storage']).to_f('GiB').to_i.to_s
@@ -186,10 +195,15 @@ module ConfigLMM
                     nics = serverInfo['NIC']
                     nics = [nics] unless nics.is_a?(Array)
                     nics.each_with_index do |nic, i|
+                        nic.transform_keys!(&:downcase)
                         nic['name'] = "eth#{i}" unless nic['name']
                         if nic['mac']
                             nic['hwaddr'] = nic['mac']
                             nic.delete('mac')
+                        end
+                        if nic['vlan']
+                            nic['tag'] = nic['vlan']
+                            nic.delete('vlan')
                         end
                         nic[:ip] = 'dhcp'
                         if serverInfo['Network'].is_a?(Hash)
