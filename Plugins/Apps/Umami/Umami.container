@@ -1,0 +1,19 @@
+
+[Unit]
+Description=Umami container
+After=local-fs.target
+
+[Container]
+ContainerName=Umami
+Image=docker.umami.is/umami-software/umami:postgresql-latest
+EnvironmentFile=/var/lib/umami/.config/containers/systemd/Umami.env
+Network=slirp4netns:allow_host_loopback=true
+PublishPort=127.0.0.1:13300:3000
+LogDriver=journald
+AutoUpdate=registry
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
