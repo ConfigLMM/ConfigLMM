@@ -1,0 +1,61 @@
+
+upstream <%= config['Name'] %> {
+    server <%= config['Server'] %>;
+}
+
+server {
+    <% if config['NginxVersion'] >= 1.25 %>
+        listen 443 ssl;
+        listen [::]:443 ssl;
+        http2 on;
+        http3 on;
+        quic_retry on;
+        add_header Alt-Svc 'h3=":443"; ma=86400';
+    <% else %>
+        listen 443 ssl http2;
+        listen [::]:443 ssl http2;
+    <% end %>
+
+    include config-lmm/errors.conf;
+    include config-lmm/security.conf;
+    include config-lmm/ssl.conf;
+
+    server_name <%= config['Domain'] %>;
+
+    <% if config['CertName'] %>
+        ssl_certificate "/etc/letsencrypt/live/<%= config['CertName'] %>/fullchain.pem";
+        ssl_certificate_key "/etc/letsencrypt/live/<%= config['CertName'] %>/privkey.pem";
+        ssl_trusted_certificate "/etc/letsencrypt/live/<%= config['CertName'] %>/chain.pem";
+    <% end %>
+
+    client_max_body_size 24M;
+    large_client_header_buffers 8 128k;
+
+    location / {
+        proxy_pass http://<%= config['Name'] %>;
+        include config-lmm/proxy.conf;
+    }
+
+    location ~ ^/api/(v1|v3)/logs/(tail|livetail){
+        proxy_pass http://<%= config['Name'] %>;
+
+        # connection will be closed if no data is read for 600s between successive read operations
+        proxy_read_timeout 600s;
+
+        # dont buffer the data send it directly to client.
+        proxy_buffering off;
+        proxy_cache off;
+    }
+
+    location /api {
+        proxy_pass http://<%= config['Name'] %>/api;
+        # connection will be closed if no data is read for 600s between successive read operations
+        proxy_read_timeout 600s;
+    }
+
+    location /ws {
+        proxy_pass  http://<%= config['Name'] %>/ws;
+        proxy_read_timeout 600s;
+    }
+
+}

@@ -1,0 +1,26 @@
+
+[Unit]
+Description=SigNoz container
+After=local-fs.target
+
+[Container]
+ContainerName=SigNoz
+Image=docker.io/signoz/signoz-community:$VERSION
+Exec=--use-logs-new-schema=true --use-trace-new-schema=true --cluster default
+EnvironmentFile=/var/lib/signoz/.config/containers/systemd/SigNoz.env
+Network=slirp4netns:allow_host_loopback=true
+PublishPort=127.0.0.1:4320:4320
+PublishPort=127.0.0.1:6060:6060
+PublishPort=127.0.0.1:18600:8080
+Volume=/var/lib/signoz/config:/root/config
+Volume=/var/lib/signoz/data:/var/lib/signoz
+LogDriver=journald
+AutoUpdate=registry
+
+[Service]
+TimeoutStartSec=6min
+TimeoutStopSec=3min
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target

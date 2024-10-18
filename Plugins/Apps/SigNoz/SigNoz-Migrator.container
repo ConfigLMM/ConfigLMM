@@ -1,0 +1,17 @@
+[Unit]
+Description=SigNoz Migrator container
+After=local-fs.target
+
+[Container]
+ContainerName=SigNoz-Migrator
+Image=docker.io/signoz/signoz-schema-migrator:$VERSION
+Exec=sync --cluster-name default --dsn=$DSN
+Network=slirp4netns:allow_host_loopback=true
+LogDriver=journald
+AutoUpdate=registry
+
+[Service]
+TimeoutStartSec=10min
+
+[Install]
+WantedBy=multi-user.target default.target

@@ -1,0 +1,23 @@
+
+[Unit]
+Description=OpenTelemetry Collector container
+After=local-fs.target
+
+[Container]
+ContainerName=SigNoz-Collector
+Image=docker.io/signoz/signoz-otel-collector:$VERSION
+Exec=--config=/etc/otel/otel-collector-config.yaml --copy-path=/var/tmp/collector-config.yaml --manager-config=/etc/otel/otel-collector-opamp-config.yaml
+Network=slirp4netns:allow_host_loopback=true
+PublishPort=127.0.0.1:4317:4317
+PublishPort=127.0.0.1:4318:4318
+Volume=/var/lib/signoz-collector/otel-collector-config.yaml:/etc/otel/otel-collector-config.yaml
+Volume=/var/lib/signoz-collector/otel-collector-opamp-config.yaml:/etc/otel/otel-collector-opamp-config.yaml
+LogDriver=journald
+AutoUpdate=registry
+
+[Service]
+TimeoutStartSec=6min
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
