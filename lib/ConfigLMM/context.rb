@@ -2,16 +2,21 @@
 # encoding: UTF-8
 # frozen_string_literal: true
 
+require_relative 'secrets/envStore'
+require_relative 'secrets/fileStore'
+
 require 'yaml'
 
 module ConfigLMM
     class Context
         CONTEXT_FILE = 'configlmm/context.yaml'
 
-        def initialize(logger, prompt, xdg, contextFile)
+        def initialize(logger, prompt, xdg, options)
             @Logger = logger
             @Prompt = prompt
-            load!(xdg.config_home, contextFile)
+            contextFile = options[:context]
+            secretsProvider = options[:secrets]
+            load!(xdg.config_home, contextFile, secretsProvider)
         end
 
         def likes?(name)
@@ -30,10 +35,15 @@ module ConfigLMM
             @Context['Dislikes'] += context['Dislikes']
         end
 
+        def secrets
+            @Secrets
+        end
+
         private
 
-        def load!(configHome, contextFile)
+        def load!(configHome, contextFile, secretsProvider)
             @Context = {}
+            @Secrets = Secrets::EnvStore.new(@Logger, @Prompt)
             if (contextFile && !File.exist?(contextFile))
                 @Logger.error("Provided Context file doesn't exist: #{contextFile}")
                 raise 'Missing Context!'
@@ -46,6 +56,15 @@ module ConfigLMM
             end
             @Context['Likes'] ||= []
             @Context['Dislikes'] ||= []
+
+            if secretsProvider
+                url = Addressable::URI.parse(secretsProvider)
+                if url.scheme.nil?
+                    @Secrets = Secrets::FileStore.new(@Logger, @Prompt, url.path)
+                else
+                    raise 'Only file secret provider is implemented!'
+                end
+            end
         end
 
     end

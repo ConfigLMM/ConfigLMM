@@ -23,7 +23,7 @@ module ConfigLMM
                     config.level = @Options[:level]
                 end
 
-                @Context = Context.new(logger, prompt, ::XDG.new, @Options[:context])
+                @Context = Context.new(logger, prompt, ::XDG.new, @Options)
                 @State = State.new(logger, prompt)
                 @Diff = {}
 

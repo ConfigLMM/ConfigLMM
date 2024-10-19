@@ -45,6 +45,8 @@ module ConfigLMM
         desc 'refresh [CONFIGS...]', 'Update local state to match deployed things'
         method_option :help,    aliases: '-h', type: :boolean,
                                 desc: 'Display usage information'
+        method_option :secrets, aliases: '-s', type: :string,
+                                desc: 'Path to the secrets provider (can be a file)'
         method_option :state,   aliases: '-s', type: :string,
                                 desc: 'Path to the state file'
         method_option :context, aliases: '-c', type: :string,
@@ -82,6 +84,8 @@ module ConfigLMM
         desc 'deploy [CONFIGS...]', 'Deploy configuration'
         method_option :help,    aliases: '-h', type: :boolean,
                                 desc: 'Display usage information'
+        method_option :secrets, aliases: '-s', type: :string,
+                                desc: 'Path to the secrets provider (can be a file)'
         method_option :state,   aliases: '-s', type: :string,
                                 desc: 'Path to the state file'
         method_option :context, aliases: '-c', type: :string,
@@ -95,12 +99,14 @@ module ConfigLMM
 
 
         desc 'cleanup [CONFIGS...]', 'In deployed infrastructure cleanup/delete unused things (eg. deployment leftover junk) (note this can be risky due to mistakes)'
-        method_option :help,  aliases: '-h', type: :boolean,
-                              desc: 'Display usage information'
-        method_option :state, aliases: '-s', type: :string,
-                              desc: 'Path to the state file'
-        method_option :destroy,  aliases: '-d', type: :boolean,
-                              desc: 'Destroy all data (eg. even DB)'
+        method_option :help,    aliases: '-h', type: :boolean,
+                                desc: 'Display usage information'
+        method_option :secrets, aliases: '-s', type: :string,
+                                desc: 'Path to the secrets provider (can be a file)'
+        method_option :state,   aliases: '-s', type: :string,
+                                desc: 'Path to the state file'
+        method_option :destroy, aliases: '-d', type: :boolean,
+                                desc: 'Destroy all data (eg. even DB)'
         def cleanup(*configPaths)
             handleCommand(:cleanup, configPaths, options)
         end
