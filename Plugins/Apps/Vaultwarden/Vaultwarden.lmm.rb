@@ -59,7 +59,6 @@ module ConfigLMM
                     end
                 else
                     # TODO
-                    activeState['Location'] = '@me'
                 end
             end
 

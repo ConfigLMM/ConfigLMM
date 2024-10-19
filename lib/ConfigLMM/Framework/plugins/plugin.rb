@@ -229,7 +229,7 @@ module ConfigLMM
                 items.each do |id, item|
                     if !configs.key?(id) && item['Status'] != State::STATUS_DESTROYED && (item['Status'] != State::STATUS_DELETED || options[:destroy])
                         begin
-                            self.withConnection(item['Location'], item) do |connection|
+                            self.withConnection(item['Config']['Location'], item) do |connection|
                                 yield(item, id, state, context, options, connection)
                             end
                         rescue SystemCallError => error

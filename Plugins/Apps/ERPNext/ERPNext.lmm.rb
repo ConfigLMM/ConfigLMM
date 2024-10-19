@@ -45,7 +45,6 @@ module ConfigLMM
 
                     self.class.sshStart(uri) do |ssh|
 
-                        activeState['Database'] = target['Database']
                         dbPassword = self.configureMariaDB(target['Database'], activeState, ssh)
                         distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
                         Framework::LinuxApp.configurePodmanServiceOverSSH(USER, HOME_DIR, 'ERPNext', distroInfo, ssh)

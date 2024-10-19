@@ -64,7 +64,6 @@ module ConfigLMM
                     if !target.key?('Proxy') || target['Proxy'] == true || target['Proxy'] == 'only'
                         deployNginxConfig(id, target, activeState, context, options)
                     end
-                    activeState['Location'] = '@me'
                 end
             end
 

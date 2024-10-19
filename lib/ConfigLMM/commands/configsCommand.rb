@@ -124,8 +124,10 @@ module ConfigLMM
                 elsif activeState[:Type] != singleTarget['Type'].to_s
                     raise Framework::PluginError.new("Unexpected Type #{activeState[:Type].inspect}! Wanted #{singleTarget['Type']}")
                 end
-                activeState['Location'] = singleTarget['Location']
-                activeState['Proxy'] = singleTarget['Proxy']
+
+                singleTarget['Location'] = '@me' unless singleTarget['Location']
+                singleTarget['SecretId'] = (singleTarget['SecretId'] || id).upcase
+
                 actionMethod = plugin.class.actionMethod(singleTarget['Type'], 'Deploy')
                 if plugin.methods.include?(:authenticate)
                     result = plugin.authenticate(actionMethod, singleTarget, state, context, options)
@@ -148,7 +150,7 @@ module ConfigLMM
                     end
 
                     if !options['dry']
-                     # Prevent others accessing it
+                        # Prevent others accessing it
                         FileUtils.chmod(0750, options['output'])
                     end
 
@@ -158,7 +160,31 @@ module ConfigLMM
 
                     plugin.send(actionMethod, id, singleTarget, activeState, context, options)
                 end
+                activeState['Config'] = self.class.sanitizeConfig(singleTarget)
+                activeState['Config'].delete(:Parent)
+                activeState['Config'].delete('Resources')
+                activeState['Status'] = State::STATUS_DEPLOYED unless activeState['Status']
                 state.save
+            end
+
+            def self.sanitizeConfig(config)
+                return config unless config.is_a?(Hash)
+                newConfig = config.dup
+                config.each do |key, value|
+                    lowerkey = key.to_s.downcase
+                    if lowerkey.include?('password') || lowerkey.include?('privatekey') || lowerkey.include?('sharedkey')
+                        newConfig.delete(key)
+                    elsif value.is_a?(Hash)
+                        newConfig[key] = self.sanitizeConfig(value)
+                    elsif value.is_a?(Array)
+                        newValue = value
+                        value.each_with_index do |v, i|
+                            newValue[i] = self.sanitizeConfig(v)
+                        end
+                        newConfig[key] = newValue
+                    end
+                end
+                newConfig
             end
 
 

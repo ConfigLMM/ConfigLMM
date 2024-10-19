@@ -68,7 +68,6 @@ module ConfigLMM
                         copyNotPresent(options['output'] + GOLLUM_PATH + '/repo', GOLLUM_PATH, options['dry'])
                         chown('http', 'http', GOLLUM_PATH, options['dry'])
                     end
-                    activeState['Location'] = '@me'
                 end
             end
 

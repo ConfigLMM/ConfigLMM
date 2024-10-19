@@ -59,8 +59,6 @@ module ConfigLMM
 
                 self.ensureServiceAutoStart(serviceName, target['Location'])
                 self.startService(serviceName, target['Location'])
-
-                activeState['Status'] = State::STATUS_DEPLOYED
             end
 
             def cleanup(configs, state, context, options)

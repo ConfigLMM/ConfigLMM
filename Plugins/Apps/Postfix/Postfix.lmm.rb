@@ -12,13 +12,9 @@ module ConfigLMM
                 plugins[:Linux].ensurePackages([PACKAGE_NAME, 'CyrusSASL'], target['Location'])
                 plugins[:Linux].ensureServiceAutoStart(SERVICE_NAME, target['Location'])
 
-                activeState['Instance'] = target['Instance']
-                activeState['AlternativePort'] = target['AlternativePort']
                 deploySettings(target, target['Location'], options)
 
                 plugins[:Linux].startService(SERVICE_NAME, target['Location'])
-
-                activeState['Status'] = State::STATUS_DEPLOYED
             end
 
             def deploySettings(target, location, options)

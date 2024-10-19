@@ -237,7 +237,6 @@ module ConfigLMM
                     if uri.scheme == 'ssh' && !params.key?('host')
                         self.class.sshStart(uri) do |ssh|
                             target['Deploy'] = !!target['Settings'] unless target.key?('Deploy')
-                            activeState['Deploy'] = target['Deploy']
                             if target['Deploy']
                                 Framework::LinuxApp.ensurePackages([PACKAGE_NAME], ssh)
                                 Framework::LinuxApp.ensureServiceAutoStartOverSSH(SERVICE_NAME, ssh)
@@ -261,7 +260,6 @@ module ConfigLMM
                             if target['Deploy']
                                 Framework::LinuxApp.firewallAddServiceOverSSH('dns', ssh)
                                 Framework::LinuxApp.startServiceOverSSH(SERVICE_NAME, ssh)
-                                activeState['Status'] = State::STATUS_DEPLOYED
                             end
                         end
                     end

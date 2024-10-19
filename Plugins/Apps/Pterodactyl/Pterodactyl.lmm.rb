@@ -10,7 +10,6 @@ module ConfigLMM
             def actionPterodactylDeploy(id, target, activeState, context, options)
                 if !target['Location'] || target['Location'] == '@me'
                     deployNginxConfig(id, target, activeState, context, options)
-                    activeState['Location'] = '@me'
                 end
             end
 
@@ -21,7 +20,6 @@ module ConfigLMM
             def actionWingsDeploy(id, target, activeState, context, options)
                 if !target['Location'] || target['Location'] == '@me'
                     deployNginxConfig(id, target, activeState, context, options)
-                    activeState['Location'] = '@me'
                 end
             end
         end

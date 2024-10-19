@@ -56,7 +56,6 @@ module ConfigLMM
                         end
 
                         target['Database'] ||= {}
-                        activeState['Database'] = target['Database']
                         if !target['Database']['Type'] || target['Database']['Type'] == 'pgsql'
                             password = SecureRandom.alphanumeric(20)
                             PostgreSQL.createRemoteUserAndDBOverSSH(target['Database'], USER, password, ssh)
@@ -105,7 +104,6 @@ module ConfigLMM
                 else
                     # TODO
                 end
-                activeState['Status'] = State::STATUS_DEPLOYED
             end
 
             def cleanup(configs, state, context, options)

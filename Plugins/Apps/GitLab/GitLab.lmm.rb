@@ -63,7 +63,6 @@ module ConfigLMM
                 else
                     # TODO
                 end
-                activeState['Status'] = State::STATUS_DEPLOYED
             end
 
             def prepareConfig(target, ssh)

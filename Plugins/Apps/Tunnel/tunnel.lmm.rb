@@ -8,8 +8,6 @@ module ConfigLMM
                     Framework::LinuxApp.ensurePackage('socat', connection)
 
                     port = target['Port']
-                    activeState['Port'] = port
-                    activeState['UDP'] = target['UDP']
                     if target['UDP']
                         name = "tunnelUDP-#{port}"
                         connection.upload(__dir__ + '/tunnelUDP.service', "/etc/systemd/system/#{name}.service")
@@ -33,7 +31,6 @@ module ConfigLMM
                     Framework::LinuxApp.stopService(name + '.service', connection)
                     Framework::LinuxApp.startService(name + '.socket', connection)
                 end
-                activeState['Status'] = State::STATUS_DEPLOYED
             end
 
             def cleanup(configs, state, context, options)

@@ -25,8 +25,8 @@ module ConfigLMM
             end
 
             def actionGitHubOrganizationDiff(id, target, activeState, context, options)
-                shouldMatch(id, 'Name', 'login', target, activeState)
-                shouldMatch(id, 'Description', 'description', target, activeState)
+                shouldMatch(id, 'Name', 'login', target, activeState['Config'])
+                shouldMatch(id, 'Description', 'description', target, activeState['Config'])
             end
 
             def actionGitHubOrganizationDeploy(id, target, activeState, context, options)

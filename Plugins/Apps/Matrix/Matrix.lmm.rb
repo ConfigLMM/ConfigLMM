@@ -93,7 +93,6 @@ module ConfigLMM
                     end
                 else
                     deployNginxConfig(id, target, activeState, context, options)
-                    activeState['Location'] = '@me'
                 end
             end
 

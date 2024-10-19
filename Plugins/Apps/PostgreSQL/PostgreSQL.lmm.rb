@@ -13,11 +13,6 @@ module ConfigLMM
 
             def actionPostgreSQLDeploy(id, target, activeState, context, options)
                 target['Deploy'] = !!(target['ListenAll'] || target['Listen'] || target['Settings']) unless target.key?('Deploy')
-                activeState['Deploy'] = target['Deploy']
-                activeState['Users'] = target['Users']
-                activeState['Databases'] = target['Databases']
-                activeState['Publications'] = target['Publications']
-                activeState['Subscriptions'] = target['Subscriptions']
 
                 if target['Deploy']
                     self.ensurePackage(PACKAGE_NAME, target['Location'])
@@ -44,8 +39,6 @@ module ConfigLMM
                         `pg_ctl reload`
                     end
                 end
-
-                activeState['Status'] = State::STATUS_DEPLOYED
             end
 
             def cleanup(configs, state, context, options)

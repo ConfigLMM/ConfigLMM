@@ -26,8 +26,6 @@ module ConfigLMM
                 else
                     # TODO
                 end
-
-                activeState['Status'] = State::STATUS_DEPLOYED
             end
 
             def cleanup(configs, state, context, options)

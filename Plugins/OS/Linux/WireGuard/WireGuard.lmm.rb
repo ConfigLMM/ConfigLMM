@@ -86,8 +86,6 @@ module ConfigLMM
                     # TODO
                 end
                 self.startService(SERVICE_NAME, target['Location'])
-
-                activeState['Status'] = State::STATUS_DEPLOYED
             end
 
             def cleanup(configs, state, context, options)

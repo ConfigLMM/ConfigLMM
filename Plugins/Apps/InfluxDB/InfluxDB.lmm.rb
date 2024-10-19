@@ -10,7 +10,6 @@ module ConfigLMM
             def actionInfluxDBDeploy(id, target, activeState, context, options)
                 if !target['Location'] || target['Location'] == '@me'
                     deployNginxConfig(id, target, activeState, context, options)
-                    activeState['Location'] = '@me'
                 end
             end
 

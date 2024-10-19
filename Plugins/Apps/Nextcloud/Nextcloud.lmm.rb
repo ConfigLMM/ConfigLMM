@@ -69,9 +69,7 @@ module ConfigLMM
                     end
                 else
                     deployNginxConfig(id, target, activeState, context, options)
-                    activeState['Location'] = '@me'
                 end
-                activeState['Status'] = State::STATUS_DEPLOYED
             end
 
             def cleanup(configs, state, context, options)

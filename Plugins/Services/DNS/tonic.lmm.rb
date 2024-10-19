@@ -26,7 +26,6 @@ module ConfigLMM
                 if domain.empty?
                     raise Framework::PluginProcessError.new('Invalid Domain for ' + id)
                 end
-                activeState['Domain'] = target['Domain']
                 response = HTTP.post(EDIT_URL, :form => {
                                             command: 'editdns',
                                             error: 'badpass.htm',
@@ -55,7 +54,7 @@ module ConfigLMM
             end
 
             def actionTonicDNSDiff(id, target, activeState, context, options)
-                shouldMatch(id, 'Domain', 'Domain', target, activeState)
+                shouldMatch(id, 'Domain', 'Domain', target, activeState['Config'])
                 nameservers = activeState['Nameservers']&.transform_keys { |ns| Addressable::IDNA.to_unicode(ns) }
                 if target['Nameservers'] != nameservers
                     @Diff.update({'Nameservers' => [target['Nameservers'], nameservers]})
@@ -104,9 +103,6 @@ module ConfigLMM
                                            'B1.x': 45,
                                            'B1.y': 30
                                         })
-
-                    activeState['Domain'] = target['Domain']
-                    activeState['Nameservers'] = target['Nameservers']
 
                     prompt.say(Nokogiri::HTML(response.to_s).at('//title/text()'))
                 end
