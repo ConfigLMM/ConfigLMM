@@ -12,4 +12,7 @@ AllowedIPs = <%= peer['AllowedIPs'] %>
 <% if peer['Endpoint'] %>
 Endpoint = <%= peer['Endpoint'] %>:51820
 <% end %>
+<% if peer['PersistentKeepalive'] %>
+PersistentKeepalive = <%= peer['PersistentKeepalive'] %>
+<% end %>
 <% end %>

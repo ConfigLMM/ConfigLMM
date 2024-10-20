@@ -13,45 +13,64 @@ module ConfigLMM
 
             def actionWireGuardDeploy(id, target, activeState, context, options)
                 self.prepareConfig(target)
-                if target['Location'] && target['Location'] != '@me'
-                    uri = Addressable::URI.parse(target['Location'])
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
-                    self.class.sshStart(uri) do |ssh|
-                        self.class.sshExec!(ssh, "firewall-cmd -q --permanent --add-port='#{PORT}/udp'")
-                        self.class.sshExec!(ssh, "firewall-cmd -q --add-port='#{PORT}/udp'")
-                        self.class.sshExec!(ssh, "firewall-cmd -q --permanent --zone=trusted --add-source=#{SUBNET}")
-                        self.class.sshExec!(ssh, "firewall-cmd -q --zone=trusted --add-source=#{SUBNET}")
-                        self.class.sshExec!(ssh, "firewall-cmd -q --permanent --direct --add-rule ipv4 nat POSTROUTING 0 -s #{SUBNET} ! -d #{SUBNET} -j MASQUERADE")
-                        self.class.sshExec!(ssh, "firewall-cmd -q --direct --add-rule ipv4 nat POSTROUTING 0 -s #{SUBNET} ! -d #{SUBNET} -j MASQUERADE")
+                self.withConnection(target['Location'], target) do |connection|
+                    Linux.withConnection(connection) do |linuxConnection|
+                        linuxConnection.firewallAddPort("#{PORT}/udp", options)
+                        linuxConnection.exec("firewall-cmd -q --permanent --zone=trusted --add-source=#{SUBNET}", options)
+                        linuxConnection.exec("firewall-cmd -q --zone=trusted --add-source=#{SUBNET}", options)
+                        linuxConnection.exec("firewall-cmd -q --permanent --direct --add-rule ipv4 nat POSTROUTING 0 -s #{SUBNET} ! -d #{SUBNET} -j MASQUERADE", options)
+                        linuxConnection.exec("firewall-cmd -q --direct --add-rule ipv4 nat POSTROUTING 0 -s #{SUBNET} ! -d #{SUBNET} -j MASQUERADE", options)
 
-                        self.class.ensurePackages([WIREGUARD_PACKAGE], ssh)
-                        self.class.ensureServiceAutoStartOverSSH(SERVICE_NAME, ssh)
+                        linuxConnection.ensurePackage(WIREGUARD_PACKAGE, options)
+                        linuxConnection.ensureServiceAutoStart(SERVICE_NAME, options)
 
                         dir = options['output'] + '/' + id + '/etc/wireguard/'
                         mkdir(dir, false)
                         template = ERB.new(File.read(__dir__ + '/wg0.conf.erb'))
 
-                        if self.class.remoteFilePresent?(CONFIG_FILE, ssh)
+                        target = target.dup
+                        target['PrivateKey'] = context.secrets.load(target['SecretId'], 'PRIVATEKEY')
+                        if target['PrivateKey'].nil?
+                            target['PrivateKey'] = genkey(connection, options)
+                            if !options['dry']
+                                context.secrets.store(target['SecretId'], 'PRIVATEKEY', target['PrivateKey'])
+                                context.secrets.print("Private Key", target['PrivateKey'])
+                            end
+                        end
+
+                        if connection.filePresent?(CONFIG_FILE, { **options, 'dry' => false })
                             # TODO Implement adding and removing peers
                         else
-                            if !target['PrivateKey']
-                                target['PrivateKey'] = ENV['WIREGUARD_PRIVATEKEY_' + id]
-                                if !target['PrivateKey']
-                                    target['PrivateKey'] = genkeyOverSSH(ssh)
-                                end
-                            end
-                            publicKey = pubkeyOverSSH(target['PrivateKey'], ssh)
-                            self.class.sshExec!(ssh, "echo '#{publicKey}' > /etc/wireguard/pubkey")
+                            publicKey = pubkey(target['PrivateKey'], connection, options)
+                            context.secrets.store(target['SecretId'], 'PUBLICKEY', publicKey) unless options['dry']
+                            connection.exec("echo '#{publicKey}' > /etc/wireguard/pubkey", false, options)
+
                             target['Peers'].each do |name, data|
-                                if !data['PublicKey']
-                                    data['PrivateKey'] = genkeyOverSSH(ssh)
-                                    data['PublicKey'] = pubkeyOverSSH(data['PrivateKey'], ssh)
-                                end
-                                if !data['PresharedKey']
-                                    data['PresharedKey'] = ENV['WIREGUARD_PRESHAREDKEY_' + id + '_' + name]
-                                    if !data['PresharedKey']
-                                        data['PresharedKey'] = genpskOverSSH(ssh)
+                                if data['SecretId']
+                                    data['PublicKey'] = context.secrets.load(data['SecretId'], 'PUBLICKEY')
+                                    data['PrivateKey'] = context.secrets.load(data['SecretId'], 'PRIVATEKEY')
+                                    if data['PublicKey'].nil?
+                                        data['PrivateKey'] = genkey(connection, options)
+                                        data['PublicKey'] = pubkey(data['PrivateKey'], connection, options)
+                                        if !options['dry']
+                                            context.secrets.store(data['SecretId'], 'PRIVATEKEY', data['PrivateKey'])
+                                            context.secrets.store(data['SecretId'], 'PUBLICKEY', data['PublicKey'])
+                                        end
                                     end
+                                    sharedSecretId = "#{target['SecretId'].upcase}_#{data['SecretId'].upcase}"
+                                    data['PresharedKey'] = context.secrets.load(sharedSecretId, 'PRESHAREDKEY')
+                                    if data['PresharedKey'].nil?
+                                        sharedSecretId2 = "#{data['SecretId'].upcase}_#{target['SecretId'].upcase}"
+                                        data['PresharedKey'] = context.secrets.load(sharedSecretId2, 'PRESHAREDKEY')
+                                        if data['PresharedKey'].nil?
+                                            data['PresharedKey'] = genpsk(connection, options)
+                                            context.secrets.store(sharedSecretId, 'PRESHAREDKEY', data['PresharedKey']) unless options['dry']
+                                        end
+                                    end
+                                else
+                                    data['PrivateKey'] = genkey(connection, options)
+                                    data['PublicKey'] = pubkey(data['PrivateKey'], connection, options)
+                                    data['PresharedKey'] = genpsk(connection, options)
                                 end
                             end
 
@@ -68,7 +87,7 @@ module ConfigLMM
                                         psk = otherData[pskIdB]
                                     else
                                         pskIdA = 'PresharedKey_' + name + '_' + otherName
-                                        data[pskIdA] = genpskOverSSH(ssh)
+                                        data[pskIdA] = genpsk(connection, options)
                                         psk = data[pskIdA]
                                     end
                                     templateData['Peers'][otherName] = { 'PublicKey' => otherData['PublicKey'], 'PresharedKey' => psk }
@@ -78,28 +97,27 @@ module ConfigLMM
                             end
 
                             renderTemplate(template, target, dir + 'wg0.conf', options)
-                            ssh.scp.upload!(dir + 'wg0.conf', CONFIG_FILE)
+                            connection.upload(dir + 'wg0.conf', CONFIG_FILE, options)
                         end
 
+                        linuxConnection.restartService(SERVICE_NAME, options)
                     end
-                else
-                    # TODO
                 end
-                self.startService(SERVICE_NAME, target['Location'])
             end
 
             def cleanup(configs, state, context, options)
                 cleanupType(:WireGuard, configs, state, context, options) do |item, id, state, context, options, connection|
-                    Framework::LinuxApp.stopService(SERVICE_NAME, connection, options[:dry])
-                    Framework::LinuxApp.disableService(SERVICE_NAME, connection, options[:dry])
-                    Framework::LinuxApp.removePackage(WIREGUARD_PACKAGE, connection, options[:dry])
+                    Linux.withConnection(connection) do |linuxConnection|
+                        linuxConnection.stopService(SERVICE_NAME, options[:dry])
+                        linuxConnection.disableService(SERVICE_NAME, options[:dry])
+                        linuxConnection.removePackage(WIREGUARD_PACKAGE, options[:dry])
 
-                    connection.exec("firewall-cmd -q --permanent --remove-port='#{PORT}/udp'", false, options[:dry])
-                    connection.exec("firewall-cmd -q --remove-port='#{PORT}/udp'", false, options[:dry])
-                    connection.exec("firewall-cmd -q --permanent --zone=trusted --remove-source=#{SUBNET}", false, options[:dry])
-                    connection.exec("firewall-cmd -q --zone=trusted --remove-source=#{SUBNET}", false, options[:dry])
-                    connection.exec("firewall-cmd -q --permanent --direct --remove-rule ipv4 nat POSTROUTING 0 -s #{SUBNET} ! -d #{SUBNET} -j MASQUERADE", false, options[:dry])
-                    connection.exec("firewall-cmd -q --direct --remove-rule ipv4 nat POSTROUTING 0 -s #{SUBNET} ! -d #{SUBNET} -j MASQUERADE", false, options[:dry])
+                        linuxConnection.firewallRemovePort("#{PORT}/udp", options)
+                        linuxConnection.exec("firewall-cmd -q --permanent --zone=trusted --remove-source=#{SUBNET}", false, options[:dry])
+                        linuxConnection.exec("firewall-cmd -q --zone=trusted --remove-source=#{SUBNET}", false, options[:dry])
+                        linuxConnection.exec("firewall-cmd -q --permanent --direct --remove-rule ipv4 nat POSTROUTING 0 -s #{SUBNET} ! -d #{SUBNET} -j MASQUERADE", false, options[:dry])
+                        linuxConnection.exec("firewall-cmd -q --direct --remove-rule ipv4 nat POSTROUTING 0 -s #{SUBNET} ! -d #{SUBNET} -j MASQUERADE", false, options[:dry])
+                    end
 
                     state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
 
@@ -111,24 +129,32 @@ module ConfigLMM
                 end
             end
 
-            def genkeyOverSSH(ssh)
-              self.class.sshExec!(ssh, 'wg genkey')
+            def genkey(connection, options)
+                key = connection.exec('wg genkey', false, options).strip
+                if options['dry']
+                    key = connection.exec('wg genkey', false, { **options, 'dry' => false }).strip
+                end
+                key
             end
 
-            def genpskOverSSH(ssh)
-              self.class.sshExec!(ssh, 'wg genpsk')
+            def genpsk(connection, options)
+                key = connection.exec('wg genpsk', false, options).strip
+                if options['dry']
+                    key = connection.exec('wg genpsk', false, { **options, 'dry' => false }).strip
+                end
+                key
             end
 
-            def pubkeyOverSSH(privateKey, ssh)
-              self.class.sshExec!(ssh, " echo '#{privateKey}' | wg pubkey")
+            def pubkey(privateKey, connection, options)
+                key = connection.exec(" echo '#{privateKey}' | wg pubkey", false, { **options, hide: true }).strip
+                if options['dry']
+                    key = connection.exec(" echo '#{privateKey}' | wg pubkey", false, { **options, 'dry' => false, hide: true }).strip
+                end
+                key
             end
 
             def prepareConfig(target)
                 target['Address'] = '172.20.0.1' unless target['Address']
-                target['Peers'].each do |name, data|
-                    target['Peers'][name] ||= {}
-                    target['Peers'][name]['AllowedIPs'] = SUBNET unless target['Peers'][name]['AllowedIPs']
-                end
             end
         end
     end
