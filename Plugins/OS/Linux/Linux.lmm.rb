@@ -1,4 +1,6 @@
 
+require_relative 'Connection'
+
 require 'addressable/uri'
 require 'http'
 require 'securerandom'
@@ -583,6 +585,10 @@ module ConfigLMM
                 self.class.exec("xorriso -boot_image any keep -dev #{patchedIso} -map #{options['output'] + '/' + id + '/auto-installer-mode.toml'} /auto-installer-mode.toml")
                 self.class.exec("xorriso -boot_image any keep -dev #{patchedIso} -map #{options['output'] + '/' + id + '/answer.toml'} /answer.toml")
                 patchedIso
+            end
+
+            def self.withConnection(connection)
+                yield(LinuxConnection.new(connection))
             end
 
             def prepareConfig(target)

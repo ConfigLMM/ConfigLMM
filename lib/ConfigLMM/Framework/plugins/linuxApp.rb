@@ -15,14 +15,17 @@ module ConfigLMM
             PODMAN_PACKAGE = 'Podman'
             SYSTEMD_CONTAINERS_PATH = '~/.config/containers/systemd/'
 
+            # DEPRECATED
             def ensurePackage(name, location, binary = nil)
                 self.class.ensurePackage(name, location, binary)
             end
 
+            # DEPRECATED
             def ensurePackages(names, location)
                 self.class.ensurePackages(names, location)
             end
 
+            # DEPRECATED
             def self.ensurePackage(name, locationOrConnection, binary = nil)
                 if binary && TTY::Which.which(binary)
                     return
@@ -30,128 +33,103 @@ module ConfigLMM
                 self.ensurePackages([name], locationOrConnection)
             end
 
+            # DEPRECATED
             def self.ensurePackages(names, locationOrConnection)
                 self.doConnection(locationOrConnection) do |connection|
-                    distroInfo = self.currentDistroInfo(connection)
-                    reposPackages = self.mapPackages(names, distroInfo['Name'])
-
-                    repos = []
-                    pkgs = []
-                    reposPackages.each do |pkg|
-                        if pkg.include?('|')
-                            repoName, pkg = pkg.split('|')
-                            repos << repoName
-                            pkgs << pkg
-                        else
-                            pkgs << pkg
-                        end
-                    end
-                    repos.each do |repoName|
-                        self.addRepo(repoName, distroInfo, connection)
-                    end
-                    command = distroInfo['InstallPackage'] + ' ' + pkgs.map { |pkg| pkg.shellescape }.join(' ')
-                    connection.adminExec(command)
-                    distroInfo
+                    linuxConnection = LMM::LinuxConnection.new(connection)
+                    linuxConnection.ensurePackages(names)
+                    linuxConnection.distroInfo
                 end
             end
 
+            # DEPRECATED
             def self.removePackage(name, locationOrConnection, dry = false)
                 self.doConnection(locationOrConnection) do |connection|
-                    distroInfo = self.currentDistroInfo(connection)
-                    reposPackages = self.mapPackages([name], distroInfo['Name'])
-
-                    pkgs = []
-                    reposPackages.each do |pkg|
-                        if pkg.include?('|')
-                            repoName, pkg = pkg.split('|')
-                            pkgs << pkg
-                        else
-                            pkgs << pkg
-                        end
-                    end
-
-                    command = distroInfo['RemovePackage'] + ' ' + pkgs.map { |pkg| pkg.shellescape }.join(' ')
-                    connection.adminExec(command, true, dry)
-                    distroInfo
+                    linuxConnection = LMM::LinuxConnection.new(connection)
+                    linuxConnection.removePackage(name)
+                    linuxConnection.distroInfo
                 end
             end
 
+            # DEPRECATED
             def ensureServiceAutoStart(name, locationOrConnection)
                 self.class.ensureServiceAutoStart(name, locationOrConnection)
             end
 
+            # DEPRECATED
             def self.ensureServiceAutoStart(name, locationOrConnection)
                 name = self.convertServiceName(name, locationOrConnection)
                 self.execDistroCommand(name, 'AutoStartService', locationOrConnection)
             end
 
-            # Deprecated
+            # DEPRECATED
             def self.ensureServiceAutoStartOverSSH(name, locationOrConnection)
                 self.ensureServiceAutoStart(name, locationOrConnection)
             end
 
+            # DEPRECATED
             def startService(name, locationOrConnection, dry = false)
                 self.class.startService(name, locationOrConnection, dry = false)
             end
 
+            # DEPRECATED
             def self.startService(name, locationOrConnection, dry = false)
                 name = self.convertServiceName(name, locationOrConnection)
                 self.execDistroCommand(name, 'StartService', locationOrConnection, false, dry)
             end
 
-            # Deprecated
+            # DEPRECATED
             def self.startServiceOverSSH(name, locationOrConnection, dry = false)
+                name = self.convertServiceName(name, locationOrConnection)
                 self.startService(name, locationOrConnection, dry)
             end
 
+            # DEPRECATED
             def self.restartService(name, locationOrConnection, dry = false)
                 name = self.convertServiceName(name, locationOrConnection)
                 self.execDistroCommand(name, 'RestartService', locationOrConnection, false, dry)
             end
 
+            # DEPRECATED
             def self.reloadService(name, locationOrConnection, dry = false)
                 name = self.convertServiceName(name, locationOrConnection)
                 self.execDistroCommand(name, 'ReloadService', locationOrConnection, false, dry)
             end
 
+            # DEPRECATED
             def self.stopService(name, locationOrConnection, dry = false)
                 name = self.convertServiceName(name, locationOrConnection)
                 self.execDistroCommand(name, 'StopService', locationOrConnection, true, dry)
             end
 
+            # DEPRECATED
             def self.disableService(name, locationOrConnection, dry = false)
                 name = self.convertServiceName(name, locationOrConnection)
                 self.execDistroCommand(name, 'DisableService', locationOrConnection, true, dry)
             end
 
+            # DEPRECATED
             def self.reloadServiceManager(locationOrConnection, dry = false)
                 self.execDistroCommand(nil, 'ReloadServiceManager', locationOrConnection, false, dry)
             end
 
+            # DEPRECATED
             def self.deleteUserAndGroup(name, locationOrConnection, dry = false)
                 self.execDistroCommand(name, 'DeleteUser', locationOrConnection, true, dry)
                 self.execDistroCommand(name, 'DeleteGroup', locationOrConnection, true, dry)
             end
 
+            # DEPRECATED
             def self.execDistroCommand(param, commandName, locationOrConnection, allowFailure = false, dry = false)
                 self.doConnection(locationOrConnection) do |connection|
-                    distroInfo = self.currentDistroInfo(connection)
-
-                    command = distroInfo[commandName]
-                    command += ' ' + param.shellescape unless param.nil?
-                    connection.exec(command, allowFailure, dry)
+                    LMM::LinuxConnection.new(connection).execDistroCommand(param, commandName, allowFailure, { 'dry': dry })
                 end
             end
 
+            # DEPRECATED
             def self.convertServiceName(name, connection)
                 self.doConnection(connection) do |connection|
-                    if name.is_a?(Symbol)
-                        distroInfo = self.currentDistroInfo(connection)
-                        allServices = YAML.load_file(LINUX_FOLDER + 'Services.yaml')
-                        distroName = distroInfo['Name']
-                        raise "Distro '#{distroName}' not implemented!" unless allServices.key?(distroName)
-                        name = allServices[distroName][name.to_s]
-                    end
+                    name = LMM::LinuxConnection.new(connection).convertServiceName(name)
                 end
                 name
             end
@@ -175,49 +153,41 @@ module ConfigLMM
                 result
             end
 
-            # Deprecated
+            # DEPRECATED
             def self.firewallAddServiceOverSSH(serviceName, locationOrConnection)
                 self.firewallAddService(serviceName, locationOrConnection)
             end
 
-            # Deprecated
+            # DEPRECATED
             def self.firewallAddPortOverSSH(portName, locationOrConnection)
                 self.firewallAddPort(portName, locationOrConnection)
             end
 
+            # DEPRECATED
             def self.firewallAddService(serviceName, locationOrConnection = nil, dry = false)
                 self.doConnection(locationOrConnection) do |connection|
-                     command = 'firewall-cmd --permanent --add-service ' + serviceName.shellescape
-                     connection.exec(command, true, dry)
-                     command = 'firewall-cmd --add-service ' + serviceName.shellescape
-                     connection.exec(command, true, dry)
+                    LMM::LinuxConnection.new(connection).firewallAddService(serviceName, { 'dry': dry })
                 end
             end
 
+            # DEPRECATED
             def self.firewallRemoveService(serviceName, locationOrConnection = nil, dry = false)
                 self.doConnection(locationOrConnection) do |connection|
-                     command = 'firewall-cmd --permanent --remove-service ' + serviceName.shellescape
-                     connection.exec(command, false, dry)
-                     command = 'firewall-cmd --remove-service ' + serviceName.shellescape
-                     connection.exec(command, false, dry)
+                    LMM::LinuxConnection.new(connection).firewallRemoveService(serviceName, { 'dry': dry })
                 end
             end
 
+            # DEPRECATED
             def self.firewallAddPort(portName, locationOrConnection = nil, dry = false)
                 self.doConnection(locationOrConnection) do |connection|
-                     command = 'firewall-cmd --permanent --add-port ' + portName.shellescape
-                     connection.exec(command, true, dry)
-                     command = 'firewall-cmd --add-port ' + portName.shellescape
-                     connection.exec(command, true, dry)
+                    LMM::LinuxConnection.new(connection).firewallAddPort(portName, { 'dry': dry })
                 end
             end
 
+            # DEPRECATED
             def self.firewallRemovePort(portName, locationOrConnection = nil, dry = false)
                 self.doConnection(locationOrConnection) do |connection|
-                     command = 'firewall-cmd --permanent --remove-port ' + portName.shellescape
-                     connection.exec(command, false, dry)
-                     command = 'firewall-cmd --remove-port ' + portName.shellescape
-                     connection.exec(command, false, dry)
+                    LMM::LinuxConnection.new(connection).firewallRemovePort(portName, { 'dry': dry })
                 end
             end
 
@@ -252,6 +222,7 @@ module ConfigLMM
                 dir
             end
 
+            # DEPRECATED
             def self.configurePodmanService(user, homedir, userComment, distroInfo, connection)
                 self.configurePodmanServiceOverSSH(user, homedir, userComment, distroInfo, connection)
             end
@@ -277,16 +248,7 @@ module ConfigLMM
                 end
             end
 
-            def self.addRepo(name, distroInfo, connection)
-                if distroInfo['Name'] == 'openSUSE Leap'
-                    versionId = connection.exec('cat /etc/os-release | grep "^VERSION_ID=" | cut -d "=" -f 2').strip.gsub('"', '')
-                    connection.exec("zypper addrepo https://download.opensuse.org/repositories/#{name}/#{versionId}/#{name}.repo", true)
-                    connection.exec("zypper --gpg-auto-import-keys refresh")
-                else
-                    # TODO
-                end
-            end
-
+            # DEPRECATED
             def self.createSubuids(user, distroInfo, connection)
                 connection.exec("#{distroInfo['ModifyUser']} --add-subuids 100000-165535 --add-subgids 100000-165535 #{user}")
             end
@@ -296,27 +258,23 @@ module ConfigLMM
                 self.sshExec!(ssh, "#{distroInfo['ModifyUser']} --add-subuids 100000-165535 --add-subgids 100000-165535 #{user}")
             end
 
+            # DEPRECATED
             def self.distroID(connection = nil)
-                cmd = 'cat /etc/os-release | grep "^ID=" | cut -d "=" -f 2'
-                if connection
-                    if connection.is_a?(IO::Connection)
-                        connection.exec(cmd).strip.gsub('"', '')
-                    else
-                        connection.exec!(cmd).strip.gsub('"', '')
-                    end
-                else
-                    `#{cmd}`.strip.gsub('"', '')
+                id = nil
+                self.doConnection(connection) do |connection|
+                    id = LMM::LinuxConnection.new(connection).distroID
                 end
+                id
             end
 
+            # DEPRECATED
             def self.currentDistroInfo(connection)
                 self.distroInfo(self.distroID(connection))
             end
 
+            # DEPRECATED
             def self.distroInfo(distroID)
-                distributions = YAML.load_file(LINUX_FOLDER + 'Distributions.yaml')
-                raise Framework::PluginProcessError.new("Unknown Linux Distro: #{distroID}!") unless distributions.key?(distroID)
-                distributions[distroID]
+                YAML.load_file(LINUX_FOLDER + 'Distributions.yaml')[distroID]
             end
 
         end
