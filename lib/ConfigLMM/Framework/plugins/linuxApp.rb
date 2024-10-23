@@ -211,6 +211,7 @@ module ConfigLMM
                 names
             end
 
+            # DEPRECATED
             def self.createCertificateOverSSH(ssh)
                 dir = "/etc/letsencrypt/live/Wildcard/"
                 self.sshExec!(ssh, "mkdir -p #{dir}")

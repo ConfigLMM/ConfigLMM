@@ -11,12 +11,15 @@ require 'fileutils'
 module ConfigLMM
     module Framework
 
+        # DEPRECATED
         class NginxApp < Framework::Plugin
 
+            # DEPRECATED
             NGINX_PACKAGE = 'nginx'
             CONFIG_DIR = '/etc/nginx/'
             WWW_DIR = '/srv/www/'
 
+            # DEPRECATED
             def writeNginxConfig(dir, name, id, target, activeState, context, options)
                 outputFolder = options['output']
 
@@ -29,6 +32,7 @@ module ConfigLMM
                 renderTemplate(template, target, outputFolder + '/nginx/servers-lmm/' + name + '.conf', options)
             end
 
+            # DEPRECATED
             def deployNginxConfig(id, target, activeState, context, options)
                 outputFolder = options['output'] + '/nginx/servers-lmm'
 
@@ -48,10 +52,12 @@ module ConfigLMM
                 end
             end
 
+            # DEPRECATED
             def cleanupNginxConfig(name, id, state, context, options, connection)
                 connection.rm('/etc/nginx/servers-lmm/' + name + '.conf', options['dry'])
             end
 
+            # DEPRECATED
             def self.prepareNginxConfig(target, connectionOrSSH = nil)
                 if connectionOrSSH.is_a?(IO::Connection)
                     target['NginxVersion'] = connectionOrSSH.exec('nginx -v').strip.split('/')[1].to_f
@@ -62,6 +68,7 @@ module ConfigLMM
                 end
             end
 
+            # DEPRECATED
             def self.reload(connection = nil, dry = false)
                 if connection.is_a?(IO::Connection)
                     connection.exec("systemctl reload nginx", false, { 'dry' => dry })
@@ -70,11 +77,13 @@ module ConfigLMM
                 end
             end
 
+            # DEPRECATED
             def self.ensurePackage(connection = nil)
                 Framework::LinuxApp.ensurePackages([NGINX_PACKAGE], connection)
                 Framework::LinuxApp.ensureServiceAutoStartOverSSH(NGINX_PACKAGE, connection)
             end
 
+            # DEPRECATED
             def useNginxProxy(dir, configName, id, target, activeState, state, context, options, connectionOrSSH)
                 self.class.ensurePackage(connectionOrSSH)
                 self.class.prepareNginxConfig(target, connectionOrSSH)
@@ -84,6 +93,7 @@ module ConfigLMM
                 self.class.reload(connectionOrSSH)
             end
 
+            # DEPRECATED
             def deployNginxProxyConfig(server, name, id, target, activeState, state, context, options, connectionOrSSH)
                 target = target.dup
                 target['Proxy'] = server
@@ -94,6 +104,7 @@ module ConfigLMM
 
             private
 
+            # DEPRECATED
             def updateTargetConfig(target)
                 target['TLS'] = true if target['TLS'].nil?
 

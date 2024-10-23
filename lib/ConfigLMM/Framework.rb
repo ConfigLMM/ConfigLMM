@@ -7,3 +7,4 @@ end
 
 require_relative 'Framework/registrator'
 require_relative 'Framework/plugins'
+require_relative 'Framework/variables'

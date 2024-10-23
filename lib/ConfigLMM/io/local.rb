@@ -168,6 +168,11 @@ module ConfigLMM
                     raise ExecError.new("Failed '#{command}'", command, stdout, stdeerr, status)
                 end
                 stdout + stdeerr
+            rescue Errno::ENOENT => error
+                if !allowFailure
+                    raise ExecError.new("Failed '#{command}'", command, error, nil, nil)
+                end
+                ''
             end
 
         end

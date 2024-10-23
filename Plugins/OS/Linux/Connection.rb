@@ -67,8 +67,9 @@ module ConfigLMM
                 connection.updateFile(*args, &block)
             end
 
-            def uploadFolder(*args)
-                connection.uploadFolder(*args)
+            def uploadFolder(folder, target, options = {})
+                createDirs(options, target + '/' + File.basename(folder))
+                connection.uploadFolder(folder, target, options)
             end
 
             def fileWrite(target, data, options = {})
