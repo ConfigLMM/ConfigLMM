@@ -21,6 +21,14 @@ module ConfigLMM
                 @allServices = YAML.load_file(__dir__ + '/Services.yaml')
             end
 
+            def prompt
+                @connection.prompt
+            end
+
+            def logger
+                @connection.logger
+            end
+
             def distroInfo
                 raise Framework::PluginProcessError.new("Unknown Linux Distro: #{distroID}!") unless distributions.key?(distroID)
                 distributions[distroID]

@@ -126,19 +126,6 @@ module ConfigLMM
                 local.chown(user, group, target, dry)
             end
 
-            def self.loadVariable(value, target)
-                variableStart = value.index('${')
-                return value unless variableStart
-                variableEnd = value.index('}', variableStart + 2)
-                variableName = value[variableStart + 2...variableEnd]
-                if variableName.start_with?('ENV:')
-                    value = value[0...variableStart].to_s + ENV[variableName[4..variableEnd]] + value[(variableEnd + 1)..-1].to_s
-                else
-                    raise 'Not implemented!'
-                end
-                value
-            end
-
             def updateLocalFile(file, options, atTop = false, comment = '#')
                 local.updateFile(file, options, atTop, comment)
             end
