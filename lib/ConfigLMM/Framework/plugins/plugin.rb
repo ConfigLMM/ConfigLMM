@@ -44,7 +44,8 @@ module ConfigLMM
 
             attr_accessor :state
 
-            def initialize(logger, prompt, plugins)
+            def initialize(context, logger, prompt, plugins)
+                @Context = context
                 @Logger = logger
                 @Prompt = prompt
                 @Plugins = plugins
@@ -75,6 +76,10 @@ module ConfigLMM
             end
 
             protected
+
+            def context
+                @Context
+            end
 
             def logger
                 @Logger
@@ -179,7 +184,7 @@ module ConfigLMM
             end
 
             def withConnection(uri, target, &block)
-                IO::Connection.tunnel(uri, target, self.prompt, self.logger, &block)
+                IO::Connection.tunnel(uri, target, self.context, self.prompt, self.logger, &block)
             end
 
             # DEPRECATED

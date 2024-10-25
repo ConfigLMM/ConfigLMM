@@ -21,14 +21,14 @@ module ConfigLMM
             FIREWALL_SERVICE = 'firewalld'
 
             def actionLinuxBuild(id, target, activeState, context, options)
-                prepareConfig(target)
+                prepareConfig(target, context)
                 buildHostsFile(id, target, options)
                 buildSSHConfig(id, target, options)
                 buildAutoInstall(id, target, options)
             end
 
             def actionLinuxDeploy(id, target, activeState, context, options)
-                prepareConfig(target)
+                prepareConfig(target, context)
                 if target['Location'] && target['Location'] != '@me'
                     uri = Addressable::URI.parse(target['Location'])
                     case uri.scheme
@@ -97,7 +97,7 @@ module ConfigLMM
                 end
                 if target['Users']
                     target['Users'].each do |name, info|
-                        userId = connection.exec("id -u #{name} 2>/dev/null").strip
+                        userId = connection.exec("id -u #{name} 2>/dev/null", true).strip
                         if userId.empty?
                             shell = ''
                             if info['Shell']
@@ -394,22 +394,22 @@ module ConfigLMM
                 iso = installationISO(target['Distro'], target['Flavour'], location)
                 iso = buildAutoInstallISO(id, iso, target, options)
                 if plugins[:Libvirt].createVM(target['Name'], target, target['Location'], iso, activeState)
-                    prompt.say("Root password: #{target['Users']['root']['Password']}", :color => :magenta) if target['Users']['root'].key?('Password')
+                    context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users']['root'].key?('Password')
                 end
             end
 
             def deployOverProxmox(id, target, activeState, context, options)
                 if target['LXC']
                     info = flavourInfo(target['Distro'], target['Flavour'])
-                    if plugins[:Proxmox].createContainer(target, target['Location'], info, activeState)
-                        prompt.say("Root password: #{target['Users']['root']['Password']}", :color => :magenta) if target['Users']['root'].key?('Password')
+                    if plugins[:Proxmox].createContainer(target, target['Location'], info, activeState, context)
+                        context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users']['root'].key?('Password')
                     end
                 else
                     location = Proxmox.getLocation(target['Location'])
                     iso = installationISO(target['Distro'], target['Flavour'], location)
                     iso = buildAutoInstallISO(id, iso, target, options)
-                    if plugins[:Proxmox].createVM(target['Name'], target, target['Location'], iso, activeState)
-                        prompt.say("Root password: #{target['Users']['root']['Password']}", :color => :magenta) if target['Users']['root'].key?('Password')
+                    if plugins[:Proxmox].createVM(target['Name'], target, target['Location'], iso, activeState, context)
+                        context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users']['root'].key?('Password')
                     end
                 end
             end
@@ -591,25 +591,27 @@ module ConfigLMM
                 yield(LinuxConnection.new(connection))
             end
 
-            def prepareConfig(target)
+            def prepareConfig(target, context)
                 target['SSH'] ||= {}
                 target['SSH']['Config'] ||= {}
                 target['Users'] ||= {}
                 target['HostName'] = target['Name'] unless target['HostName']
 
-                if ENV['LINUX_ROOT_PASSWORD_HASH']
+                if context.secrets.load(target['SecretId'], 'ROOT_PASSWORD_HASH')
                     target['Users']['root'] ||= {}
-                    target['Users']['root']['PasswordHash'] = ENV['LINUX_ROOT_PASSWORD_HASH']
-                elsif ENV['LINUX_ROOT_PASSWORD']
+                    target['Users']['root']['PasswordHash'] = context.secrets.load(target['SecretId'], 'ROOT_PASSWORD_HASH')
+                elsif context.secrets.load(target['SecretId'], 'ROOT_PASSWORD')
                     target['Users']['root'] ||= {}
-                    target['Users']['root']['Password'] = ENV['LINUX_ROOT_PASSWORD']
-                    target['Users']['root']['PasswordHash'] = self.class.linuxPasswordHash(ENV['LINUX_ROOT_PASSWORD'])
+                    target['Users']['root']['Password'] = context.secrets.load(target['SecretId'], 'ROOT_PASSWORD')
+                    target['Users']['root']['PasswordHash'] = self.class.linuxPasswordHash(target['Users']['root']['Password'])
                 elsif target['Users'].key?('root')
-                    if !target['Users']['root']['Password'] &&
-                       !target['Users']['root']['PasswordHash']
-                        target['Users']['root']['Password'] = SecureRandom.urlsafe_base64(12)
-                        target['Users']['root']['PasswordHash'] = self.class.linuxPasswordHash(target['Users']['root']['Password'])
-                    elsif target['Users']['root']['Password'] == 'no'
+                    if !target['Users']['root'].key?('Password') &&
+                       !target['Users']['root'].key?('PasswordHash')
+                        password = SecureRandom.urlsafe_base64(20)
+                        context.secrets.store(target['SecretId'], 'ROOT_PASSWORD', password)
+                        target['Users']['root']['Password'] = password
+                        target['Users']['root']['PasswordHash'] = self.class.linuxPasswordHash(password)
+                    elsif target['Users']['root']['Password'] == false
                         target['Users']['root'].delete('Password')
                     end
                 end

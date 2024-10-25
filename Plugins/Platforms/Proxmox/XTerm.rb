@@ -97,7 +97,7 @@ module ConfigLMM
 
             end
 
-            def self.tunnel(url, insecure, token, term, target, prompt, logger, &block)
+            def self.tunnel(url, insecure, token, term, username, password, prompt, logger, &block)
                 headers = {}
                 headers['Cookie'] = 'PVEAuthCookie=' + token
                 state = {
@@ -124,7 +124,7 @@ module ConfigLMM
                         end
 
                         $WS.on :message do |event|
-                            self.processMessage($WS, event, state, target)
+                            self.processMessage($WS, event, state, username, password)
                         end
 
                         $WS.on(:error) do |event|
@@ -148,7 +148,7 @@ module ConfigLMM
                 thread.join
             end
 
-            def self.processMessage(ws, event, state, target)
+            def self.processMessage(ws, event, state, username, password)
                 state[:message] += event.data.pack('C*')
                 if !state[:timer].nil?
                     EM.cancel_timer(state[:timer])
@@ -161,11 +161,11 @@ module ConfigLMM
                         state[:condition].signal()
                     }
                 else
-                    state[:timer] = EM.add_timer(state[:delay]) { self.handleData(ws, state, target) }
+                    state[:timer] = EM.add_timer(state[:delay]) { self.handleData(ws, state, username, password) }
                 end
             end
 
-            def self.handleData(ws, state, target)
+            def self.handleData(ws, state, username, password)
                 state[:delay] = 0.1
                 if state[:stage] == :raw
                     rawData = data = state[:data] = state[:message]
@@ -181,24 +181,14 @@ module ConfigLMM
                     state[:delay] = 3
                     self.sendMessage(ws, "\n")
                 when :login
-                    self.doLogin(ws, data, state)
+                    self.doLogin(ws, data, state, username)
                 when :password
-                    if data.include?('Password:')
-                        state[:stage] = :checkPassword
-                        password = ENV['LINUX_ROOT_PASSWORD']
-                        if target['Type'] == :Linux
-                            password = target['Users']['root']['Password']
-                        end
-                        state[:delay] = 3
-                        self.sendMessage(ws, password + "\n")
-                    else
-                        raise 'Unexpected Console state!'
-                    end
+                    self.doPassword(ws, data, state, password)
                 when :checkPassword
                     if data.lines.last.include?('login:') && data.include?('Login incorrect')
                         state[:invalidLogin] += 1
                         state[:stage] = :login
-                        self.doLogin(ws, data, state)
+                        self.doLogin(ws, data, state, username)
                         return
                     end
                     raise 'Unexpected Console state!' unless data.lines.last.strip.end_with?('#')
@@ -252,13 +242,13 @@ module ConfigLMM
                 end
             end
 
-            def self.doLogin(ws, data, state)
+            def self.doLogin(ws, data, state, username)
                 if data.include?('login:')
                     if state[:invalidLogin] >= 2
                         raise 'Too many failed login attempts!'
                     end
                     state[:stage] = :password
-                    self.sendMessage(ws, "root\n")
+                    self.sendMessage(ws, "#{username}\n")
                 elsif data.strip.end_with?('#')
                     state[:stage] = :shell
                     state[:mutex].synchronize {
@@ -270,6 +260,17 @@ module ConfigLMM
                 elsif data == "\n"
                     state[:delay] = 10
                     self.sendMessage(ws, "\n")
+                else
+                    raise 'Unexpected Console state!'
+                end
+            end
+
+            def self.doPassword(ws, data, state, password)
+                if data.include?('Password:')
+                    state[:stage] = :checkPassword
+                    raise 'Missing ROOT_PASSWORD!' unless password
+                    state[:delay] = 3
+                    self.sendMessage(ws, password + "\n")
                 else
                     raise 'Unexpected Console state!'
                 end

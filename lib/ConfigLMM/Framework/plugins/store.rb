@@ -37,19 +37,19 @@ module ConfigLMM
                 end
             end
 
-            def self.boot(logger, prompt, plugins)
+            def self.boot(context, logger, prompt, plugins)
                 leafPlugins.each do |id, plugin|
-                    self.initPlugin(id, logger, prompt, plugins)
+                    self.initPlugin(id, context, logger, prompt, plugins)
                 rescue PluginLoadError => error
                     logger.warn("Plugin '#{id}' failed to load!\n#{error.message}" + (error.cause ? '  - ' : ''), error.cause)
                 end
                 true
             end
 
-            def self.initPlugin(pluginId, logger, prompt, plugins)
+            def self.initPlugin(pluginId, context, logger, prompt, plugins)
                 pluginId = pluginId.to_sym
                 raise 'Recursive/cyclic plugin' if plugins.key?(pluginId)
-                plugins[pluginId] = @@AvailablePlugins[pluginId].new(logger, prompt, plugins)
+                plugins[pluginId] = @@AvailablePlugins[pluginId].new(context, logger, prompt, plugins)
             end
 
         end

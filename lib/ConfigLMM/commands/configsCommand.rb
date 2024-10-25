@@ -31,7 +31,7 @@ module ConfigLMM
                 Framework::Registrator.registerAll(logger)
 
                 # Create Plugin instances
-                Framework::Store.boot(logger, prompt, @Plugins)
+                Framework::Store.boot(@Context, logger, prompt, @Plugins)
                 @Plugins.each do |id, plugin|
                     plugin.state = @State
                 end

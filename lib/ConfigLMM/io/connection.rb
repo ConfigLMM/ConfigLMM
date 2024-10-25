@@ -94,7 +94,7 @@ module ConfigLMM
 
             # `connect': No route to host - connect(2) for 192.168.1.3:22 (Errno::EHOSTUNREACH)
             # `connect': Connection refused - connect(2) for 192.168.1.3:22 (Errno::ECONNREFUSED)
-            def self.tunnel(uri, target, prompt, logger, &block)
+            def self.tunnel(uri, target, context, prompt, logger, &block)
                 scheme, uri = self.processURI(uri)
                 case scheme
                 when 'local'
@@ -104,7 +104,7 @@ module ConfigLMM
                         yield(Connection.new(:SSH, SSH.new(prompt, logger, ssh), prompt, logger))
                     end
                 when 'proxmox+xterm'
-                    LMM::Proxmox.withXTerm(uri, target, prompt, logger) do |xterm|
+                    LMM::Proxmox.withXTerm(uri, target, context, prompt, logger) do |xterm|
                         yield(Connection.new(:Proxmox, xterm, prompt, logger))
                     end
                 else
