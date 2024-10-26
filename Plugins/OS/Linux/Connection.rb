@@ -127,11 +127,17 @@ module ConfigLMM
 
                 repos = []
                 pkgs = []
+                githubPackages = []
+
                 reposPackages.each do |pkg|
                     if pkg.include?('|')
                         repoName, pkg = pkg.split('|')
-                        repos << repoName
-                        pkgs << pkg
+                        if repoName == 'GitHub'
+                            githubPackages << pkg
+                        else
+                            repos << repoName
+                            pkgs << pkg
+                        end
                     else
                         pkgs << pkg
                     end
@@ -139,8 +145,69 @@ module ConfigLMM
                 repos.each do |repoName|
                     addRepo(repoName)
                 end
-                command = distroInfo['InstallPackage'] + ' ' + pkgs.map { |pkg| pkg.shellescape }.join(' ')
-                connection.adminExec(command, false, options)
+
+                if !pkgs.empty?
+                    command = distroInfo['InstallPackage'] + ' ' + pkgs.map { |pkg| pkg.shellescape }.join(' ')
+                    connection.adminExec(command, false, options)
+                end
+
+                handleGitHubPackages(githubPackages, options) unless githubPackages.empty?
+            end
+
+            def handleGitHubPackages(githubPackages, options)
+                githubPackages.each do |pkg|
+                    repo, name = pkg.split(':')
+                    namePattern = name.gsub('.', '\\.').gsub('*', '.*')
+                    response = HTTP.get("https://api.github.com/repos/#{repo}/releases")
+                    if response.status.success?
+                        releases = response.parse
+                        releases.each do |release|
+                            next if release['draft'] || release['prerelease']
+                            if installGitHubRelease(release, namePattern, options)
+                                break
+                            end
+                        end
+                    else
+                        raise response
+                    end
+                end
+            end
+
+            def installGitHubRelease(release, namePattern, options)
+                release['assets'].each do |asset|
+                    if asset['name'].match?(namePattern)
+                        if asset['name'].end_with?('.rpm')
+                            installRPM(asset['name'], asset['browser_download_url'], options)
+                        elsif asset['name'].end_with?('.deb')
+                            installDeb(asset['name'], asset['browser_download_url'], options)
+                        else
+                            $stderr.puts(asset)
+                            raise 'Not Implemented!'
+                        end
+                        return true
+                    end
+                end
+                false
+            end
+
+            def installRPM(name, url, options)
+                command = "rpm -U #{url.shellescape}"
+                connection.adminExec(command, true, options)
+            end
+
+            def installDeb(name, url, options)
+                pkgName = name.split('_').first
+                command = "dpkg-query --status #{pkgName.shellescape} | grep Version: | cut -d ' ' -f 2"
+                version = connection.exec(command, false, { **options, 'dry' => false }).strip
+                if version.empty? || !name.include?(version)
+                    command = "curl --silent --location --output /tmp/pkg.deb #{url.shellescape}"
+                    connection.exec(command, false, options)
+
+                    command = "dpkg --install /tmp/pkg.deb"
+                    connection.adminExec(command, false, options)
+
+                    connection.rm('/tmp/pkg.deb', options['dry'])
+                end
             end
 
             def removePackage(name, options = {})

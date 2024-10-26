@@ -1,0 +1,654 @@
+
+receiverTemplate:
+  filelog/nginx:
+    include: /var/log/nginx/access.json
+    storage: file_storage
+    attributes:
+      level: INFO2
+    resource:
+      service.name: nginx
+    operators:
+      - type: json_parser
+        timestamp:
+          parse_from: attributes.time
+          layout_type: epoch
+          layout: s.ms
+      - type: copy
+        from: attributes.scheme
+        to: resource['url.scheme']
+      - type: copy
+        from: attributes.host
+        to: resource['http.request.header.host']
+      - type: add
+        field: resource['url.domain']
+        value: EXPR(split(resource['http.request.header.host'], ':')[0])
+      - type: add
+        field: resource['url.port']
+        value: EXPR(get(split(resource['http.request.header.host'], ':'), 1))
+      - if: resource['url.port'] == nil and resource['url.scheme'] == 'http'
+        type: add
+        field: resource['url.port']
+        value: 80
+      - if: resource['url.port'] == nil and resource['url.scheme'] == 'https'
+        type: add
+        field: resource['url.port']
+        value: 443
+      - type: copy
+        from: attributes.uri
+        to: resource['url.path']
+      - type: add
+        field: resource['url.full']
+        value: EXPR(resource['url.scheme'] + '://' + resource['http.request.header.host'] + attributes.request_uri)
+      - type: copy
+        from: attributes.query_string
+        to: resource['url.query']
+      - type: copy
+        from: attributes.method
+        to: resource['http.request.method']
+      - type: copy
+        from: attributes.status
+        to: resource['http.response.status_code']
+      - type: copy
+        from: attributes.request_length
+        to: resource['http.request.size']
+      - type: copy
+        from: attributes.body_bytes_sent
+        to: resource['http.response.body.size']
+      - type: copy
+        from: attributes.bytes_sent
+        to: resource['http.response.size']
+      - type: copy
+        from: attributes.remote_addr
+        to: resource['client.address']
+      - type: copy
+        from: attributes.remote_addr
+        to: resource['network.peer.address']
+      - type: copy
+        from: attributes.remote_port
+        to: resource['client.port']
+      - type: copy
+        from: attributes.server_name
+        to: resource['server.address']
+      - type: copy
+        from: attributes.server_port
+        to: resource['server.port']
+      - type: add
+        field: resource['network.protocol.name']
+        value: EXPR(lower(split(attributes.server_protocol, '/')[0]))
+      - type: add
+        field: resource['network.protocol.version']
+        value: EXPR(split(attributes.server_protocol, '/')[1])
+      - type: copy
+        from: attributes.http_user_agent
+        to: resource['http.request.header.user-agent']
+      - type: copy
+        from: attributes.http_user_agent
+        to: resource['user_agent.original']
+      - type: copy
+        from: attributes.http_referer
+        to: resource['http.request.header.referer']
+      - type: copy
+        from: attributes.http_x_forwarded_for
+        to: resource['http.request.header.x-forwarded-for']
+      - type: copy
+        from: attributes.http_x_real_ip
+        to: resource['http.request.header.x-real-ip']
+      - type: copy
+        from: attributes.http_accept_language
+        to: resource['http.request.header.accept-language']
+      - type: copy
+        from: attributes.content_type
+        to: resource['http.response.header.content-type']
+      - type: copy
+        from: attributes.upstream_http_etag
+        to: resource['http.response.header.etag']
+      - type: copy
+        from: attributes.upstream_http_last_modified
+        to: resource['http.response.header.last-modified']
+      - type: copy
+        from: attributes.request
+        to: resource['log.message']
+      - type: severity_parser
+        parse_from: attributes.level
+        overwrite_text: true
+
+  filelog/php:
+    include: /var/log/php/*.log
+    storage: file_storage
+    resource:
+      service.name: php-fpm
+    operators:
+      - type: recombine
+        source_identifier: attributes['log.file.name']
+        combine_field: body
+        is_first_entry: body matches "^\\[\\d+\\-"
+      - type: regex_parser
+        regex: '^\[(?P<time>[\d\- :\w]+)\] PHP (?P<level>\w+)( error)?: (?P<message>(.+\n?)+)'
+        timestamp:
+          parse_from: attributes.time
+          layout_type: strptime
+          layout: "%d-%b-%Y %T %Z"
+        severity:
+          parse_from: attributes.level
+      - type: copy
+        from: attributes.message
+        to: resource['log.message']
+      - type: severity_parser
+        parse_from: attributes.level
+        overwrite_text: true
+
+  filelog/php_json:
+    include: /var/log/php/*.json
+    storage: file_storage
+    attributes:
+      level: INFO2
+    resource:
+      service.name: php-fpm
+    operators:
+      - type: json_parser
+        timestamp:
+          parse_from: attributes.time_iso8601
+          layout_type: strptime
+          layout: "%FT%T%z"
+      - type: copy
+        from: attributes.host
+        to: resource['http.request.header.host']
+      - type: add
+        field: resource['url.domain']
+        value: EXPR(split(resource['http.request.header.host'], ':')[0])
+      - type: add
+        field: resource['url.port']
+        value: EXPR(get(split(resource['http.request.header.host'], ':'), 1))
+      - type: copy
+        from: attributes.uri
+        to: resource['url.path']
+      - type: add
+        field: resource['url.full']
+        value: EXPR('//' + resource['http.request.header.host'] + attributes.request_uri)
+      - type: copy
+        from: attributes.query_string
+        to: resource['url.query']
+      - type: copy
+        from: attributes.method
+        to: resource['http.request.method']
+      - type: copy
+        from: attributes.status
+        to: resource['http.response.status_code']
+      - type: copy
+        from: attributes.body_bytes_sent
+        to: resource['http.response.body.size']
+      - if: attributes.remote_addr != '-'
+        type: copy
+        from: attributes.remote_addr
+        to: resource['client.address']
+      - if: attributes.remote_addr != '-'
+        type: copy
+        from: attributes.remote_addr
+        to: resource['network.peer.address']
+      - type: add
+        field: resource['network.protocol.name']
+        value: EXPR(lower(split(attributes.server_protocol, '/')[0]))
+      - type: add
+        field: resource['network.protocol.version']
+        value: EXPR(split(attributes.server_protocol, '/')[1])
+      - type: copy
+        from: attributes.http_user_agent
+        to: resource['http.request.header.user-agent']
+      - type: copy
+        from: attributes.http_user_agent
+        to: resource['user_agent.original']
+      - if: attributes.http_referer != '-'
+        type: copy
+        from: attributes.http_referer
+        to: resource['http.request.header.referer']
+      - if: attributes.http_x_forwarded_for != '-'
+        type: copy
+        from: attributes.http_x_forwarded_for
+        to: resource['http.request.header.x-forwarded-for']
+      - if: attributes.http_x_real_ip != '-'
+        type: copy
+        from: attributes.http_x_real_ip
+        to: resource['http.request.header.x-real-ip']
+      - if: attributes.http_accept_language != '-'
+        type: copy
+        from: attributes.http_accept_language
+        to: resource['http.request.header.accept-language']
+      - if: attributes.content_type != '-'
+        type: copy
+        from: attributes.content_type
+        to: resource['http.response.header.content-type']
+      - if: attributes.upstream_http_etag != '-'
+        type: copy
+        from: attributes.upstream_http_etag
+        to: resource['http.response.header.etag']
+      - if: attributes.upstream_http_last_modified != '-'
+        type: copy
+        from: attributes.upstream_http_last_modified
+        to: resource['http.response.header.last-modified']
+      - type: copy
+        from: attributes.request
+        to: resource['log.message']
+      - type: severity_parser
+        parse_from: attributes.level
+        overwrite_text: true
+
+extensions:
+  health_check:
+  pprof:
+    endpoint: 127.0.0.1:1777
+  zpages:
+    endpoint: 127.0.0.1:55679
+  file_storage:
+    # directory: /var/lib/otelcol/file_storage
+
+receivers:
+  journald:
+    storage: file_storage
+    all: true
+    operators:
+      # Systemd/Journald
+      - type: copy
+        from: body.SYSLOG_IDENTIFIER
+        to: resource['service.name']
+      - if: body.SYSLOG_PID != nil
+        type: copy
+        from: body.SYSLOG_PID
+        to: resource['service.instance.id']
+      - type: copy
+        from: body._MACHINE_ID
+        to: resource['host.id']
+      - type: copy
+        from: body.MESSAGE
+        to: resource['log.record.original']
+      - type: copy
+        from: body.MESSAGE
+        to: resource['log.message']
+      - if: body._COMM != nil
+        type: copy
+        from: body._COMM
+        to: resource['process.command']
+      - if: body._EXE != nil
+        type: copy
+        from: body._EXE
+        to: resource['process.executable.path']
+      - if: body._CMDLINE != nil
+        type: copy
+        from: body._CMDLINE
+        to: resource['process.command_line']
+      - if: body._PID != nil
+        type: copy
+        from: body._PID
+        to: resource['process.pid']
+      - if: body._UID != nil
+        type: copy
+        from: body._UID
+        to: resource['process.user.id']
+      - if: body._GID != nil
+        type: copy
+        from: body._GID
+        to: resource['process.group.id']
+      - if: body.CONTAINER_ID_FULL != nil
+        type: copy
+        from: body.CONTAINER_ID_FULL
+        to: resource['container.id']
+      - if: body.CONTAINER_NAME != nil
+        type: copy
+        from: body.CONTAINER_NAME
+        to: resource['container.name']
+      - if: body.CODE_FILE != nil
+        type: copy
+        from: body.CODE_FILE
+        to: resource['code.filepath']
+      - if: body.CODE_FUNC != nil
+        type: copy
+        from: body.CODE_FUNC
+        to: resource['code.function']
+      - if: body.CODE_LINE != nil
+        type: copy
+        from: body.CODE_LINE
+        to: resource['code.lineno']
+      - if: body.MESSAGE[0:1] == '{'
+        type: json_parser
+        parse_from: body.MESSAGE
+        parse_to: body.info
+      - type: severity_parser
+        parse_from: body.PRIORITY
+        overwrite_text: true
+        mapping:
+          fatal3: 0
+          fatal2: 1
+          fatal: 2
+          error: 3
+          warn: 4
+          info3: 5
+          info: 6
+          debug: 7
+
+      # Nginx error log
+      - if: 'body.MESSAGE matches "^[\\d+/ :]+ \\[\\w+\\] \\d+#\\d+: "'
+        type: regex_parser
+        parse_from: body.MESSAGE
+        parse_to: body.info
+        regex: '^(?P<local_time>[\d+/ :]+) \[(?P<level>\w+)\] (?P<PID>\d+)#(?P<TID>\d+): (\*(?P<CID>\d+) )?(?P<message>.+?)(, client: (?P<remote_addr>.+), server: (?P<server_name>.+), request: "(?P<request>[^"]+)"(, upstream: "(?P<upstream>[^"]+)")?, host: "(?P<host>[^"]+)"(, referrer: "(?P<referrer>[^"]+)"?)?)?$'
+      - if: body.info != nil and body.info.remote_addr != nil and len(body.info.remote_addr) == 0
+        type: remove
+        field: body.info.remote_addr
+      - if: body.info != nil and body.info.server_name != nil and len(body.info.server_name) == 0
+        type: remove
+        field: body.info.server_name
+      - if: body.info != nil and body.info.request != nil and len(body.info.request) == 0
+        type: remove
+        field: body.info.request
+      - if: body.info != nil and body.info.upstream != nil and len(body.info.upstream) == 0
+        type: remove
+        field: body.info.upstream
+      - if: body.info != nil and body.info.host != nil and len(body.info.host) == 0
+        type: remove
+        field: body.info.host
+      - if: body.info != nil and body.info.referrer != nil and len(body.info.referrer) == 0
+        type: remove
+        field: body.info.referrer
+      - if: body.info != nil and body.info.request != nil
+        type: regex_parser
+        parse_from: body.info.request
+        parse_to: body.info
+        regex: ^(?<method>\w+) (?<uri>.+) (?<server_protocol>[\w/\.]+)$
+
+      # Nginx access log
+      - if: body.info != nil and body.info.scheme != nil
+        type: copy
+        from: body.info.scheme
+        to: resource['url.scheme']
+      - if: body.info != nil and body.info.host != nil
+        type: copy
+        from: body.info.host
+        to: resource['http.request.header.host']
+      - if: resource['http.request.header.host'] != nil
+        type: add
+        field: resource['url.domain']
+        value: EXPR(split(resource['http.request.header.host'], ':')[0])
+      - if: resource['http.request.header.host'] != nil
+        type: add
+        field: resource['url.port']
+        value: EXPR(get(split(resource['http.request.header.host'], ':'), 1))
+      - if: resource['url.port'] == nil and resource['url.scheme'] == 'http'
+        type: add
+        field: resource['url.port']
+        value: 80
+      - if: resource['url.port'] == nil and resource['url.scheme'] == 'https'
+        type: add
+        field: resource['url.port']
+        value: 443
+      - if: body.info != nil and body.info.uri != nil
+        type: copy
+        from: body.info.uri
+        to: resource['url.path']
+      - if: body.info != nil and body.info.request_uri != nil
+        type: add
+        field: resource['url.full']
+        value: EXPR(resource['url.scheme'] + '://' + resource['http.request.header.host'] + body.info.request_uri)
+      - if: body.info != nil and body.info.query_string != nil
+        type: copy
+        from: body.info.query_string
+        to: resource['url.query']
+      - if: body.info != nil and body.info.method != nil
+        type: copy
+        from: body.info.method
+        to: resource['http.request.method']
+      - if: body.info != nil and body.info.status != nil
+        type: copy
+        from: body.info.status
+        to: resource['http.response.status_code']
+      - if: body.info != nil and body.info.request_length != nil
+        type: copy
+        from: body.info.request_length
+        to: resource['http.request.size']
+      - if: body.info != nil and body.info.body_bytes_sent != nil
+        type: copy
+        from: body.info.body_bytes_sent
+        to: resource['http.response.body.size']
+      - if: body.info != nil and body.info.bytes_sent != nil
+        type: copy
+        from: body.info.bytes_sent
+        to: resource['http.response.size']
+      - if: body.info != nil and body.info.remote_addr != nil
+        type: copy
+        from: body.info.remote_addr
+        to: resource['client.address']
+      - if: body.info != nil and body.info.remote_addr != nil
+        type: copy
+        from: body.info.remote_addr
+        to: resource['network.peer.address']
+      - if: body.info != nil and body.info.remote_port != nil
+        type: copy
+        from: body.info.remote_port
+        to: resource['client.port']
+      - if: body.info != nil and body.info.server_name != nil
+        type: copy
+        from: body.info.server_name
+        to: resource['server.address']
+      - if: body.info != nil and body.info.server_port != nil
+        type: copy
+        from: body.info.server_port
+        to: resource['server.port']
+      - if: body.info != nil and body.info.server_protocol != nil
+        type: add
+        field: resource['network.protocol.name']
+        value: EXPR(lower(split(body.info.server_protocol, '/')[0]))
+      - if: body.info != nil and body.info.server_protocol != nil
+        type: add
+        field: resource['network.protocol.version']
+        value: EXPR(split(body.info.server_protocol, '/')[1])
+      - if: body.info != nil and body.info.http_user_agent != nil
+        type: copy
+        from: body.info.http_user_agent
+        to: resource['http.request.header.user-agent']
+      - if: body.info != nil and body.info.http_user_agent != nil
+        type: copy
+        from: body.info.http_user_agent
+        to: resource['user_agent.original']
+      - if: body.info != nil and body.info.http_referer != nil
+        type: copy
+        from: body.info.http_referer
+        to: resource['http.request.header.referer']
+      - if: body.info != nil and body.info.http_x_forwarded_for != nil
+        type: copy
+        from: body.info.http_x_forwarded_for
+        to: resource['http.request.header.x-forwarded-for']
+      - if: body.info != nil and body.info.http_x_real_ip != nil
+        type: copy
+        from: body.info.http_x_real_ip
+        to: resource['http.request.header.x-real-ip']
+      - if: body.info != nil and body.info.http_accept_language != nil
+        type: copy
+        from: body.info.http_accept_language
+        to: resource['http.request.header.accept-language']
+      - if: body.info != nil and body.info.content_type != nil
+        type: copy
+        from: body.info.content_type
+        to: resource['http.response.header.content-type']
+      - if: body.info != nil and body.info.upstream_http_etag != nil
+        type: copy
+        from: body.info.upstream_http_etag
+        to: resource['http.response.header.etag']
+      - if: body.info != nil and body.info.upstream_http_last_modified != nil
+        type: copy
+        from: body.info.upstream_http_last_modified
+        to: resource['http.response.header.last-modified']
+      - if: body.info != nil and body.info.request != nil
+        type: copy
+        from: body.info.request
+        to: resource['log.message']
+      - if: body.info != nil and body.info.level == nil
+        type: add
+        field: body.info.level
+        value: info2
+
+      # SigNoz
+      - if: 'body.MESSAGE matches "^ts=[\\dT:\\.Z\\-]+ caller="'
+        type: regex_parser
+        parse_from: body.MESSAGE
+        parse_to: body.info
+        regex: '^ts=(?P<local_time>[\dT:\.Z\-]+) caller=(?P<caller>[\w\.:]+) level=(?P<level>\w+)( component=(?P<component>\w+))?( msg="(?P<msg>.+)")?'
+      - if: body.info != nil and body.info.func_name != nil
+        type: copy
+        from: body.info.func_name
+        to: resource['code.function']
+      - if: body.info != nil and body.info.stacktrace != nil
+        type: copy
+        from: body.info.stacktrace
+        to: resource['exception.stacktrace']
+
+      # Otel
+      - if: body.info != nil and body.info.msg != nil
+        type: add
+        field: resource['log.message']
+        value: EXPR(body.info.msg)
+      - if: body.info != nil and body.info.msg != nil and body.info.error != nil
+        type: add
+        field: resource['log.message']
+        value: EXPR(body.info.msg + ' - ' + body.info.error)
+      - if: body.info != nil and body.info.component != nil
+        type: copy
+        from: body.info.component
+        to: resource['code.function']
+      - if: body.info != nil and body.info.caller != nil
+        type: add
+        field: resource['code.filepath']
+        value: EXPR(split(body.info.caller, ':')[0])
+      - if: body.info != nil and body.info.caller != nil
+        type: add
+        field: resource['code.lineno']
+        value: EXPR(split(body.info.caller, ':')[1])
+
+      # ClickHouse
+      - if: body.info != nil and body.info.message != nil
+        type: add
+        field: resource['log.message']
+        value: EXPR(body.info.message)
+      - if: body.info != nil and body.info.source_file != nil
+        type: add
+        field: resource['code.filepath']
+        value: EXPR(split(body.info.source_file, ';')[0])
+      - if: body.info != nil and body.info.source_line != nil
+        type: add
+        field: resource['code.lineno']
+        value: EXPR(body.info.source_line)
+      - if: body.info != nil and body.info.thread_name != nil
+        type: copy
+        from: body.info.thread_name
+        to: resource['thread.name']
+      - if: body.info != nil and body.info.thread_id != nil
+        type: copy
+        from: body.info.thread_id
+        to: resource['thread.id']
+
+      - if: body.info != nil and body.info.level != nil
+        type: severity_parser
+        parse_from: body.info.level
+        overwrite_text: true
+        mapping:
+          info:
+            - Information
+            - "\u001b[34mINFO\u001b[0m"
+          warn: "\u001b[33mWARN\u001b[0m"
+          error: "\u001b[31mERROR\u001b[0m"
+          fatal: "\u001b[31mFATAL\u001b[0m"
+
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      cpu: {}
+      load: {}
+      memory: {}
+      disk: {}
+      filesystem: {}
+      network: {}
+      paging: {}
+      processes: {}
+
+  # Collect own metrics
+  prometheus:
+    config:
+      scrape_configs:
+      - job_name: 'otel-collector'
+        scrape_interval: 10s
+        static_configs:
+        - targets: ['127.0.0.1:8888']
+
+  jaeger:
+    protocols:
+      grpc:
+        endpoint: 127.0.0.1:14250
+      thrift_binary:
+        endpoint: 127.0.0.1:6832
+      thrift_compact:
+        endpoint: 127.0.0.1:6831
+      thrift_http:
+        endpoint: 127.0.0.1:14268
+
+  zipkin:
+    endpoint: 127.0.0.1:9411
+
+processors:
+  batch:
+    timeout: 10s
+  resource:
+    attributes:
+      - key: deployment.environment.name
+        value: production
+        action: upsert
+      - key: deployment.environment
+        value: production
+        action: upsert
+  resourcedetection:
+    # Using OTEL_RESOURCE_ATTRIBUTES envvar, env detector adds custom labels.
+    detectors: [env, system] # include ec2 for AWS, gcp for GCP and azure for Azure.
+    timeout: 2s
+#  transform:
+#    error_mode: ignore
+#    log_statements:
+#      - context: log
+#        statements:
+
+exporters:
+  otlp:
+    endpoint: $OTLP_RECEIVER:4317
+    sending_queue:
+      storage: file_storage
+      queue_size: 10000
+
+service:
+  telemetry:
+    logs:
+      encoding: json
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 127.0.0.1
+                port: 8888
+
+  pipelines:
+
+    traces:
+      receivers: [jaeger, zipkin]
+      processors: [resource, resourcedetection, batch]
+      exporters: [otlp]
+
+    metrics:
+      receivers: [prometheus, hostmetrics]
+      processors: [resource, resourcedetection, batch]
+      exporters: [otlp]
+
+    logs:
+      receivers: [journald]
+      processors: [resource, resourcedetection, batch]
+      exporters: [otlp]
+
+  extensions:
+    - health_check
+    - pprof
+    - zpages
+    - file_storage
