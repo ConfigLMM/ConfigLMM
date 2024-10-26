@@ -4,11 +4,16 @@ Description=Matrix (Element) container
 After=local-fs.target
 
 [Container]
+ContainerName=Element
 Image=docker.io/vectorim/element-web:latest
 EnvironmentFile=/var/lib/matrix/.config/containers/systemd/Matrix.env
 PublishPort=127.0.0.1:18300:80
 Volume=/var/lib/matrix/config.json:/app/config.json
+LogDriver=journald
 AutoUpdate=registry
+
+[Service]
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target default.target

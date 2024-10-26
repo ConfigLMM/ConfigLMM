@@ -4,6 +4,7 @@ Description=Authentik Server container
 After=local-fs.target
 
 [Container]
+ContainerName=Authentik-Server
 Image=ghcr.io/goauthentik/server:latest
 Exec=server
 EnvironmentFile=/var/lib/authentik/.config/containers/systemd/Authentik.env
@@ -13,7 +14,11 @@ PublishPort=127.0.0.1:19300:9300
 UserNS=keep-id:uid=1000,gid=1000
 Volume=/var/lib/authentik/media:/media
 Volume=/var/lib/authentik/templates:/templates
+LogDriver=journald
 AutoUpdate=registry
+
+[Service]
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target default.target

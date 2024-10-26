@@ -4,6 +4,7 @@ Description=GitLab container
 After=local-fs.target firewalld.service
 
 [Container]
+ContainerName=GitLab
 Image=docker.io/gitlab/gitlab-ce:latest
 PublishPort=127.0.0.1:18100:80
 PublishPort=0.0.0.0:22:22
@@ -12,7 +13,11 @@ Volume=/var/lib/gitlab/logs:/var/log/gitlab
 Volume=/var/lib/gitlab/data:/var/opt/gitlab
 Volume=/var/lib/gitlab/backups:/var/opt/gitlab/backups
 ShmSize=256M
+LogDriver=journald
 AutoUpdate=registry
+
+[Service]
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target default.target

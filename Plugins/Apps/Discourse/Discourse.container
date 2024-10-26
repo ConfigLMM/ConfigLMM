@@ -11,7 +11,11 @@ Network=slirp4netns:allow_host_loopback=true
 PublishPort=127.0.0.1:13100:3000
 UserNS=keep-id:uid=999,gid=999
 Volume=/var/lib/discourse/data:/bitnami/discourse
+LogDriver=journald
 AutoUpdate=registry
+
+[Service]
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target default.target

@@ -5,11 +5,16 @@ Description=OpenVidu Call container
 After=local-fs.target
 
 [Container]
+ContainerName=OpenViduCall
 Image=docker.io/openvidu/openvidu-call:main
 EnvironmentFile=/var/lib/openvidu/.config/containers/systemd/OpenVidu.env
 PublishPort=127.0.0.1:6080:6080
 UserNS=keep-id:uid=1000,gid=1000
+LogDriver=journald
 AutoUpdate=registry
+
+[Service]
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target default.target

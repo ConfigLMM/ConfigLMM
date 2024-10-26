@@ -14,6 +14,10 @@ HostName=ERPNext-Websocket
 UserNS=keep-id:uid=1000,gid=1000
 Volume=/var/lib/erpnext/sites:/home/frappe/frappe-bench/sites
 Volume=/var/lib/erpnext/logs:/home/frappe/frappe-bench/logs
+LogDriver=journald
+
+[Service]
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target default.target

@@ -4,6 +4,7 @@ Description=Authentik Worker container
 After=local-fs.target
 
 [Container]
+ContainerName=Authentik-Worker
 Image=ghcr.io/goauthentik/server:latest
 Exec=worker
 EnvironmentFile=/var/lib/authentik/.config/containers/systemd/Authentik.env
@@ -12,7 +13,11 @@ UserNS=keep-id:uid=1000,gid=1000
 Volume=/var/lib/authentik/media:/media
 Volume=/var/lib/authentik/templates:/templates
 Volume=/var/lib/authentik/certs:/certs
+LogDriver=journald
 AutoUpdate=registry
+
+[Service]
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target default.target
