@@ -132,8 +132,6 @@ module ConfigLMM
                     connection.rm('/var/log/php/roundcube.access.log', options[:dry])
                     connection.rm('/var/log/php/roundcube.errors.log', options[:dry])
                     connection.rm('/var/log/php/roundcube.mail.log', options[:dry])
-                    connection.rm('/var/log/nginx/roundcube.access.log', options[:dry])
-                    connection.rm('/var/log/nginx/roundcube.error.log', options[:dry])
                     state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
                 end
             end

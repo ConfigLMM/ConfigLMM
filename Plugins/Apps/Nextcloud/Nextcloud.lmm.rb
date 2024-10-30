@@ -91,8 +91,6 @@ module ConfigLMM
                         connection.rm('/var/log/php/nextcloud.access.log', options[:dry])
                         connection.rm('/var/log/php/nextcloud.errors.log', options[:dry])
                         connection.rm('/var/log/php/nextcloud.mail.log', options[:dry])
-                        connection.rm('/var/log/nginx/nextcloud.access.log', options[:dry])
-                        connection.rm('/var/log/nginx/nextcloud.error.log', options[:dry])
                         state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
                     end
                 end

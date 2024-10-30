@@ -31,9 +31,6 @@ server
 
     server_name <%= config['Domain'] %>;
 
-    access_log  /var/log/nginx/nextcloud.access.log;
-    error_log   /var/log/nginx/nextcloud.error.log;
-
     root /usr/share/webapps/nextcloud;
 
     include config-lmm/private.conf;

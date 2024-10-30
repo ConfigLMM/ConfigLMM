@@ -177,8 +177,6 @@ module ConfigLMM
                         end
                         Framework::LinuxApp.deleteUserAndGroup(USER, connection, options[:dry])
                         connection.rm(HOME_DIR, options[:dry])
-                        connection.rm('/var/log/nginx/erpnext.access.log', options[:dry])
-                        connection.rm('/var/log/nginx/erpnext.error.log', options[:dry])
 
                         state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
                     end

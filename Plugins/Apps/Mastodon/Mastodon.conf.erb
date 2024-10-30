@@ -30,9 +30,6 @@ server {
 
     server_name <%= config['Domain'] %>;
 
-    access_log  /var/log/nginx/mastodon.access.log;
-    error_log   /var/log/nginx/mastodon.error.log;
-
     client_max_body_size 99M;
 
     include config-lmm/errors.conf;

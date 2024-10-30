@@ -33,9 +33,6 @@ server {
         root               <%= config['Root'] %>;
     <% end %>
 
-    access_log  /var/log/nginx/gollum.access.log;
-    error_log   /var/log/nginx/gollum.error.log;
-
     <% if config['AuthentikDomain'].nil? %>
         include config-lmm/private.conf;
     <% end %>

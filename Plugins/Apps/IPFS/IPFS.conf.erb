@@ -20,9 +20,6 @@ server {
 
     server_name <%= config['Domain'] %>;
 
-    access_log  /var/log/nginx/ipfs.access.log;
-    error_log   /var/log/nginx/ipfs.error.log;
-
     include config-lmm/private.conf;
     include config-lmm/errors.conf;
 

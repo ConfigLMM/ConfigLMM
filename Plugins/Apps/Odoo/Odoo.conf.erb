@@ -37,9 +37,6 @@ server {
 
     server_name <%= config['Domain'] %>;
 
-    access_log  /var/log/nginx/odoo.access.log;
-    error_log   /var/log/nginx/odoo.error.log;
-
     include config-lmm/errors.conf;
 
     location / {

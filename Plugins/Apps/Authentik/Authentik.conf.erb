@@ -24,9 +24,6 @@ server {
 
     server_name <%= config['Domain'] %>;
 
-    access_log  /var/log/nginx/authentik.access.log;
-    error_log   /var/log/nginx/authentik.error.log;
-
     # Proxy site
     location / {
         proxy_pass http://authentik;

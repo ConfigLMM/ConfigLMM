@@ -85,8 +85,6 @@ module ConfigLMM
                     state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
                     if options[:destroy]
                         connection.rm('/var/lib/gitlab', options[:dry])
-                        connection.rm('/var/log/nginx/gitlab.access.log', options[:dry])
-                        connection.rm('/var/log/nginx/gitlab.error.log', options[:dry])
                         state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
                     end
                 end

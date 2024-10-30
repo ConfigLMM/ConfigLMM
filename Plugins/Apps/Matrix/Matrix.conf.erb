@@ -22,9 +22,6 @@ server {
 
     server_name <%= config['Domain'] %>;
 
-    access_log  /var/log/nginx/matrix.access.log;
-    error_log   /var/log/nginx/matrix.error.log;
-
     include config-lmm/errors.conf;
 
     location / {
@@ -59,9 +56,6 @@ server {
     #listen [::]:8448 ssl http2 default_server;
 
     server_name <%= config['SynapseDomain'] %>;
-
-    access_log  /var/log/nginx/matrix.access.log;
-    error_log   /var/log/nginx/matrix.error.log;
 
     include config-lmm/errors.conf;
 

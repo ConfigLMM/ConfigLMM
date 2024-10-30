@@ -23,9 +23,6 @@ server {
 
     server_name <%= config['Domain'] %>;
 
-    access_log  /var/log/nginx/<%= config['Name'].downcase %>.access.log;
-    error_log   /var/log/nginx/<%= config['Name'].downcase %>.error.log;
-
     include config-lmm/errors.conf;
     include config-lmm/security.conf;
 

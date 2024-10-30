@@ -14,9 +14,6 @@ server {
 
     server_name <%= config['Domain'] %>;
 
-    access_log  /var/log/nginx/pterodactyl.access.log;
-    error_log   /var/log/nginx/pterodactyl.error.log;
-
     include config-lmm/private.conf;
     include config-lmm/errors.conf;
 
