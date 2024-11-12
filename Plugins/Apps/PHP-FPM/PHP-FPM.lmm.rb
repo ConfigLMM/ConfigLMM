@@ -26,7 +26,9 @@ module ConfigLMM
                 configLines << "pm.min_spare_servers = 1\n"
                 configLines << "pm.max_spare_servers = 3\n"
                 configLines << "pm.start_servers = 2\n"
-                configLines << "access.log = /var/log/php/$pool.access.log\n"
+
+                configLines << 'access.format = \'{"time_iso8601":"%{%Y-%m-%dT%H:%M:%S%z}T","time_received":"%{%Y-%m-%dT%H:%M:%S%z}t","pool":"%n","remote_addr":"%R","remote_user":"%u","method":"%m","host":"%{HTTP_HOST}e","uri":"%r","query_string":"%q","request":"%m %{REQUEST_URI}e %{SERVER_PROTOCOL}e","status":%s,"request_uri":"%{REQUEST_URI}e","server_protocol":"%{SERVER_PROTOCOL}e","body_bytes_sent":%l,"request_time":%d,"request_filename":"%f","http_x_forwarded_for":"%{HTTP_X_FORWARDED_FOR}e","http_x_real_ip":"%{HTTP_X_REAL_IP}e","http_referer":"%{HTTP_REFERER}e","http_user_agent":"%{HTTP_USER_AGENT}e","http_accept_language":"%{HTTP_ACCEPT_LANGUAGE}e","request_id":"%{HTTP_X_REQUEST_ID}e","content_type":"%{Content-Type}o","upstream_http_etag":"%{ETag}o","upstream_http_last_modified":"%{Last-Modified}o","cpu_time":%C,"memory":%M,"ppid":%P,"pid":%p}\'' + "\n"
+                configLines << "access.log = /var/log/php/$pool.access.json\n"
                 if target['PHP-FPM']['chdir']
                     configLines << "chdir = #{target['PHP-FPM']['chdir']}\n"
                 else

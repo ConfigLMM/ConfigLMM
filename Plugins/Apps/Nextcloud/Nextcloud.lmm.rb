@@ -26,10 +26,13 @@ module ConfigLMM
                         addUserCmd = "#{distroInfo['CreateServiceUser']} --home-dir '#{HOME_DIR}' --create-home --comment 'Nextcloud' #{USER}"
                         self.class.sshExec!(ssh, addUserCmd, true)
                         self.class.sshExec!(ssh, "mkdir -p /var/log/php/ /var/lib/nextcloud/apps/ /var/lib/nextcloud/data/")
+                        self.class.sshExec!(ssh, "touch /var/log/php/nextcloud.access.json")
                         self.class.sshExec!(ssh, "touch /var/log/php/nextcloud.errors.log")
                         self.class.sshExec!(ssh, "touch /var/log/php/nextcloud.mail.log")
+                        self.class.sshExec!(ssh, "chgrp #{USER} /var/log/php/nextcloud.access.json")
                         self.class.sshExec!(ssh, "chown #{USER}:#{USER} /var/log/php/nextcloud.errors.log")
                         self.class.sshExec!(ssh, "chown #{USER}:#{USER} /var/log/php/nextcloud.mail.log")
+                        self.class.sshExec!(ssh, "chmod o-r /var/log/php/nextcloud.access.json /var/log/php/nextcloud.errors.log /var/log/php/nextcloud.mail.log")
                         PHP_FPM::fixConfigFileOverSSH(distroInfo, ssh)
 
                         webappsDir = PHP_FPM::webappsDir(distroInfo)
@@ -88,7 +91,7 @@ module ConfigLMM
                             PostgreSQL.dropUserAndDB(item['Database'], USER, connection, options[:dry])
                         end
                         Framework::LinuxApp.deleteUserAndGroup(USER, connection, options[:dry])
-                        connection.rm('/var/log/php/nextcloud.access.log', options[:dry])
+                        connection.rm('/var/log/php/nextcloud.access.json', options[:dry])
                         connection.rm('/var/log/php/nextcloud.errors.log', options[:dry])
                         connection.rm('/var/log/php/nextcloud.mail.log', options[:dry])
                         state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
