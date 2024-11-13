@@ -7,16 +7,14 @@ module ConfigLMM
             PID_FILE = '/run/redis/redis.pid'
 
             def actionValkeyDeploy(id, target, activeState, context, options)
-                self.ensurePackage(PACKAGE_NAME, target['Location'])
+                self.withConnection(target['Location'], target) do |connection|
+                    Linux.withConnection(connection) do |linuxConnection|
+                        linuxConnection.ensurePackage(PACKAGE_NAME, options)
 
-                serviceName = 'redis'
-
-                if target['Location'] && target['Location'] != '@me'
-                    self.class.sshStart(target['Location']) do |ssh|
-                        distroId = self.class.distroID(ssh)
-                        if distroId == SUSE_ID
+                        serviceName = 'redis'
+                        if linuxConnection.distroID == SUSE_ID
                             serviceName = 'redis@redis'
-                            self.class.sshExec!(ssh, "touch #{CONFIG_FILE}")
+                            linuxConnection.exec("touch #{CONFIG_FILE}", false, options)
 
                             target['Settings'] ||= {}
                             target['Settings']['pidfile'] = PID_FILE
@@ -24,15 +22,19 @@ module ConfigLMM
                             target['Settings']['dir'] = '/var/lib/redis/default/'
                         end
 
-                        if ENV[id + '-VALKEY_PASSWORD']
-                            target['Settings']['requirepass'] = ENV[id + '-VALKEY_PASSWORD']
-                        elsif ENV['VALKEY_PASSWORD']
-                            target['Settings']['requirepass'] = ENV['VALKEY_PASSWORD']
+                        password = context.secrets.load(target['SecretId'], 'VALKEY_PASSWORD')
+                        if password.nil?
+                            password = SecureRandom.urlsafe_base64(20)
+                            context.secrets.store(target['SecretId'], 'VALKEY_PASSWORD', password)
+                        end
+
+                        if !password.empty? && password != 'no' && target['Password'] != false
+                            target['Settings']['requirepass'] = password
                         end
 
                         if target['Settings']
                             target['Settings']['bind'] = '127.0.0.1' unless target['Settings']['bind']
-                            updateRemoteFile(ssh, CONFIG_FILE, options, false) do |configLines|
+                            linuxConnection.updateFile(CONFIG_FILE, options, false) do |configLines|
                                 target['Settings'].each do |name, value|
                                     configLines << "#{name} #{value}\n"
                                 end
@@ -40,42 +42,33 @@ module ConfigLMM
                             end
                         end
 
-                        self.class.exec("chgrp redis #{CONFIG_FILE}", ssh)
-                        self.class.exec("chmod 640 #{CONFIG_FILE}", ssh)
-                    end
-                else
-                    if target['Settings']
-                        `touch #{CONFIG_FILE}`
-                        updateLocalFile(CONFIG_FILE, options) do |configLines|
-                            target['Settings'].each do |name, value|
-                                configLines << "#{name} #{value}\n"
-                            end
-                            configLines
-                        end
-                    end
-                    self.class.exec("chgrp redis #{CONFIG_FILE}", ssh)
-                    self.class.exec("chmod 640 #{CONFIG_FILE}", nil)
-                end
+                        target['Settings']['requirepass'] = '<REDACTED>' if target['Settings']['requirepass']
 
-                self.ensureServiceAutoStart(serviceName, target['Location'])
-                self.startService(serviceName, target['Location'])
+                        linuxConnection.setUserGroup(CONFIG_FILE, 'redis', nil, options)
+                        linuxConnection.setPrivate(CONFIG_FILE, options)
+
+                        linuxConnection.ensureServiceAutoStart(serviceName, options)
+                        linuxConnection.restartService(serviceName, options)
+                    end
+                end
             end
 
             def cleanup(configs, state, context, options)
                 cleanupType(:Valkey, configs, state, context, options) do |item, id, state, context, options, connection|
-                    serviceName = 'redis'
-                    distroId = self.class.distroID(connection)
-                    serviceName = 'redis@redis' if distroId == SUSE_ID
+                    Linux.withConnection(connection) do |linuxConnection|
+                        serviceName = 'redis'
+                        serviceName = 'redis@redis' if linuxConnection.distroID == SUSE_ID
 
-                    Framework::LinuxApp.stopService(serviceName, connection, options[:dry])
-                    Framework::LinuxApp.removePackage(PACKAGE_NAME, connection, options[:dry])
+                        linuxConnection.stopService(serviceName, options)
+                        linuxConnection.removePackage(PACKAGE_NAME, options)
 
-                    state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
+                        state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
 
-                    if options[:destroy]
-                        connection.rm('/etc/redis', options[:dry])
+                        if options[:destroy]
+                            linuxConnection.rm('/etc/redis', options[:dry])
 
-                        state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                            state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                        end
                     end
                 end
             end
