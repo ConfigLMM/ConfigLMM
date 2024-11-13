@@ -4,45 +4,42 @@ module ConfigLMM
     module LMM
         class MariaDB < Framework::LinuxApp
             PACKAGE_NAME = 'MariaDB'
-            SERVICE_NAME = 'mariadb'
+            SERVICE_NAME = :mariadb
             USER_NAME = 'mariadb'
 
             def actionMariaDBDeploy(id, target, activeState, context, options)
-                self.ensurePackage(PACKAGE_NAME, target['Location'])
-                self.ensureServiceAutoStart(SERVICE_NAME, target['Location'])
-                self.startService(SERVICE_NAME, target['Location'])
+                self.withConnection(target['Location'], target) do |connection|
+                    Linux.withConnection(connection) do |linuxConnection|
+                        linuxConnection.ensurePackage(PACKAGE_NAME, options)
+                        linuxConnection.ensureServiceAutoStart(SERVICE_NAME, options)
+                        linuxConnection.startService(SERVICE_NAME, options)
 
-                if target['Location'] && target['Location'] != '@me'
-                    uri = Addressable::URI.parse(target['Location'])
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
-
-                    self.class.sshStart(uri) do |ssh|
-                        self.class.secureInstallation(ssh)
-                        self.class.exec("sed -i 's|^log-error |#log-error |' /etc/my.cnf", ssh)
+                        self.class.secureInstallation(connection)
+                        linuxConnection.exec("sed -i 's|^log-error |#log-error |' /etc/my.cnf", false, options)
                         if target['Listen']
-                            self.class.exec("sed -i 's|bind-address .*|bind-address = #{target['Listen']}|' /etc/my.cnf", ssh)
-                            self.class.restartService(SERVICE_NAME, ssh)
+                            linuxConnection.exec("sed -i 's|bind-address .*|bind-address = #{target['Listen']}|' /etc/my.cnf", false, options)
+                            linuxConnection.restartService(SERVICE_NAME, options)
                         end
                     end
-                else
-                    # TODO
                 end
             end
 
             def cleanup(configs, state, context, options)
                 cleanupType(:MariaDB, configs, state, context, options) do |item, id, state, context, options, connection|
-                    Framework::LinuxApp.stopService(SERVICE_NAME, connection, options[:dry])
-                    Framework::LinuxApp.disableService(SERVICE_NAME, connection, options[:dry])
-                    Framework::LinuxApp.removePackage(PACKAGE_NAME, connection, options[:dry])
-
+                    Linux.withConnection(connection) do |linuxConnection|
+                        linuxConnection.stopService(SERVICE_NAME, options)
+                        linuxConnection.disableService(SERVICE_NAME, options)
+                        linuxConnection.removePackage(PACKAGE_NAME, options)
+                    end
                     state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
                 end
             end
 
-            def self.secureInstallation(ssh)
+            def self.secureInstallation(connection)
                 status = {}
                 output = ''
-                channel = ssh.exec("mariadb-secure-installation", status: status) do |channel, stream, data|
+                # TODO: FIXME to work with non-ssh connection aswell
+                channel = connection.tunnel.ssh.exec("mariadb-secure-installation", status: status) do |channel, stream, data|
                     output += data
                     channel.send_data("\n")  # Empty root password
                     channel.send_data("Y\n") # unix_socket authentication
