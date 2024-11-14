@@ -1,7 +1,7 @@
 
 module ConfigLMM
     module LMM
-        class Gollum < Framework::NginxApp
+        class Gollum < Framework::Plugin
 
             NAME = 'gollum'
             USER = 'gollum'
@@ -9,11 +9,13 @@ module ConfigLMM
             GOLLUM_PORT = '14567'
 
             def actionGollumBuild(id, target, activeState, context, options)
-                writeNginxConfig(__dir__, NAME, id, target, activeState, context, options)
+                Nginx.withConnection(local) do |nginxConnection|
+                    nginxConnection.writeConfig(__dir__, NAME, target, state, context, options)
+                end
                 targetDir = options['output'] + GOLLUM_PATH
-                mkdir(targetDir + '/config', options['dry'])
-                copy(__dir__ + '/config.ru', targetDir, options['dry'])
-                `git init #{targetDir}/repo`
+                local.mkdir(targetDir + '/config', options['dry'])
+                local.copy(__dir__ + '/config.ru', targetDir, options['dry'])
+                local.exec("git init #{targetDir}/repo", options)
             end
 
             def actionGollumRefresh(id, target, activeState, context, options)
@@ -21,64 +23,54 @@ module ConfigLMM
             end
 
             def actionGollumDeploy(id, target, activeState, context, options)
-                if target['Location'] && target['Location'] != '@me'
-                    uri = Addressable::URI.parse(target['Location'])
-                    self.class.sshStart(uri) do |ssh|
+                self.withConnection(target['Location'], target) do |connection|
+                    Linux.withConnection(connection) do |linuxConnection|
                         if !target.key?('Proxy') || !!target['Proxy']
-                            self.class.prepareNginxConfig(target, ssh)
-                            if !target['Root']
-                                gollumPath = ssh.exec!('gem which gollum').strip
-                                target['Root'] = File.dirname(gollumPath) + '/gollum/public'
+                            #if !target['Root']
+                            #    gollumPath = linuxConnection.exec('gem which gollum', true).strip
+                            #    target['Root'] = File.dirname(gollumPath) + '/gollum/public'
+                            #end
+                            Nginx.withConnection(linuxConnection) do |nginxConnection|
+                                nginxConnection.writeConfig(__dir__, NAME, target, state, context, options)
+                                nginxConnection.deployAllConfigs(target, activeState, context, options)
                             end
-                            writeNginxConfig(__dir__, NAME, id, target, state, context, options)
-                            deployNginxConfig(id, target, activeState, context, options)
                         end
                         if !target.key?('Proxy') || target['Proxy'] != 'only'
-                            distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
-                            Framework::LinuxApp.configurePodmanServiceOverSSH(USER, GOLLUM_PATH, 'gollum', distroInfo, ssh)
+                            Podman.createUser(USER, GOLLUM_PATH, 'gollum', linuxConnection, options)
+                            linuxConnection.withUserShell(USER) do |shell|
+                                shell.createDirs(options, '~/data')
+                            end
+
                             if target['Config']
-                                `cp #{target['Config']} #{options['output'] + GOLLUM_PATH}/config/config.rb`
+                                local.copy(target['Config'], "#{options['output'] + GOLLUM_PATH}/config/config.rb", options['dry'])
                             else
-                                `touch #{options['output'] + GOLLUM_PATH}/config/config.rb`
+                                local.fileWrite(options['output'] + GOLLUM_PATH + "/config/config.rb", '', options['dry'])
                             end
-                            self.class.uploadFolder(options['output'] + GOLLUM_PATH, '/srv', ssh)
-                            path = Framework::LinuxApp::SYSTEMD_CONTAINERS_PATH.gsub('~', GOLLUM_PATH)
-                            ssh.scp.upload!(__dir__ + '/gollum.container', path)
-                            self.class.sshExec!(ssh, "chown -R #{USER}:#{USER} #{GOLLUM_PATH}")
-                            self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ daemon-reload")
-                            self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ restart gollum")
+                            linuxConnection.uploadFolder(options['output'] + GOLLUM_PATH, '/srv', options)
+
+                            path = Podman.containersPath(GOLLUM_PATH)
+                            linuxConnection.upload(__dir__ + '/gollum.container', path, options)
+
+                            linuxConnection.setUserGroup(GOLLUM_PATH, USER, USER, options)
+                            linuxConnection.reloadUserServices(USER, options)
+                            linuxConnection.restartUserService(USER, 'gollum', options)
                             if target['Proxy'] != 'only'
-                                Framework::LinuxApp.firewallAddPortOverSSH(GOLLUM_PORT + '/tcp', ssh)
+                                linuxConnection.firewallAddPort(GOLLUM_PORT + '/tcp', options)
                             end
                         end
-                    end
-                else
-                    targetDir = GOLLUM_PATH
-                    mkdir(targetDir, options['dry'])
-                    if !target.key?('Proxy') || !!target['Proxy']
-                        self.class.prepareNginxConfig(target)
-                        if !target['Root']
-                            target['Root'] = File.dirname(`gem which gollum`.strip) + '/gollum/public'
-                        end
-                        writeNginxConfig(__dir__, NAME, id, target, state, context, options)
-                        deployNginxConfig(id, target, activeState, context, options)
-                    end
-                    if !target.key?('Proxy') || target['Proxy'] != 'only'
-                        copy(options['output'] + GOLLUM_PATH + '/config.ru', GOLLUM_PATH, options['dry'])
-                        copyNotPresent(options['output'] + GOLLUM_PATH + '/repo', GOLLUM_PATH, options['dry'])
-                        chown('http', 'http', GOLLUM_PATH, options['dry'])
                     end
                 end
             end
 
             def cleanup(configs, state, context, options)
-                items = state.selectType(:Gollum)
-                items.each do |id, item|
-                    if !configs.key?(id)
-                        if item['Location'] == '@me'
-                            cleanupNginxConfig(NAME, id, state, context, options)
-                        else
-                            # TODO
+                cleanupType(:Gollum, configs, state, context, options) do |item, id, state, context, options, connection|
+                    if !item['Config'].key?('Proxy') || !!item['Config']['Proxy']
+                        Linux.withConnection(connection) do |linuxConnection|
+                            Nginx.withConnection(linuxConnection) do |nginxConnection|
+                                nginxConnection.cleanupConfig(NAME, context, options)
+                                nginxConnection.reload(options)
+                            end
+                            state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
                         end
                     end
                 end
