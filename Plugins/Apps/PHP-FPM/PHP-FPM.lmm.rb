@@ -6,6 +6,16 @@ module ConfigLMM
             PHPFPM_PACKAGE = 'PHP-FPM'
             PHPFPM_SERVICE = 'php-fpm'
 
+            def self.deploy(linuxConnection, options)
+                linuxConnection.ensurePackage(PHP_FPM::PHPFPM_PACKAGE, options)
+                linuxConnection.ensureServiceAutoStart(PHP_FPM::PHPFPM_SERVICE, options)
+
+                dir = self.configFileDir(linuxConnection.distroInfo)
+                if !linuxConnection.filePresent?(dir + 'php-fpm.conf', { **options, 'dry': false })
+                    linuxConnection.exec("cp #{dir}php-fpm.conf.default #{dir}php-fpm.conf", false, options)
+                end
+            end
+
             def self.writeConfig(name, target, distroInfo, configLines)
                 target['PHP-FPM'] ||= {}
 
@@ -85,6 +95,7 @@ module ConfigLMM
                 end
             end
 
+            # DEPRECATED
             def self.fixConfigFileOverSSH(distroInfo, ssh)
                 dir = self.configFileDir(distroInfo)
                 if !self.remoteFilePresent?(dir + 'php-fpm.conf', ssh)

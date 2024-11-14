@@ -1,14 +1,16 @@
 
 module ConfigLMM
     module LMM
-        class Nextcloud < Framework::NginxApp
+        class Nextcloud < Framework::Plugin
 
             USER = 'nextcloud'
             HOME_DIR = '/var/lib/nextcloud'
             PACKAGE_NAME = 'Nextcloud'
 
             def actionNextcloudBuild(id, target, state, context, options)
-                writeNginxConfig(__dir__, 'Nextcloud', id, target, state, context, options)
+                Nginx.withConnection(local) do |nginxConnection|
+                    nginxConnection.writeConfig(__dir__, 'Nextcloud', target, state, context, options)
+                end
             end
 
             def actionNextcloudDiff(id, target, activeState, context, options)
@@ -16,85 +18,88 @@ module ConfigLMM
             end
 
             def actionNextcloudDeploy(id, target, activeState, context, options)
-                if target['Location'] && target['Location'] != '@me'
-                    uri = Addressable::URI.parse(target['Location'])
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
-                    self.class.sshStart(uri) do |ssh|
-                        Framework::LinuxApp.ensurePackages([PHP_FPM::PHPFPM_PACKAGE], ssh)
-                        Framework::LinuxApp.ensureServiceAutoStartOverSSH(PHP_FPM::PHPFPM_SERVICE, ssh)
-                        distroInfo = Framework::LinuxApp.ensurePackages([PACKAGE_NAME], ssh)
-                        addUserCmd = "#{distroInfo['CreateServiceUser']} --home-dir '#{HOME_DIR}' --create-home --comment 'Nextcloud' #{USER}"
-                        self.class.sshExec!(ssh, addUserCmd, true)
-                        self.class.sshExec!(ssh, "mkdir -p /var/log/php/ /var/lib/nextcloud/apps/ /var/lib/nextcloud/data/")
-                        self.class.sshExec!(ssh, "touch /var/log/php/nextcloud.access.json")
-                        self.class.sshExec!(ssh, "touch /var/log/php/nextcloud.errors.log")
-                        self.class.sshExec!(ssh, "touch /var/log/php/nextcloud.mail.log")
-                        self.class.sshExec!(ssh, "chgrp #{USER} /var/log/php/nextcloud.access.json")
-                        self.class.sshExec!(ssh, "chown #{USER}:#{USER} /var/log/php/nextcloud.errors.log")
-                        self.class.sshExec!(ssh, "chown #{USER}:#{USER} /var/log/php/nextcloud.mail.log")
-                        self.class.sshExec!(ssh, "chmod o-r /var/log/php/nextcloud.access.json /var/log/php/nextcloud.errors.log /var/log/php/nextcloud.mail.log")
-                        PHP_FPM::fixConfigFileOverSSH(distroInfo, ssh)
+                self.withConnection(target['Location'], target) do |connection|
+                    Linux.withConnection(connection) do |linuxConnection|
+                        PHP_FPM::deploy(linuxConnection, options)
+                        linuxConnection.ensurePackage(PACKAGE_NAME, options)
 
+                        Podman.createUser(USER, HOME_DIR, 'Nextcloud', linuxConnection, options)
+                        linuxConnection.withUserShell(USER) do |shell|
+                            shell.createDirs(options, '~/apps', '~/data')
+                        end
+                        linuxConnection.createDirs(options, '/var/log/php')
+                        linuxConnection.fileWrite('/var/log/php/nextcloud.access.json', '', options)
+                        linuxConnection.fileWrite('/var/log/php/nextcloud.errors.log', '', options)
+                        linuxConnection.fileWrite('/var/log/php/nextcloud.mail.log', '', options)
+
+                        linuxConnection.setUserGroup('/var/log/php/nextcloud.access.json', USER, USER, options)
+                        linuxConnection.setUserGroup('/var/log/php/nextcloud.errors.log', USER, USER, options)
+                        linuxConnection.setUserGroup('/var/log/php/nextcloud.mail.log', USER, USER, options)
+
+                        linuxConnection.exec("chmod o-r /var/log/php/nextcloud.access.json /var/log/php/nextcloud.errors.log /var/log/php/nextcloud.mail.log", false, options)
+
+                        distroInfo = linuxConnection.distroInfo
                         webappsDir = PHP_FPM::webappsDir(distroInfo)
                         configDir = webappsDir + 'nextcloud/config/'
-                        if !self.class.remoteFilePresent?(configDir + 'config.php', ssh)
-                            self.class.uploadNotPresent(__dir__ + '/config.php', configDir, ssh)
-                            self.class.sshExec!(ssh, "sed -i \"s|'instanceid' .*|'instanceid' => '#{SecureRandom.alphanumeric(10)}',|\" #{configDir}config.php")
-                            self.class.sshExec!(ssh, "touch #{configDir}CAN_INSTALL")
-                            self.class.sshExec!(ssh, "sed -i 's|/usr/share/webapps/|#{webappsDir}|' #{configDir}config.php")
+                        if !linuxConnection.filePresent?(configDir + 'config.php', options)
+                            linuxConnection.upload(__dir__ + '/config.php', configDir, options)
+                            linuxConnection.fileReplace("#{configDir}config.php", "'instanceid' .*", "'instanceid' => '#{SecureRandom.alphanumeric(10)}',", options)
+                            linuxConnection.fileWrite("#{configDir}CAN_INSTALL", '', options)
+                            linuxConnection.fileReplace("#{configDir}config.php", '/usr/share/webapps/', webappsDir, options)
                         end
-                        self.class.sshExec!(ssh, "chown -R nextcloud:nextcloud #{configDir}")
-                        self.class.sshExec!(ssh, "chown -R nextcloud:nextcloud /var/lib/nextcloud/")
+                        linuxConnection.setUserGroup(configDir, USER, USER, options)
+                        linuxConnection.setUserGroup('/var/lib/nextcloud', USER, USER, options)
 
                         target['Database'] ||= {}
                         if !target['Database']['Type'] || target['Database']['Type'] == 'pgsql'
-                            PostgreSQL.createRemoteUserAndDBOverSSH(target['Database'], USER, nil, ssh)
+                            PostgreSQL.withConnection(target['Database'], linuxConnection) do |postgresConnection|
+                                postgresConnection.createUserAndDB(USER, nil, options)
+                            end
                         end
 
                         target['User'] = USER unless target['User']
+                        target['Root'] = webappsDir + 'nextcloud'
                         name = 'nextcloud'
-                        self.updateRemoteFile(ssh, PHP_FPM.configDir(distroInfo) + name + '.conf', options, false, ';') do |configLines|
+                        linuxConnection.updateFile(PHP_FPM.configDir(distroInfo) + name + '.conf', options, false, ';') do |configLines|
                             PHP_FPM.writeConfig(name, target, distroInfo, configLines)
                         end
 
-                        Framework::LinuxApp.startServiceOverSSH(PHP_FPM::PHPFPM_SERVICE, ssh)
+                        linuxConnection.startService(PHP_FPM::PHPFPM_SERVICE, options)
 
-                        self.class.ensurePackage(ssh)
-                        self.class.prepareNginxConfig(target, ssh)
-                        self.writeNginxConfig(__dir__, 'Nextcloud', id, target, state, context, options)
-                        distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
-                        webappsDir = PHP_FPM::webappsDir(distroInfo)
-                        nginxFile = options['output'] + '/nginx/servers-lmm/Nextcloud.conf'
-                        `sed -i 's|root .*|root #{webappsDir}nextcloud;|' #{nginxFile}`
-                        deployNginxConfig(id, target, activeState, context, options)
-                        Framework::LinuxApp.startService(NGINX_PACKAGE, ssh)
-                        self.class.reload(ssh)
+                        Nginx.withConnection(linuxConnection) do |nginxConnection|
+                            nginxConnection.writeConfig(__dir__, 'Nextcloud', target, state, context, options)
+                            nginxConnection.deployAllConfigs(target, activeState, context, options)
+                        end
                     end
-                else
-                    deployNginxConfig(id, target, activeState, context, options)
                 end
             end
 
             def cleanup(configs, state, context, options)
                 cleanupType(:Nextcloud, configs, state, context, options) do |item, id, state, context, options, connection|
-                    self.cleanupNginxConfig('Nextcloud', id, state, context, options, connection)
-                    self.class.reload(connection, options[:dry])
-                    distroInfo = Framework::LinuxApp.currentDistroInfo(connection)
-                    connection.rm(PHP_FPM.configDir(distroInfo) + 'nextcloud.conf', options[:dry])
-                    Framework::LinuxApp.reloadService(PHP_FPM::PHPFPM_SERVICE, connection, options[:dry])
-                    Framework::LinuxApp.removePackage(PACKAGE_NAME, connection, options[:dry])
-                    state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
-                    if options[:destroy]
-                        connection.rm(PHP_FPM::webappsDir(distroInfo) + 'nextcloud', options[:dry])
-                        item['Database'] ||= {}
-                        if !item['Database']['Type'] || item['Database']['Type'] == 'pgsql'
-                            PostgreSQL.dropUserAndDB(item['Database'], USER, connection, options[:dry])
+                    Linux.withConnection(connection) do |linuxConnection|
+                        Nginx.withConnection(linuxConnection) do |nginxConnection|
+                            nginxConnection.cleanupConfig('Nextcloud', context, options)
+                            nginxConnection.reload(options)
                         end
-                        Framework::LinuxApp.deleteUserAndGroup(USER, connection, options[:dry])
-                        connection.rm('/var/log/php/nextcloud.access.json', options[:dry])
-                        connection.rm('/var/log/php/nextcloud.errors.log', options[:dry])
-                        connection.rm('/var/log/php/nextcloud.mail.log', options[:dry])
-                        state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                        linuxConnection.rm(PHP_FPM.configDir(linuxConnection.distroInfo) + 'nextcloud.conf', options[:dry])
+                        linuxConnection.reloadService(PHP_FPM::PHPFPM_SERVICE, options)
+                        linuxConnection.removePackage(PACKAGE_NAME, options)
+                        state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
+
+                        if options[:destroy]
+                            linuxConnection.rm(PHP_FPM::webappsDir(linuxConnection.distroInfo) + 'nextcloud', options[:dry])
+                            item['Config']['Database'] ||= {}
+                            if !item['Config']['Database']['Type'] || item['Config']['Database']['Type'] == 'pgsql'
+                                PostgreSQL.withConnection(item['Config']['Database'], linuxConnection) do |postgresConnection|
+                                    postgresConnection.dropUserAndDB(USER, options)
+                                end
+                            end
+                            linuxConnection.deleteUserAndGroup(USER, options)
+                            linuxConnection.rm('/var/log/php/nextcloud.access.json', options[:dry])
+                            linuxConnection.rm('/var/log/php/nextcloud.errors.log', options[:dry])
+                            linuxConnection.rm('/var/log/php/nextcloud.mail.log', options[:dry])
+                            state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                        end
                     end
                 end
             end

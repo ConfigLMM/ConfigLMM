@@ -168,13 +168,6 @@ module ConfigLMM
                 !IO::SSH.exec!(ssh, "grep '#{content}' #{file}", true).strip.empty?
             end
 
-            def self.uploadNotPresent(file, target, ssh)
-                target += '/' + File.basename(file)
-                if !self.remoteFilePresent?(target, ssh)
-                    ssh.scp.upload!(file, target)
-                end
-            end
-
             def self.uploadFolder(folder, target, ssh)
                 target += '/' + File.basename(folder) + '/'
                 IO::SSH.exec!(ssh, "mkdir -p #{target}")
