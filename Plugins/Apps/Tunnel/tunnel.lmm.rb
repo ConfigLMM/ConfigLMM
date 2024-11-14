@@ -5,48 +5,52 @@ module ConfigLMM
 
             def actionTunnelDeploy(id, target, activeState, context, options)
                 self.withConnection(target['Location'], target) do |connection|
-                    Framework::LinuxApp.ensurePackage('socat', connection)
+                    Linux.withConnection(connection) do |linuxConnection|
+                        linuxConnection.ensurePackage('socat', options)
 
-                    port = target['Port']
-                    if target['UDP']
-                        name = "tunnelUDP-#{port}"
-                        connection.upload(__dir__ + '/tunnelUDP.service', "/etc/systemd/system/#{name}.service")
-                        connection.upload(__dir__ + '/tunnelUDP.socket', "/etc/systemd/system/#{name}.socket")
-                        connection.exec("sed -i 's|$PORT|#{port}|' /etc/systemd/system/#{name}.service")
-                        connection.exec("sed -i 's|$PORT|#{port}|' /etc/systemd/system/#{name}.socket")
-                        connection.exec("sed -i 's|$REMOTE|#{Addressable::IDNA.to_ascii(target['Remote'])}|' /etc/systemd/system/#{name}.service")
-                        Framework::LinuxApp.firewallAddPort("#{port}/udp", connection)
-                    else
-                        name = "tunnelTCP-#{port}"
-                        connection.upload(__dir__ + '/tunnelTCP.service', "/etc/systemd/system/#{name}.service")
-                        connection.upload(__dir__ + '/tunnelTCP.socket', "/etc/systemd/system/#{name}.socket")
-                        connection.exec("sed -i 's|$PORT|#{port}|' /etc/systemd/system/#{name}.service")
-                        connection.exec("sed -i 's|$PORT|#{port}|' /etc/systemd/system/#{name}.socket")
-                        connection.exec("sed -i 's|$REMOTE|#{Addressable::IDNA.to_ascii(target['Remote'])}|' /etc/systemd/system/#{name}.service")
-                        Framework::LinuxApp.firewallAddPort("#{port}/tcp", connection)
+                        port = target['Port']
+                        if target['UDP']
+                            name = "tunnelUDP-#{port}"
+                            linuxConnection.upload(__dir__ + '/tunnelUDP.service', "/etc/systemd/system/#{name}.service", options)
+                            linuxConnection.upload(__dir__ + '/tunnelUDP.socket', "/etc/systemd/system/#{name}.socket", options)
+                            linuxConnection.fileReplace("/etc/systemd/system/#{name}.service", '$PORT', port, options)
+                            linuxConnection.fileReplace("/etc/systemd/system/#{name}.socket", '$PORT', port, options)
+                            linuxConnection.fileReplace("/etc/systemd/system/#{name}.service", '$REMOTE', Addressable::IDNA.to_ascii(target['Remote']) , options)
+                            linuxConnection.firewallAddPort("#{port}/udp", options)
+                        else
+                            name = "tunnelTCP-#{port}"
+                            linuxConnection.upload(__dir__ + '/tunnelTCP.service', "/etc/systemd/system/#{name}.service", options)
+                            linuxConnection.upload(__dir__ + '/tunnelTCP.socket', "/etc/systemd/system/#{name}.socket", options)
+                            linuxConnection.fileReplace("/etc/systemd/system/#{name}.service", '$PORT', port, options)
+                            linuxConnection.fileReplace("/etc/systemd/system/#{name}.socket", '$PORT', port, options)
+                            linuxConnection.fileReplace("/etc/systemd/system/#{name}.service", '$REMOTE', Addressable::IDNA.to_ascii(target['Remote']), options)
+                            linuxConnection.firewallAddPort("#{port}/tcp", options)
+                        end
+
+                        linuxConnection.reloadServiceManager(options)
+                        linuxConnection.ensureServiceAutoStart(name + '.socket', options)
+                        linuxConnection.stopService(name + '.service', options)
+                        linuxConnection.startService(name + '.socket', options)
                     end
-
-                    Framework::LinuxApp.reloadServiceManager(connection)
-                    Framework::LinuxApp.ensureServiceAutoStart(name + '.socket', connection)
-                    Framework::LinuxApp.stopService(name + '.service', connection)
-                    Framework::LinuxApp.startService(name + '.socket', connection)
                 end
             end
 
             def cleanup(configs, state, context, options)
                 cleanupType(:Tunnel, configs, state, context, options) do |item, id, state, context, options, connection|
-                    if item['UDP']
-                        name = "tunnelUDP-#{item['Port']}"
-                        Framework::LinuxApp.firewallRemovePort("#{item['Port']}/udp", connection)
-                    else
-                        name = "tunnelTCP-#{item['Port']}"
-                        Framework::LinuxApp.firewallRemovePort("#{item['Port']}/tcp", connection)
+                    Linux.withConnection(connection) do |linuxConnection|
+                        if item['Config']['UDP']
+                            name = "tunnelUDP-#{item['Config']['Port']}"
+                            linuxConnection.firewallRemovePort("#{item['Config']['Port']}/udp", options)
+                        else
+                            name = "tunnelTCP-#{item['Config']['Port']}"
+                            linuxConnection.firewallRemovePort("#{item['Config']['Port']}/tcp", options)
+                        end
+                        linuxConnection.stopService(name + '.socket', options)
+                        linuxConnection.disableService(name + '.socket', options)
+                        linuxConnection.rm("/etc/systemd/system/#{name}.service", options[:dry])
+                        linuxConnection.rm("/etc/systemd/system/#{name}.socket", options[:dry])
+                        state.item(id)['Status'] = State::STATUS_DESTROYED
                     end
-                    Framework::LinuxApp.stopService(name + '.socket', connection)
-                    Framework::LinuxApp.disableService(name + '.socket', connection)
-                    connection.rm("/etc/systemd/system/#{name}.service", options[:dry])
-                    connection.rm("/etc/systemd/system/#{name}.socket", options[:dry])
-                    state.item(id)['Status'] = State::STATUS_DESTROYED
                 end
             end
 
