@@ -12,7 +12,7 @@ module ConfigLMM
             def self.create(targets, logger)
                 targets = targets.uniq.select do |target|
                     exist = File.exist?(target)
-                    logger.warn("'#{path}' doesn't exist, ignoring!") unless exist
+                    logger.warn("'#{target}' doesn't exist, ignoring!") unless exist
                     exist
                 end
                 self.new(targets)
