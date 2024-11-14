@@ -164,26 +164,6 @@ module ConfigLMM
                 postgres.connection.exec(" PGPASSWORD=#{password} pg_dump --schema-only --no-owner --dbname=#{sourceDB} #{authParams} | psql --dbname=#{targetDB}", false, { **options, hide: true })
             end
 
-            def self.updateOwner(db, owner, ssh)
-                sql = "SELECT tablename FROM pg_tables WHERE NOT schemaname IN ('pg_catalog', 'information_schema')"
-                tables = self.executeSQL(sql, db, ssh, false, ['--csv', '--tuples-only']).strip.lines
-                tables.each do |table|
-                    self.executeSQL("ALTER TABLE public.#{table} OWNER TO #{owner};", db, ssh)
-                end
-
-                sql = "SELECT sequence_name FROM information_schema.sequences WHERE NOT sequence_schema IN ('pg_catalog', 'information_schema')"
-                sequences = self.executeSQL(sql, db, ssh, false, ['--csv', '--tuples-only']).strip.lines
-                sequences.each do |sequence|
-                    self.executeSQL("ALTER SEQUENCE public.#{sequence} OWNER TO #{owner};", db, ssh)
-                end
-
-                sql = "SELECT table_name FROM information_schema.views WHERE NOT table_schema IN ('pg_catalog', 'information_schema')"
-                views = self.executeSQL(sql, db, ssh, false, ['--csv', '--tuples-only']).strip.lines
-                views.each do |view|
-                    self.executeSQL("ALTER VIEW public.#{view} OWNER TO #{owner};", db, ssh)
-                end
-            end
-
             def self.defaults(settings)
                 settings['HostName'] = 'localhost' unless settings['HostName']
                 settings['Port'] = PORT unless settings['Port']
@@ -275,17 +255,6 @@ module ConfigLMM
                 if password
                     sql = "ALTER USER #{user} WITH PASSWORD '#{password}'"
                     self.executeSQL(sql, nil, connectionOrSSH)
-                end
-            end
-
-            def self.importSQL(owner, db, sqlFile, ssh = nil)
-                if ssh
-                    self.sshExec!(ssh, "echo \"SET ROLE '#{owner}';\" > /tmp/postgres_import.sql")
-                    self.sshExec!(ssh, "cat #{sqlFile} >> /tmp/postgres_import.sql")
-                    cmd = "su --login #{USER_NAME} --command 'psql #{db} < /tmp/postgres_import.sql'"
-                    self.sshExec!(ssh, cmd)
-                else
-                    # TODO
                 end
             end
 

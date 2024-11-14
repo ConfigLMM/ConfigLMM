@@ -49,10 +49,10 @@ module ConfigLMM
             def actionPowerDNSDeploy(id, target, activeState, context, options)
                 #actionPowerDNSDiff(id, target, activeState, context, options)
 
-                deploySettings(target, activeState, options)
+                deploySettings(target, activeState, context, options)
                 connect(id, target, activeState, context, options) do |host, port, key|
                     if target['TSIG']
-                        updateTSIG(host, port, key, target['TSIG'])
+                        updateTSIG(host, port, key, target, context)
                     end
                     if target['DNS']
                         updateDNS(host, port, key, target['DNS'])
@@ -65,18 +65,22 @@ module ConfigLMM
 
             def cleanup(configs, state, context, options)
                 cleanupType(:PowerDNS, configs, state, context, options) do |item, id, state, context, options, connection|
-                    if item['Deploy']
-                        Framework::LinuxApp.stopService(SERVICE_NAME, connection, options[:dry])
-                        Framework::LinuxApp.firewallRemoveService('dns', connection, options[:dry])
-                        Framework::LinuxApp.removePackage(PACKAGE_NAME, connection, options[:dry])
+                    if item['Config']['Deploy']
+                        Linux.withConnection(connection) do |linuxConnection|
+                            linuxConnection.stopService(SERVICE_NAME, options)
+                            linuxConnection.firewallRemoveService('dns', options)
+                            linuxConnection.removePackage(PACKAGE_NAME, options)
 
-                        state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
+                            state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
 
-                        if options[:destroy]
-                            item['Database'] ||= {}
-                            PostgreSQL.dropUserAndDB(item['Database'], USER, connection, options[:dry])
-                            connection.rm('/etc/pdns', options[:dry])
-                            state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                            if options[:destroy]
+                                item['Config']['Database'] ||= {}
+                                PostgreSQL.withConnection(item['Config']['Database'], linuxConnection) do |connectionDB|
+                                    connectionDB.dropUserAndDB(USER, options)
+                                end
+                                linuxConnection.rm('/etc/pdns', options[:dry])
+                                state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                            end
                         end
                     else
                         # TODO
@@ -129,7 +133,6 @@ module ConfigLMM
                     if !dns.list_zones(server).map { |zone| zone['name'].downcase }.include?(canonicalDomain.downcase)
                         dns.create_zone(server, canonicalDomain, [], { kind: 'Native' }.update(info['!'].to_h))
                     elsif !info['!'].to_h.empty?
-                        puts ({ kind: 'Native' }.update(info['!'].to_h).inspect)
                         dns.update_zone(server, canonicalDomain, { kind: 'Native' }.update(info['!'].to_h))
                     end
 
@@ -180,16 +183,18 @@ module ConfigLMM
 
             end
 
-            def updateTSIG(host, port, key, targetTSIG)
+            def updateTSIG(host, port, key, target, context)
                 server = 'localhost'
                 url = "http://#{host}:#{port}/api/v1/servers/#{server}/tsigkeys"
                 headers = { 'X-Api-Key' => key }
-                targetTSIG.each do |name, info|
+                target['TSIG'].each do |name, info|
                     data = { name: name, algorithm: info['Algorithm'] }
                     response = HTTP.headers(headers).post(url, json: data)
                     if response.status == 201
                         result = response.parse(:json)
-                        prompt.say("TSIG #{result['name']} key: #{result['key']}", :color => :magenta)
+                        key = result['key']
+                        context.secrets.store(target['SecretId'], "TSIG_#{result['name'].upcase}_KEY", key)
+                        context.secrets.print("TSIG #{result['name']} Key", key)
                     elsif response.status != 409
                         prompt.say(response.body.to_s, :color => :red)
                         raise 'Failed to create TSIG key!'
@@ -229,72 +234,69 @@ module ConfigLMM
                 end
             end
 
-            def deploySettings(target, activeState, options)
-                if target['Location']
-                    uri = Addressable::URI.parse(target['Location'])
-                    params = {}
-                    params = CGI.parse(uri.query) if uri.query
-                    if uri.scheme == 'ssh' && !params.key?('host')
-                        self.class.sshStart(uri) do |ssh|
-                            target['Deploy'] = !!target['Settings'] unless target.key?('Deploy')
-                            if target['Deploy']
-                                Framework::LinuxApp.ensurePackages([PACKAGE_NAME], ssh)
-                                Framework::LinuxApp.ensureServiceAutoStartOverSSH(SERVICE_NAME, ssh)
-                            end
+            def deploySettings(target, activeState, context, options)
+                target['Deploy'] = !!target['Settings'] unless target.key?('Deploy')
+                if target['Deploy']
+                    self.withConnection(target['Location'], target) do |connection|
+                        Linux.withConnection(connection) do |linuxConnection|
+                            linuxConnection.ensurePackages([PACKAGE_NAME], options)
+                            linuxConnection.ensureServiceAutoStart(SERVICE_NAME, options)
                             if target['Settings']
                                 prepareSettings(target)
-                                self.class.sshExec!(ssh, "mkdir -p #{CONFIG_DIR}")
-                                self.class.sshExec!(ssh, "sed -i 's|# include-dir=|include-dir=#{CONFIG_DIR}|' /etc/pdns/pdns.conf")
-                                ssh.scp.upload!(options['output'] + CONFIG_DIR + '/configlmm.conf', CONFIG_DIR + '/configlmm.conf')
+                                linuxConnection.createDirs(options, CONFIG_DIR)
+                                linuxConnection.fileReplace('/etc/pdns/pdns.conf', '# include-dir=', "include-dir=#{CONFIG_DIR}", options)
+                                linuxConnection.upload(options['output'] + CONFIG_DIR + '/configlmm.conf', CONFIG_DIR + '/configlmm.conf', options)
                                 apiKeyFile = CONFIG_DIR + '/apiKey.conf'
-                                if !self.class.remoteFilePresent?(apiKeyFile, ssh)
-                                    apiKey = ENV['POWERDNS_API_KEY']
-                                    apiKey = SecureRandom.urlsafe_base64(60) unless apiKey
-                                    self.class.sshExec!(ssh, " echo 'api-key=#{apiKey}' > #{apiKeyFile}")
-                                    self.class.sshExec!(ssh, " chown #{USER}:#{USER} #{apiKeyFile}")
-                                    self.class.sshExec!(ssh, " chmod 400 #{apiKeyFile}")
-                                    prompt.say("PowerDNS API Key: #{apiKey}", )
+                                apiKey = context.secrets.load(target['SecretId'], 'POWERDNS_API_KEY')
+                                if linuxConnection.filePresent?(apiKeyFile, options)
+                                    if !apiKey
+                                        if options['dry']
+                                            linuxConnection.exec("cat #{apiKeyFile} | grep api-key | cut -d '=' -f 2", false, options)
+                                        end
+                                        apiKey = linuxConnection.exec("cat #{apiKeyFile} | grep api-key | cut -d '=' -f 2", false, { **options, 'dry' => false }).strip
+                                        context.secrets.store(target['SecretId'], 'POWERDNS_API_KEY', apiKey)
+                                    end
+                                else
+                                    if !apiKey
+                                        apiKey = SecureRandom.urlsafe_base64(60)
+                                        context.secrets.store(target['SecretId'], 'POWERDNS_API_KEY', apiKey)
+                                        context.secrets.print('PowerDNS API Key', apiKey)
+                                    end
+                                    linuxConnection.fileWrite(apiKeyFile, "api-key=#{apiKey}", options)
+                                    linuxConnection.setUserGroup(apiKeyFile, USER, USER, options)
+                                    linuxConnection.setPrivate(apiKeyFile, options)
                                 end
-                                self.configurePostgreSQL(target['Settings'], ssh)
+                                self.configurePostgreSQL(target['Settings'], linuxConnection, options)
                             end
-                            if target['Deploy']
-                                Framework::LinuxApp.firewallAddServiceOverSSH('dns', ssh)
-                                Framework::LinuxApp.startServiceOverSSH(SERVICE_NAME, ssh)
-                            end
+                            linuxConnection.firewallAddService('dns', options)
+                            linuxConnection.restartService(SERVICE_NAME, options)
                         end
                     end
-                else
-                    # TODO
                 end
             end
 
-            def configurePostgreSQL(settings, ssh)
-                password = SecureRandom.alphanumeric(20)
-                if settings['gpgsql-host'] == 'localhost' || settings['gpgsql-host'].start_with?('/')
-                    PostgreSQL.createUserAndDBOverSSH(USER, password, ssh)
-                    PostgreSQL.importSQL(USER, USER, '/usr/share/doc/packages/pdns/schema.pgsql.sql', ssh)
-                    PostgreSQL.updateOwner(USER, USER, ssh)
-                else
-                    self.class.sshStart("ssh://#{settings['gpgsql-host']}/") do |ssh|
-                        PostgreSQL.createUserAndDBOverSSH(USER, password, ssh)
-                        PostgreSQL.importSQL(USER, USER, '/usr/share/doc/packages/pdns/schema.pgsql.sql', ssh)
-                        PostgreSQL.updateOwner(USER, USER, ssh)
-                    end
+            def configurePostgreSQL(settings, linuxConnection, options)
+                dbSettings = {}
+                dbSettings['HostName'] = settings['gpgsql-host']
+                dbSettings['HostName'] = 'localhost' if dbSettings['HostName'].start_with?('/')
+                PostgreSQL.withConnection(dbSettings, linuxConnection) do |postgresConnection|
+                    password = SecureRandom.alphanumeric(20)
+                    postgresConnection.createUserAndDB(USER, password, options)
+                    postgresConnection.importSQL(USER, USER, '/usr/share/doc/packages/pdns/schema.pgsql.sql', options)
+                    postgresConnection.updateOwner(USER, USER, options)
                 end
-                password
             end
 
             def connect(id, target, activeState, context, options)
                 host = DEFAULT_HOST
                 port = DEFAULT_PORT
-                key = ENV['POWERDNS_API_KEY']
-                key = target['Key'] if target['Key']
+                key = context.secrets.load(target['SecretId'], 'POWERDNS_API_KEY')
                 raise Framework::PluginProcessError.new('PowerDNS missing API key!') unless key
 
                 sshServer = nil
                 sshUser = nil
                 sshPort = nil
-                sshPassword = ENV['POWERDNS_SSH_PASSWORD']
+                sshPassword = context.secrets.load(target['SecretId'], 'POWERDNS_SSH_PASSWORD')
 
                 if target['Location']
                     uri = Addressable::URI.parse(target['Location'])

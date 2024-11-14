@@ -84,7 +84,11 @@ module ConfigLMM
                 connection.exec("#{hide}echo #{data.shellescape} >> #{target}", false, options)
             end
 
-            def fileReplace(target, placeholder, result, options)
+            def fileMerge(target, file, options = {})
+                connection.exec("cat #{file.shellescape} >> #{target}", false, options)
+            end
+
+            def fileReplace(target, placeholder, result, options = {})
                 hide = ''
                 hide = ' ' if options[:hide]
                 pattern = "s|#{placeholder}|#{result.to_s.gsub('\\', '\\\\\\').gsub('&', '\\\\&').gsub('|', '\\\\|')}|"

@@ -13,7 +13,7 @@ module ConfigLMM
 
             def exec(sql, db, allowFailure = false, queryOptions = [], options = {})
                 db = 'postgres' unless db
-                cmd = "psql #{queryOptions.join(' ')} --dbname=#{db} --command=\"#{LinuxShell.escapeSingleQuotes(sql)};\""
+                cmd = "psql #{queryOptions.join(' ')} --dbname=#{db} --command=#{sql.shellescape}"
                 if options[:hide]
                     cmd = ' ' + cmd
                 end
@@ -46,6 +46,32 @@ module ConfigLMM
             def grantReplication(user, options = {})
                  exec("ALTER USER #{user} REPLICATION", nil, false, [], options)
                  exec("GRANT pg_read_all_data TO #{user}", nil, false, [], options)
+            end
+
+            def importSQL(owner, db, sqlFile, options = {})
+                cmd = "psql #{db} < #{sqlFile}"
+                output = connection.exec(cmd, false, options)
+                raise output if output.include?('ERROR:') && !output.include?('already exists')
+            end
+
+            def updateOwner(db, owner, options = {})
+                sql = "SELECT tablename FROM pg_tables WHERE NOT schemaname IN ('pg_catalog', 'information_schema')"
+                tables = self.exec(sql, db, false, ['--csv', '--tuples-only']).strip.lines
+                tables.each do |table|
+                    self.exec("ALTER TABLE public.#{table} OWNER TO #{owner};", db, false, [], options)
+                end
+
+                sql = "SELECT sequence_name FROM information_schema.sequences WHERE NOT sequence_schema IN ('pg_catalog', 'information_schema')"
+                sequences = self.exec(sql, db, false, ['--csv', '--tuples-only']).strip.lines
+                sequences.each do |sequence|
+                    self.exec("ALTER SEQUENCE public.#{sequence} OWNER TO #{owner};", db, false, [], options)
+                end
+
+                sql = "SELECT table_name FROM information_schema.views WHERE NOT table_schema IN ('pg_catalog', 'information_schema')"
+                views = self.exec(sql, db, false, ['--csv', '--tuples-only']).strip.lines
+                views.each do |view|
+                    self.exec("ALTER VIEW public.#{view} OWNER TO #{owner};", db, false, [], options)
+                end
             end
 
             def pgsqlDir
