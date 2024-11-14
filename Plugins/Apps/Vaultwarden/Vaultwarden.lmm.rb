@@ -3,7 +3,7 @@ require 'fileutils'
 
 module ConfigLMM
     module LMM
-        class Vaultwarden < Framework::NginxApp
+        class Vaultwarden < Framework::Plugin
 
             NAME = 'Vaultwarden'
             USER = 'vaultwarden'
@@ -11,7 +11,9 @@ module ConfigLMM
             SERVICE_PORT = '18000'
 
             def actionVaultwardenBuild(id, target, state, context, options)
-                writeNginxConfig(__dir__, NAME, id, target, state, context, options)
+                Nginx.withConnection(local) do |nginxConnection|
+                    nginxConnection.writeConfig(__dir__, NAME, target, state, context, options)
+                end
             end
 
             def actionVaultwardenDiff(id, target, activeState, context, options)
@@ -19,46 +21,47 @@ module ConfigLMM
             end
 
             def actionVaultwardenDeploy(id, target, activeState, context, options)
-                if target['Location'] && target['Location'] != '@me'
-                    uri = Addressable::URI.parse(target['Location'])
-                    self.class.sshStart(uri) do |ssh|
+                self.withConnection(target['Location'], target) do |connection|
+                    Linux.withConnection(connection) do |linuxConnection|
                         if !target.key?('Proxy') || target['Proxy'] != 'only'
-                            distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
-                            Framework::LinuxApp.configurePodmanServiceOverSSH(USER, HOME_DIR, 'Vaultwarden', distroInfo, ssh)
-                            self.class.sshExec!(ssh, "su --login #{USER} --shell /bin/sh --command 'mkdir -p ~/data'")
-                            path = Framework::LinuxApp::SYSTEMD_CONTAINERS_PATH.gsub('~', HOME_DIR)
-                            self.class.sshExec!(ssh, "echo 'ROCKET_PORT=8000' > #{path}/Vaultwarden.env")
+
+                            Podman.createUser(USER, HOME_DIR, 'Vaultwarden', linuxConnection, options)
+                            linuxConnection.withUserShell(USER) do |shell|
+                                shell.createDirs(options, '~/data')
+                            end
+
+                            path = Podman.containersPath(HOME_DIR)
+                            linuxConnection.fileWrite("#{path}/Vaultwarden.env", 'ROCKET_PORT=8000', options)
                             if target['Domain']
-                                self.class.sshExec!(ssh, "echo 'DOMAIN=https://#{target['Domain']}' >> #{path}/Vaultwarden.env")
+                                linuxConnection.fileAppend("#{path}/Vaultwarden.env", "DOMAIN=https://#{target['Domain']}", options)
                             end
                             target['Signups'] = false unless target['Signups']
-                            self.class.sshExec!(ssh, "echo 'SIGNUPS_ALLOWED=#{target['Signups'].to_s}' >> #{path}/Vaultwarden.env")
+                            linuxConnection.fileAppend("#{path}/Vaultwarden.env", "SIGNUPS_ALLOWED=#{target['Signups'].to_s}", options)
                             if target.key?('Invitations')
-                                self.class.sshExec!(ssh, "echo 'INVITATIONS_ALLOWED=#{target['Invitations'].to_s}' >> #{path}/Vaultwarden.env")
+                                linuxConnection.fileAppend("#{path}/Vaultwarden.env", "INVITATIONS_ALLOWED=#{target['Invitations'].to_s}", options)
                             end
-                            if ENV.key?('VAULTWARDEN_ADMIN_TOKEN')
-                                token = ENV['VAULTWARDEN_ADMIN_TOKEN']
-                                token = SecureRandom.alphanumeric(40) if token.empty?
-                                self.class.sshExec!(ssh, "echo 'ADMIN_TOKEN=#{token}' >> #{path}/Vaultwarden.env")
+                            adminToken = context.secrets.load(target['SecretId'], 'VAULTWARDEN_ADMIN_TOKEN')
+                            if !adminToken
+                                adminToken = SecureRandom.alphanumeric(40)
+                                context.secrets.store(target['SecretId'], 'VAULTWARDEN_ADMIN_TOKEN', adminToken)
                             end
-                            self.class.sshExec!(ssh, "chown #{USER}:#{USER} #{path}/Vaultwarden.env")
-                            self.class.sshExec!(ssh, "chmod 600 #{path}/Vaultwarden.env")
-
-                            ssh.scp.upload!(__dir__ + '/Vaultwarden.container', path)
-                            self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ daemon-reload")
-                            self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ start Vaultwarden")
+                            linuxConnection.fileAppend("#{path}/Vaultwarden.env", "ADMIN_TOKEN=#{adminToken}", { **options, hide: true })
+                            linuxConnection.setUserGroup("#{path}/Vaultwarden.env", USER, USER, options)
+                            linuxConnection.setPrivate("#{path}/Vaultwarden.env", options)
+                            linuxConnection.upload(__dir__ + '/Vaultwarden.container', path, options)
+                            linuxConnection.reloadUserServices(USER, options)
+                            linuxConnection.restartUserService(USER, 'Vaultwarden', options)
                             if target['Proxy'] != 'only'
-                                Framework::LinuxApp.firewallAddPortOverSSH(SERVICE_PORT + '/tcp', ssh)
+                                linuxConnection.firewallAddPort(SERVICE_PORT + '/tcp', options)
                             end
                         end
                         if !target.key?('Proxy') || !!target['Proxy']
-                            self.class.prepareNginxConfig(target, ssh)
-                            writeNginxConfig(__dir__, NAME, id, target, state, context, options)
-                            deployNginxConfig(id, target, activeState, context, options)
+                            Nginx.withConnection(linuxConnection) do |nginxConnection|
+                                nginxConnection.writeConfig(__dir__, NAME, target, state, context, options)
+                                nginxConnection.deployAllConfigs(target, activeState, context, options)
+                            end
                         end
                     end
-                else
-                    # TODO
                 end
             end
 
