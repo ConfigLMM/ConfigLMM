@@ -1,4 +1,5 @@
 require_relative '../../OS/Linux/Linux.lmm.rb'
+require_relative 'Connection'
 
 module ConfigLMM
     module LMM
@@ -56,6 +57,7 @@ module ConfigLMM
                 end
             end
 
+            # DEPRECATED
             def self.createRemoteUserAndDB(settings, user, password, ssh = nil)
                 self.executeRemotely(settings, ssh) do |connection|
                     host = 'localhost'
@@ -64,6 +66,18 @@ module ConfigLMM
                 end
             end
 
+            def self.withConnection(settings, linuxConnection)
+                if settings['HostName'].nil? || settings['HostName'] == 'localhost'
+                    settings['HostName'] = 'localhost'
+                    yield(MariaDBConnection.new(linuxConnection, settings))
+                else
+                    IO::Connection.tunnel("ssh://#{settings['HostName']}/", {}, {}, linuxConnection.prompt, linuxConnection.logger) do |connection|
+                        yield(MariaDBConnection.new(connection, settings))
+                    end
+                end
+            end
+
+            # DEPRECATED
             def self.executeRemotely(settings, connectionOrSSH = nil)
                 prompt = TTY::Prompt.new
                 logger = TTY::Logger.new
@@ -83,6 +97,7 @@ module ConfigLMM
                 end
             end
 
+            # DEPRECATED
             def self.createUserAndDB(user, password, host, connectionOrSSH = nil)
                 self.executeSQL("CREATE USER '#{user}'@'#{host}'", nil, connectionOrSSH, true)
                 self.executeSQL("ALTER USER '#{user}'@'#{host}' IDENTIFIED BY '#{password}'", nil, connectionOrSSH)
@@ -90,23 +105,7 @@ module ConfigLMM
                 self.executeSQL("GRANT ALL PRIVILEGES ON #{user}.* TO '#{user}'@'#{host}'", nil, connectionOrSSH)
             end
 
-            def self.createAdmin(connectionOrSSH)
-                self.executeSQL("CREATE USER 'admin'@'%'", nil, connectionOrSSH, true)
-                password = SecureRandom.alphanumeric(20)
-                self.executeSQL("ALTER USER 'admin'@'%' IDENTIFIED BY '#{password}'", nil, connectionOrSSH)
-                self.executeSQL("GRANT ALL PRIVILEGES ON *.* TO 'admin'@'%' WITH GRANT OPTION", nil, connectionOrSSH)
-                password
-            end
-
-            def self.dropAdmin(connectionOrSSH)
-                self.executeSQL("DROP USER 'admin'@'%'", nil, connectionOrSSH, true)
-            end
-
-            def self.tableExist?(db, table, connectionOrSSH)
-                table = self.executeSQL("SHOW TABLES LIKE '#{table}'", db, connectionOrSSH).strip
-                !table.empty?
-            end
-
+            # DEPRECATED
             def self.executeSQL(sql, db = nil, connectionOrSSH = nil, allowFailure = false, dry = false)
                 db = '' unless db
                 cmd = " mariadb #{db} --execute=\"#{sql.gsub('"', '\\"')};\""

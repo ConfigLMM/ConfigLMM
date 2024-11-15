@@ -35,6 +35,11 @@ module ConfigLMM
                 linuxConnection.upload(__dir__ + '/storage.conf', homedir + '/.config/containers/', options)
             end
 
+            def self.loadImage(userShell, imageFile, options = {})
+                cmd = "podman image load --input '#{imageFile.shellescape}'"
+                userShell.exec(cmd, false, options)
+            end
+
             def self.containersPath(homeDir = nil)
                 if homeDir.nil?
                     SYSTEM_CONTAINERS_PATH

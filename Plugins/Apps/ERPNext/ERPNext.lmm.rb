@@ -1,37 +1,39 @@
 
 module ConfigLMM
     module LMM
-        class ERPNext < Framework::NginxApp
+        class ERPNext < Framework::Plugin
 
             USER = 'erpnext'
             HOME_DIR = '/var/lib/erpnext'
             VERSION = '15'
             FRAPPE_REPO = 'https://github.com/frappe/frappe_docker.git'
             IMAGE_ID = 'ConfigLM.moe/erpnext:v' + VERSION
+            CONTAINER_NAME = 'ERPNext'
 
             def actionERPNextBuild(id, target, activeState, context, options)
                 buildContainer(id, target, options)
             end
 
             def buildContainer(id, target, options)
-                begin
-                    Framework::LinuxApp.ensurePackage('git', '@me', 'git')
-                    Framework::LinuxApp.ensurePackage('Podman', '@me', 'podman')
-                rescue RuntimeError => error
-                    prompt.say(error, :color => :red)
-                end
-                frappe = File.expand_path(REPOS_CACHE + '/frappe_docker')
-                if !File.exist?(frappe)
-                    mkdir(File.expand_path(REPOS_CACHE), false)
-                    self.class.exec('cd #{REPOS_CACHE} && git clone --quiet #{FRAPPE_REPO}')
-                else
-                    self.class.exec('cd #{REPOS_CACHE}/frappe_docker && git pull --quiet')
-                end
-                self.class.exec('cd #{REPOS_CACHE}/frappe_docker && git checkout . --quiet')
+                Linux.withConnection(local) do |localLinux|
+                    begin
+                        localLinux.ensurePackages(['git', 'Podman'], options) unless localLinux.hasBinaries?(['git', 'podman'], options)
+                    rescue RuntimeError => error
+                        prompt.say(error, :color => :red)
+                    end
+                    frappe = File.expand_path(REPOS_CACHE + '/frappe_docker')
+                    if !File.exist?(frappe)
+                        localLinux.createDirs(options, File.expand_path(REPOS_CACHE))
+                        localLinux.exec("cd #{REPOS_CACHE} && git clone --quiet #{FRAPPE_REPO}", false, options)
+                    else
+                        localLinux.exec("cd #{REPOS_CACHE}/frappe_docker && git pull --quiet", false, options)
+                    end
+                    localLinux.exec("cd #{REPOS_CACHE}/frappe_docker && git checkout . --quiet", false, options)
 
-                if !IO::Connection.cmdSuccess?("podman image exists #{IMAGE_ID}")
-                    appsJSON = Base64.urlsafe_encode64(File.read(__dir__ + '/sites/apps.json').gsub('$VERSION', VERSION))
-                    self.class.exec("cd #{REPOS_CACHE}/frappe_docker && podman build --tag=#{IMAGE_ID} --build-arg APPS_JSON_BASE64=#{appsJSON} --build-arg FRAPPE_BRANCH=version-#{VERSION}  --file images/custom/Containerfile .")
+                    if !IO::Connection.cmdSuccess?("podman image exists #{IMAGE_ID}")
+                        appsJSON = Base64.urlsafe_encode64(File.read(__dir__ + '/sites/apps.json').gsub('$VERSION', VERSION))
+                        localLinux.exec("cd #{REPOS_CACHE}/frappe_docker && podman build --tag=#{IMAGE_ID} --build-arg APPS_JSON_BASE64=#{appsJSON} --build-arg FRAPPE_BRANCH=version-#{VERSION}  --file images/custom/Containerfile .", false, options)
+                    end
                 end
             end
 
@@ -39,146 +41,152 @@ module ConfigLMM
                 raise Framework::PluginProcessError.new('Domain field must be set!') if (!target.key?('Proxy') || target['Proxy']) && !target['Domain']
 
                 target['Database'] ||= {}
-                if target['Location'] && target['Location'] != '@me'
-                    uri = Addressable::URI.parse(target['Location'])
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
+                self.withConnection(target['Location'], target) do |connection|
+                    Linux.withConnection(connection) do |linuxConnection|
 
-                    self.class.sshStart(uri) do |ssh|
+                        dbPassword = self.configureMariaDB(target['Database'], activeState, linuxConnection, options)
 
-                        dbPassword = self.configureMariaDB(target['Database'], activeState, ssh)
-                        distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
-                        Framework::LinuxApp.configurePodmanServiceOverSSH(USER, HOME_DIR, 'ERPNext', distroInfo, ssh)
-                        self.class.exec("su --login #{USER} --shell /bin/sh --command 'mkdir -p ~/sites ~/logs'", ssh)
+                        Podman.createUser(USER, HOME_DIR, 'ERPNext', linuxConnection, options)
 
-                        cmd = IO::SSH.cmd(uri)
-                        self.class.exec("podman image save ConfigLM.moe/erpnext:v#{VERSION} | #{cmd} 'cat > #{HOME_DIR}/erpnext.tar'")
-                        self.class.exec("su --login #{USER} --shell /usr/bin/sh --command 'podman image load --input erpnext.tar'", ssh)
-                        self.class.exec("rm -f #{HOME_DIR}/erpnext.tar", ssh)
+                        cmd = IO::SSH.cmd(target['Location'])
+                        local.exec("podman image save ConfigLM.moe/erpnext:v#{VERSION} | #{cmd} 'cat > #{HOME_DIR}/erpnext.tar'", false, options)
 
-                        path = Framework::LinuxApp::SYSTEMD_CONTAINERS_PATH.gsub('~', HOME_DIR)
-                        self.class.exec(" echo 'FRAPPE_DB_PASSWORD=#{dbPassword}' > #{path}/ERPNext.env", ssh)
-                        self.class.exec("echo 'FRAPPE_SITE_NAME_HEADER=erpnext' >> #{path}/ERPNext.env", ssh)
-                        #self.class.exec("echo 'UPSTREAM_REAL_IP_ADDRESS=127.0.0.1' >> #{path}/ERPNext.env", ssh)
-                        #self.class.exec("echo 'UPSTREAM_REAL_IP_RECURSIVE=on' >> #{path}/ERPNext.env", ssh)
-                        self.class.exec("echo 'BACKEND=10.90.50.10:8000' >> #{path}/ERPNext.env", ssh)
-                        self.class.exec("echo 'SOCKETIO=10.90.50.11:9000' >> #{path}/ERPNext.env", ssh)
+                        linuxConnection.withUserShell(USER) do |shell|
+                            shell.createDirs(options, '~/sites', '~/logs')
+                            Podman.loadImage(shell, 'erpnext.tar', options)
+                        end
 
-                        self.class.exec("chown #{USER}:#{USER} #{path}/ERPNext.env", ssh)
-                        self.class.exec("chmod 600 #{path}/ERPNext.env", ssh)
+                        linuxConnection.exec("rm -f #{HOME_DIR}/erpnext.tar", false, options)
 
-                        ssh.scp.upload!(__dir__ + '/sites/apps.txt', HOME_DIR + '/sites/')
-                        ssh.scp.upload!(__dir__ + '/sites/common_site_config.json', HOME_DIR + '/sites/')
+                        path = Podman.containersPath(HOME_DIR)
+                        linuxConnection.exec(" echo 'FRAPPE_DB_PASSWORD=#{dbPassword}' > #{path}/ERPNext.env", false, options)
+                        linuxConnection.exec("echo 'FRAPPE_SITE_NAME_HEADER=erpnext' >> #{path}/ERPNext.env", false, options)
+                        #linuxConnection.exec("echo 'UPSTREAM_REAL_IP_ADDRESS=127.0.0.1' >> #{path}/ERPNext.env", false, options)
+                        #linuxConnection.exec("echo 'UPSTREAM_REAL_IP_RECURSIVE=on' >> #{path}/ERPNext.env", false, options)
+                        linuxConnection.exec("echo 'BACKEND=10.90.50.10:8000' >> #{path}/ERPNext.env", false, options)
+                        linuxConnection.exec("echo 'SOCKETIO=10.90.50.11:9000' >> #{path}/ERPNext.env", false, options)
+
+                        linuxConnection.exec("chown #{USER}:#{USER} #{path}/ERPNext.env", false, options)
+                        linuxConnection.exec("chmod 600 #{path}/ERPNext.env", false, options)
+
+                        linuxConnection.upload(__dir__ + '/sites/apps.txt', HOME_DIR + '/sites/', options)
+                        linuxConnection.upload(__dir__ + '/sites/common_site_config.json', HOME_DIR + '/sites/', options)
 
                         if target['Database'] && target['Database']['HostName']
-                            self.class.exec("sed -i 's|\"10.0.2.2\"|\"#{target['Database']['HostName']}\"|' #{HOME_DIR}/sites/common_site_config.json", ssh)
+                            linuxConnection.exec("sed -i 's|\"10.0.2.2\"|\"#{target['Database']['HostName']}\"|' #{HOME_DIR}/sites/common_site_config.json", false, options)
                         end
 
                         if target['Valkey']
-                            self.class.exec("sed -i 's|10.0.2.2:6379|#{target['Valkey']}|' #{HOME_DIR}/sites/common_site_config.json", ssh)
+                            linuxConnection.exec("sed -i 's|10.0.2.2:6379|#{target['Valkey']}|' #{HOME_DIR}/sites/common_site_config.json", false, options)
                         end
 
-                        valkeyPassword = ENV[id + '-VALKEY_PASSWORD'] || ENV['VALKEY_PASSWORD']
-                        if valkeyPassword
-                            self.class.exec("sed -i 's|\"use_rq_auth\": false|\"use_rq_auth\": true|' #{HOME_DIR}/sites/common_site_config.json", ssh)
-                            self.class.exec("sed -i 's|$VALKEY_PASSWORD|#{valkeyPassword}|' #{HOME_DIR}/sites/common_site_config.json", ssh)
+                        if target['ValkeySecretId']
+                            valkeyPassword = context.secrets.load(target['ValkeySecretId'], 'VALKEY_PASSWORD')
+                            linuxConnection.exec("sed -i 's|\"use_rq_auth\": false|\"use_rq_auth\": true|' #{HOME_DIR}/sites/common_site_config.json", false, options)
+                            linuxConnection.exec("sed -i 's|$VALKEY_PASSWORD|#{valkeyPassword}|' #{HOME_DIR}/sites/common_site_config.json", false, { **options, hide: true })
                         end
 
-                        self.class.exec("chown -R #{USER}:#{USER} " + HOME_DIR + '/sites', ssh)
+                        linuxConnection.exec("chown -R #{USER}:#{USER} " + HOME_DIR + '/sites', false, options)
 
-                        ssh.scp.upload!(__dir__ + '/ERPNext.network', path)
-                        ssh.scp.upload!(__dir__ + '/ERPNext.container', path)
-                        ssh.scp.upload!(__dir__ + '/ERPNext-Queue.container', path)
-                        ssh.scp.upload!(__dir__ + '/ERPNext-Scheduler.container', path)
-                        ssh.scp.upload!(__dir__ + '/ERPNext-Websocket.container', path)
-                        ssh.scp.upload!(__dir__ + '/ERPNext-Frontend.container', path)
-                        self.class.exec("sed -i 's|$VERSION|#{VERSION}|' #{path}/ERPNext.container", ssh)
-                        self.class.exec("sed -i 's|$VERSION|#{VERSION}|' #{path}/ERPNext-Queue.container", ssh)
-                        self.class.exec("sed -i 's|$VERSION|#{VERSION}|' #{path}/ERPNext-Scheduler.container", ssh)
-                        self.class.exec("sed -i 's|$VERSION|#{VERSION}|' #{path}/ERPNext-Websocket.container", ssh)
-                        self.class.exec("sed -i 's|$VERSION|#{VERSION}|' #{path}/ERPNext-Frontend.container", ssh)
+                        linuxConnection.upload(__dir__ + '/ERPNext.network', path, options)
+                        linuxConnection.upload(__dir__ + '/ERPNext.container', path, options)
+                        linuxConnection.upload(__dir__ + '/ERPNext-Queue.container', path, options)
+                        linuxConnection.upload(__dir__ + '/ERPNext-Scheduler.container', path, options)
+                        linuxConnection.upload(__dir__ + '/ERPNext-Websocket.container', path, options)
+                        linuxConnection.upload(__dir__ + '/ERPNext-Frontend.container', path, options)
+                        linuxConnection.exec("sed -i 's|$VERSION|#{VERSION}|' #{path}/ERPNext.container", false, options)
+                        linuxConnection.exec("sed -i 's|$VERSION|#{VERSION}|' #{path}/ERPNext-Queue.container", false, options)
+                        linuxConnection.exec("sed -i 's|$VERSION|#{VERSION}|' #{path}/ERPNext-Scheduler.container", false, options)
+                        linuxConnection.exec("sed -i 's|$VERSION|#{VERSION}|' #{path}/ERPNext-Websocket.container", false, options)
+                        linuxConnection.exec("sed -i 's|$VERSION|#{VERSION}|' #{path}/ERPNext-Frontend.container", false, options)
 
                         if !target.key?('Proxy') || target['Proxy']
-                            deployNginxProxyConfig('http://127.0.0.1:18400', 'ERPNext', id, target, activeState, state, context, options, ssh)
+                            Nginx.withConnection(linuxConnection) do |nginxConnection|
+                                nginxConnection.provisionProxy('http://127.0.0.1:18400', 'ERPNext', target, activeState, context, options)
+                            end
                         elsif target.key?('Proxy') && target['Proxy'] == false
-                            self.class.exec("sed -i 's|PublishPort=127.0.0.1:18400:|PublishPort=0.0.0.0:18400:|' #{path}ERPNext-Frontend.container", ssh)
-                            Framework::LinuxApp.firewallAddPort('18400/tcp', ssh)
+                            linuxConnection.exec("sed -i 's|PublishPort=127.0.0.1:18400:|PublishPort=0.0.0.0:18400:|' #{path}/ERPNext-Frontend.container", false, options)
+                            linuxConnection.firewallAddPort('18400/tcp', options)
                         end
 
-                        self.class.exec("systemctl --user --machine=#{USER}@ daemon-reload", ssh)
-                        self.class.exec("systemctl --user --machine=#{USER}@ restart ERPNext-network", ssh)
-                        self.class.exec("systemctl --user --machine=#{USER}@ restart ERPNext", ssh)
+                        linuxConnection.reloadUserServices(USER, options)
+                        linuxConnection.restartUserService(USER, 'ERPNext-network', options)
+                        linuxConnection.restartUserService(USER, 'ERPNext', options)
 
-                        containers = JSON.parse(self.class.exec("su --login #{USER} --shell /usr/bin/sh --command 'podman ps --format json --filter name=^ERPNext$'", ssh).strip)
-                        raise 'Failed to find container!' if containers.empty?
-
-                        MariaDB.executeRemotely(target['Database'], connection) do |connectionDB|
-                            if !MariaDB.tableExist?(USER, 'tabUser', connectionDB)
-                                adminPassword = SecureRandom.alphanumeric(20)
-                                self.class.exec("rm -rf " + HOME_DIR + '/sites/erpnext', ssh)
-                                #self.class.exec(" su --login #{USER} --shell /usr/bin/sh --command \"podman exec #{containers.first['Id']} sh -c 'bench new-site --no-setup-db --db-name erpnext --db-user erpnext --admin-password #{adminPassword} --install-app erpnext --set-default erpnext'\"", ssh)
-                                dbAdminPassword = MariaDB.createAdmin(connectionDB)
-                                MariaDB.executeSQL("DROP DATABASE #{USER}", nil, connectionDB)
-                                self.class.exec(" su --login #{USER} --shell /usr/bin/sh --command \" podman exec #{containers.first['Id']} sh -c ' bench new-site --db-root-username admin --db-root-password #{dbAdminPassword} --db-name erpnext --admin-password #{adminPassword} --install-app erpnext --set-default erpnext'\"", ssh)
-                                MariaDB.dropAdmin(connectionDB)
-                                self.class.exec("su --login #{USER} --shell /usr/bin/sh --command \"podman exec #{containers.first['Id']} sh -c 'bench --site erpnext install-app hrms'\"", ssh)
-                                prompt.say("Administrator password: #{adminPassword}", :color => :magenta)
+                        MariaDB.withConnection(target['Database'], linuxConnection) do |connectionDB|
+                            if !connectionDB.tableExist?(USER, 'tabUser', { **options, 'dry': false })
+                                linuxConnection.withUserShell(USER) do |shellConnection|
+                                    Podman.withConnection(shellConnection, Podman.container(CONTAINER_NAME, shellConnection, options)) do |podmanConnection|
+                                        adminPassword = SecureRandom.alphanumeric(20)
+                                        dbAdminPassword = connectionDB.createAdmin(options)
+                                        linuxConnection.exec("rm -rf " + HOME_DIR + '/sites/erpnext', false, options)
+                                        #podmanConnection.exec("bench new-site --no-setup-db --db-name erpnext --db-user erpnext --admin-password #{adminPassword} --install-app erpnext --set-default erpnext", false, { **options, hide: true })
+                                        connectionDB.dropDB(USER, options)
+                                        podmanConnection.exec("bench new-site --db-root-username admin --db-root-password #{dbAdminPassword} --db-name erpnext --admin-password #{adminPassword} --install-app erpnext --set-default erpnext", false, { **options, hide: true })
+                                        podmanConnection.exec("bench --site erpnext install-app hrms", false, options)
+                                        prompt.say("Administrator password: #{adminPassword}", :color => :magenta)
+                                        connectionDB.dropAdmin(options)
+                                    end
+                                end
                             end
                         end
 
-                        self.class.exec("systemctl --user --machine=#{USER}@ restart ERPNext-Queue", ssh)
-                        self.class.exec("systemctl --user --machine=#{USER}@ restart ERPNext-Scheduler", ssh)
-                        self.class.exec("systemctl --user --machine=#{USER}@ restart ERPNext-Websocket", ssh)
-                        self.class.exec("systemctl --user --machine=#{USER}@ restart ERPNext-Frontend", ssh)
-
-
+                        linuxConnection.restartUserService(USER, 'ERPNext-Queue', options)
+                        linuxConnection.restartUserService(USER, 'ERPNext-Scheduler', options)
+                        linuxConnection.restartUserService(USER, 'ERPNext-Websocket', options)
+                        linuxConnection.restartUserService(USER, 'ERPNext-Frontend', options)
                     end
-                else
-                    # TODO
                 end
             end
 
-            def configureMariaDB(settings, activeState, ssh)
+            def configureMariaDB(settings, activeState, linuxConnection, options)
                 password = SecureRandom.alphanumeric(20)
-                MariaDB.createRemoteUserAndDB(settings, USER, password, ssh)
+                MariaDB.withConnection(settings, linuxConnection) do |mariaConnection|
+                    mariaConnection.createUserAndDB(USER, password, nil, options)
+                end
                 password
             end
 
             def cleanup(configs, state, context, options)
                 cleanupType(:ERPNext, configs, state, context, options) do |item, id, state, context, options, connection|
-                    if item['Proxy'].nil? || item['Proxy']
-                        self.cleanupNginxConfig('ERPNext', id, state, context, options, connection)
-                        self.class.reload(connection, options[:dry])
-                    end
-                    Framework::LinuxApp.firewallRemovePort('18400/tcp', connection, options[:dry])
-
-                    connection.exec("systemctl --user --machine=#{USER}@ stop ERPNext", connection, true, options[:dry])
-                    connection.exec("systemctl --user --machine=#{USER}@ stop ERPNext-Frontend", connection, true, options[:dry])
-                    connection.exec("systemctl --user --machine=#{USER}@ stop ERPNext-Websocket", connection, true, options[:dry])
-                    connection.exec("systemctl --user --machine=#{USER}@ stop ERPNext-Scheduler", connection, true, options[:dry])
-                    connection.exec("systemctl --user --machine=#{USER}@ stop ERPNext-Queue", connection, true, options[:dry])
-                    connection.exec("systemctl --user --machine=#{USER}@ stop ERPNext-network", connection, true, options[:dry])
-
-                    path = Framework::LinuxApp::SYSTEMD_CONTAINERS_PATH.gsub('~', HOME_DIR)
-                    connection.rm(path + 'ERPNext.network', options[:dry])
-                    connection.rm(path + 'ERPNext.container', options[:dry])
-                    connection.rm(path + 'ERPNext-Queue.container', options[:dry])
-                    connection.rm(path + 'ERPNext-Scheduler.container', options[:dry])
-                    connection.rm(path + 'ERPNext-Websocket.container', options[:dry])
-                    connection.rm(path + 'ERPNext-Frontend.container', options[:dry])
-
-                    connection.exec("podman rmi #{IMAGE_ID}", true, options[:dry])
-
-                    state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
-
-                    if options[:destroy]
-                        item['Database'] ||= {}
-                        MariaDB.executeRemotely(item['Database'], connection) do |connection|
-                            MariaDB.executeSQL("DROP DATABASE #{USER}", nil, connection, true, options[:dry])
+                    Linux.withConnection(connection) do |linuxConnection|
+                        if item['Config']['Proxy'].nil? || item['Config']['Proxy']
+                            Nginx.withConnection(linuxConnection) do |nginxConnection|
+                                nginxConnection.cleanupConfig('ERPNext', context, options)
+                                nginxConnection.reload(options)
+                            end
                         end
-                        Framework::LinuxApp.deleteUserAndGroup(USER, connection, options[:dry])
-                        connection.rm(HOME_DIR, options[:dry])
+                        linuxConnection.firewallRemovePort('18400/tcp', options)
 
-                        state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                        linuxConnection.stopUserService(USER, 'ERPNext-Frontend', options)
+                        linuxConnection.stopUserService(USER, 'ERPNext', options)
+                        linuxConnection.stopUserService(USER, 'ERPNext-Websocket', options)
+                        linuxConnection.stopUserService(USER, 'ERPNext-Scheduler', options)
+                        linuxConnection.stopUserService(USER, 'ERPNext-Queue', options)
+                        linuxConnection.stopUserService(USER, 'ERPNext-network', options)
+
+                        path = Podman.containersPath(HOME_DIR)
+                        linuxConnection.rm(path + 'ERPNext.network', options[:dry])
+                        linuxConnection.rm(path + 'ERPNext.container', options[:dry])
+                        linuxConnection.rm(path + 'ERPNext-Queue.container', options[:dry])
+                        linuxConnection.rm(path + 'ERPNext-Scheduler.container', options[:dry])
+                        linuxConnection.rm(path + 'ERPNext-Websocket.container', options[:dry])
+                        linuxConnection.rm(path + 'ERPNext-Frontend.container', options[:dry])
+
+                        linuxConnection.exec("podman rmi #{IMAGE_ID}", true, options)
+
+                        state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
+
+                        if options[:destroy]
+                            item['Config']['Database'] ||= {}
+                            MariaDB.withConnection(item['Config']['Database'], linuxConnection) do |connectionDB|
+                                connectionDB.dropDB(USER, options)
+                            end
+                            linuxConnection.deleteUserAndGroup(USER, options)
+                            linuxConnection.rm(HOME_DIR, options[:dry])
+
+                            state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                        end
                     end
                 end
             end
