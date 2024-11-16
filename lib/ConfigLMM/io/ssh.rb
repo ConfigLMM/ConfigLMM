@@ -37,14 +37,14 @@ module ConfigLMM
             def updateFile(file, options, atTop = false, comment = '#', &block)
                 localFile = options['output'] + '/' + SecureRandom.alphanumeric(10)
                 File.write(localFile, '')
-                self.exec("touch #{file}")
-                self.download(file, localFile)
+                self.exec("touch #{file}", false, options)
+                self.download(file, localFile, options)
                 Local.new(self.prompt, self.logger).updateFile(localFile, options, atTop, comment, &block)
-                self.upload(localFile, file)
+                self.upload(localFile, file, options)
             end
 
             def download(source, target, options = {})
-                if options[:dry]
+                if options['dry']
                     prompt.say("Would download scp -P #{ssh.transport.port} #{ssh.transport.host}:#{source} #{target}")
                 else
                     ssh.scp.download!(source, target)
@@ -52,7 +52,7 @@ module ConfigLMM
             end
 
             def upload(source, target, options = {})
-                if options[:dry]
+                if options['dry']
                     prompt.say("Would upload scp -P #{ssh.transport.port} #{source} #{ssh.transport.host}:#{target}")
                 else
                     ssh.scp.upload!(source, target)
@@ -62,7 +62,7 @@ module ConfigLMM
             def uploadFolder(folder, target, options = {})
                 target += '/' + File.basename(folder) + '/'
                 Dir[folder + '/*'].each do |file|
-                    if options[:dry]
+                    if options['dry']
                         prompt.say("Would upload scp -P #{ssh.transport.port} #{file} #{ssh.transport.host}:#{target + File.basename(file)}")
                     else
                         ssh.scp.upload!(file, target + File.basename(file), recursive: true)
