@@ -72,6 +72,10 @@ module ConfigLMM
                 connection.uploadFolder(folder, target, options)
             end
 
+            def ensureFile(file, options = {})
+                connection.exec("touch #{file.shellescape}", false, options)
+            end
+
             def fileWrite(target, data, options = {})
                 hide = ''
                 hide = ' ' if options[:hide]
