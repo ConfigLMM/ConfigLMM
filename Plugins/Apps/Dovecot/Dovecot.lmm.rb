@@ -9,40 +9,35 @@ module ConfigLMM
             EMAIL_USER = 'email'
 
             def actionDovecotDeploy(id, target, activeState, context, options)
-                plugins[:Linux].ensurePackage(PACKAGE_NAME, target['Location'])
-                plugins[:Linux].ensureServiceAutoStart(SERVICE_NAME, target['Location'])
+                self.withConnection(target['Location'], target) do |connection|
+                    Linux.withConnection(connection) do |linuxConnection|
 
-                if target['Location'] && target['Location'] != '@me'
-                    uri = Addressable::URI.parse(target['Location'])
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
+                        linuxConnection.ensurePackage(PACKAGE_NAME, options)
+                        linuxConnection.ensureServiceAutoStart(SERVICE_NAME, options)
 
-                    self.class.sshStart(uri) do |ssh|
-                        distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
-                        addUserCmd = "#{distroInfo['CreateServiceUser']} --home-dir '#{EMAIL_HOME}' --create-home --comment 'Dovecot EMail' #{EMAIL_USER}"
-                        self.class.sshExec!(ssh, addUserCmd, true)
-                        uid = self.class.sshExec!(ssh, "id -u #{EMAIL_USER}").strip
+                        linuxConnection.createServiceUser(EMAIL_USER, EMAIL_HOME, 'Dovecot EMail', options)
 
-                        cmd = "sed -i 's|^#mail_uid =.*|mail_uid = #{uid}|' #{DOVECOT_DIR}conf.d/10-mail.conf"
-                        self.class.sshExec!(ssh, cmd)
-                        cmd = "sed -i 's|^#mail_gid =.*|mail_gid = #{uid}|' #{DOVECOT_DIR}conf.d/10-mail.conf"
-                        self.class.sshExec!(ssh, cmd)
-                        cmd = "sed -i 's|^#mail_location =.*|mail_location = maildir:~/Mail|' #{DOVECOT_DIR}conf.d/10-mail.conf"
-                        self.class.sshExec!(ssh, cmd)
+                        uid = linuxConnection.exec("id -u #{EMAIL_USER}", false, options).strip
+
+
+                        linuxConnection.fileReplace("#{DOVECOT_DIR}conf.d/10-mail.conf", '^#mail_uid =.*', "mail_uid = #{uid}", options)
+                        linuxConnection.fileReplace("#{DOVECOT_DIR}conf.d/10-mail.conf", '^#mail_gid =.*', "mail_gid = #{uid}", options)
+                        linuxConnection.fileReplace("#{DOVECOT_DIR}conf.d/10-mail.conf", '^#mail_location =.*', "mail_location = maildir:~/Mail", options)
 
                         if !target['Protocols'].to_a.empty?
-                            updateRemoteFile(ssh, DOVECOT_DIR + 'dovecot.conf', options) do |configLines|
+                            linuxConnection.updateFile(DOVECOT_DIR + 'dovecot.conf', options) do |configLines|
                                 configLines << "protocols = #{target['Protocols'].join(' ')}\n"
                             end
                         end
 
-                        updateRemoteFile(ssh, DOVECOT_DIR + 'conf.d/10-mail.conf', options) do |configLines|
+                        linuxConnection.updateFile(DOVECOT_DIR + 'conf.d/10-mail.conf', options) do |configLines|
                             configLines << "mail_home = #{EMAIL_HOME}/emails/%u\n"
                             configLines << "first_valid_uid = #{uid}\n"
                             configLines << "last_valid_uid = #{uid}\n"
                         end
 
-                        self.class.cutConfigSection(DOVECOT_DIR + 'conf.d/10-master.conf', 'service lmtp', options, ssh)
-                        updateRemoteFile(ssh, DOVECOT_DIR + 'conf.d/10-master.conf', options) do |configLines|
+                        self.class.cutConfigSection(DOVECOT_DIR + 'conf.d/10-master.conf', 'service lmtp', options, linuxConnection)
+                        linuxConnection.updateFile(DOVECOT_DIR + 'conf.d/10-master.conf', options) do |configLines|
                             configLines << "service lmtp {\n"
                             configLines << "    unix_listener lmtp {\n"
                             configLines << "        user = postfix\n"
@@ -52,8 +47,8 @@ module ConfigLMM
                             configLines << "}\n"
                         end
 
-                        self.class.cutConfigSection(DOVECOT_DIR + 'conf.d/15-mailboxes.conf', 'namespace inbox', options, ssh)
-                        updateRemoteFile(ssh, DOVECOT_DIR + 'conf.d/15-mailboxes.conf', options) do |configLines|
+                        self.class.cutConfigSection(DOVECOT_DIR + 'conf.d/15-mailboxes.conf', 'namespace inbox', options, linuxConnection)
+                        linuxConnection.updateFile(DOVECOT_DIR + 'conf.d/15-mailboxes.conf', options) do |configLines|
                             configLines << "namespace inbox {\n"
                             configLines << "    mailbox Drafts {\n"
                             configLines << "        special_use = \\Drafts\n"
@@ -74,16 +69,14 @@ module ConfigLMM
                             configLines << "}\n"
                         end
 
-                        Framework::LinuxApp.firewallAddService('imaps', ssh)
+                        linuxConnection.firewallAddService('imaps', options)
 
-                        cmd = "sed -i 's|^!include auth-system.conf.ext|#!include auth-system.conf.ext|' #{DOVECOT_DIR}conf.d/10-auth.conf"
-                        self.class.sshExec!(ssh, cmd)
+                        linuxConnection.fileReplace("#{DOVECOT_DIR}conf.d/10-auth.conf", '^!include auth-system.conf.ext', "#!include auth-system.conf.ext", options)
 
                         if target['OAuth2']
-                            cmd = "sed -i 's|auth_mechanisms =.*|auth_mechanisms = xoauth2 oauthbearer|' #{DOVECOT_DIR}conf.d/10-auth.conf"
-                            self.class.sshExec!(ssh, cmd)
+                            linuxConnection.fileReplace("#{DOVECOT_DIR}conf.d/10-auth.conf", 'auth_mechanisms =.*', "auth_mechanisms = xoauth2 oauthbearer", options)
 
-                            updateRemoteFile(ssh, DOVECOT_DIR + 'conf.d/10-auth.conf', options) do |configLines|
+                            linuxConnection.updateFile(DOVECOT_DIR + 'conf.d/10-auth.conf', options) do |configLines|
                                 configLines << "userdb {\n"
                                 configLines << "    driver = static\n"
                                 configLines << "    args = allow_all_users=yes\n"
@@ -95,7 +88,7 @@ module ConfigLMM
                                 configLines << "}\n"
                             end
 
-                            updateRemoteFile(ssh, DOVECOT_DIR + 'dovecot-oauth2.conf.ext', options) do |configLines|
+                            linuxConnection.updateFile(DOVECOT_DIR + 'dovecot-oauth2.conf.ext', options) do |configLines|
                                 # Need v2.3.16+
                                 #configLines << "openid_configuration_url = #{target['OAuth2']['OIDC']}\n"
                                 if target['OAuth2']['TokenInfo']
@@ -112,10 +105,9 @@ module ConfigLMM
                                 end
                             end
                         else
-                            cmd = "sed -i 's|auth_mechanisms =.*|auth_mechanisms = plain|' #{DOVECOT_DIR}conf.d/10-auth.conf"
-                            self.class.sshExec!(ssh, cmd)
+                            linuxConnection.fileReplace("#{DOVECOT_DIR}conf.d/10-auth.conf", 'auth_mechanisms =.*', "auth_mechanisms = plain", options)
 
-                            updateRemoteFile(ssh, DOVECOT_DIR + 'conf.d/10-auth.conf', options) do |configLines|
+                            linuxConnection.updateFile(DOVECOT_DIR + 'conf.d/10-auth.conf', options) do |configLines|
                                 configLines << "auth_username_format = %u\n"
                                 configLines << "userdb {\n"
                                 configLines << "    driver = static\n"
@@ -126,45 +118,45 @@ module ConfigLMM
                                 configLines << "    args = #{DOVECOT_DIR}passwords\n"
                                 configLines << "}\n"
                             end
-                            self.class.sshExec!(ssh, "touch #{DOVECOT_DIR}passwords")
-                            self.class.sshExec!(ssh, "chown dovecot:dovecot #{DOVECOT_DIR}passwords")
-                            self.class.sshExec!(ssh, "chmod 600 #{DOVECOT_DIR}passwords")
+                            linuxConnection.exec("touch #{DOVECOT_DIR}passwords", options)
+                            linuxConnection.setUserGroup("#{DOVECOT_DIR}passwords", 'dovecot', 'dovecot', options)
+                            linuxConnection.setPrivate("#{DOVECOT_DIR}passwords", options)
                         end
 
-                        certDir = Framework::LinuxApp.createCertificateOverSSH(ssh)
-                        updateRemoteFile(ssh, DOVECOT_DIR + 'conf.d/10-ssl.conf', options) do |configLines|
+                        certDir = linuxConnection.createWildecardCertificate(options)
+                        linuxConnection.updateFile(DOVECOT_DIR + 'conf.d/10-ssl.conf', options) do |configLines|
                             configLines << "ssl_cert = <#{certDir}fullchain.pem\n"
                             configLines << "ssl_key = <#{certDir}privkey.pem\n"
                         end
-                    end
-                else
-                    # TODO
-                end
 
-                plugins[:Linux].startService(SERVICE_NAME, target['Location'])
+                        linuxConnection.restartService(SERVICE_NAME, options)
+                    end
+                end
             end
 
             def cleanup(configs, state, context, options)
                 cleanupType(:Dovecot, configs, state, context, options) do |item, id, state, context, options, connection|
-                    Framework::LinuxApp.stopService(SERVICE_NAME, connection, options[:dry])
-                    Framework::LinuxApp.firewallRemoveService('imaps', connection, options[:dry])
-                    Framework::LinuxApp.removePackage(PACKAGE_NAME, connection, options[:dry])
+                    Linux.withConnection(connection) do |linuxConnection|
+                        linuxConnection.stopService(SERVICE_NAME, options)
+                        linuxConnection.firewallRemoveService('imaps', options)
+                        linuxConnection.removePackage(PACKAGE_NAME, options)
 
-                    state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
+                        state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
 
-                    if options[:destroy]
-                        Framework::LinuxApp.deleteUserAndGroup(EMAIL_USER, connection, options[:dry])
+                        if options[:destroy]
+                            linuxConnection.deleteUserAndGroup(EMAIL_USER, options)
 
-                        state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                            state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
+                        end
                     end
                 end
             end
 
-            def self.cutConfigSection(file, sectionStart, options, ssh)
+            def self.cutConfigSection(file, sectionStart, options, linuxConnection)
                 localFile = options['output'] + '/' + SecureRandom.alphanumeric(10)
                 File.write(localFile, '')
-                self.sshExec!(ssh, "touch #{file}")
-                ssh.scp.download!(file, localFile)
+                linuxConnection.exec("touch #{file}", options)
+                linuxConnection.download(file, localFile, options)
                 fileData = File.read(localFile)
                 position = fileData.index(sectionStart)
                 if position
@@ -177,7 +169,7 @@ module ConfigLMM
                         fileData = fileData[0...position]
                     end
                     File.write(localFile, fileData)
-                    ssh.scp.upload!(localFile, file)
+                    linuxConnection.upload(localFile, file, options)
                 end
             end
         end
