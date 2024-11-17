@@ -1,7 +1,7 @@
 
 module ConfigLMM
     module LMM
-        class WikiJS < Framework::NginxApp
+        class WikiJS < Framework::Plugin
 
             USER = 'wikijs'
             HOME_DIR = '/var/lib/wikijs'
@@ -11,51 +11,44 @@ module ConfigLMM
                 raise Framework::PluginProcessError.new('Domain field must be set!') unless target['Domain']
 
                 target['Database'] ||= {}
-                if target['Location'] && target['Location'] != '@me'
-                    uri = Addressable::URI.parse(target['Location'])
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
+                self.withConnection(target['Location'], target) do |connection|
+                    Linux.withConnection(connection) do |linuxConnection|
+                        target['Database'] ||= {}
+                        dbPassword = self.configurePostgreSQL(target['Database'], linuxConnection, options)
 
-                    self.class.sshStart(uri) do |ssh|
+                        Podman.createUser(USER, HOME_DIR, 'Wiki.js', linuxConnection, options)
 
-                        dbPassword = self.configurePostgreSQL(target['Database'], ssh)
-                        distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
-                        Framework::LinuxApp.configurePodmanServiceOverSSH(USER, HOME_DIR, 'Wiki.js', distroInfo, ssh)
+                        path = Podman.containersPath(HOME_DIR)
+                        linuxConnection.fileWrite("#{path}/Wiki.js.env", 'DB_TYPE=postgres', options)
+                        linuxConnection.fileAppend("#{path}/Wiki.js.env", "DB_HOST=#{HOST_IP}", options)
+                        linuxConnection.fileAppend("#{path}/Wiki.js.env", "DB_PORT=5432", options)
+                        linuxConnection.fileAppend("#{path}/Wiki.js.env", "DB_USER=#{USER}", options)
+                        linuxConnection.fileAppend("#{path}/Wiki.js.env", "DB_NAME=#{USER}", options)
+                        linuxConnection.fileAppend("#{path}/Wiki.js.env", "DB_PASS=#{dbPassword}", { **options, hide: true })
 
-                        path = Framework::LinuxApp::SYSTEMD_CONTAINERS_PATH.gsub('~', HOME_DIR)
-                        self.class.exec("echo 'DB_TYPE=postgres' > #{path}/Wiki.js.env", ssh)
-                        self.class.exec("echo 'DB_HOST=#{HOST_IP}' >> #{path}/Wiki.js.env", ssh)
-                        self.class.exec("echo 'DB_PORT=5432' >> #{path}/Wiki.js.env", ssh)
-                        self.class.exec("echo 'DB_USER=#{USER}' >> #{path}/Wiki.js.env", ssh)
-                        self.class.exec("echo 'DB_NAME=#{USER}' >> #{path}/Wiki.js.env", ssh)
-                        self.class.exec(" echo 'DB_PASS=#{dbPassword}' >> #{path}/Wiki.js.env", ssh)
+                        linuxConnection.setUserGroup("#{path}/Wiki.js.env", USER, USER, options)
+                        linuxConnection.setPrivate("#{path}/Wiki.js.env", options)
 
-                        self.class.exec("chown #{USER}:#{USER} #{path}/Wiki.js.env", ssh)
-                        self.class.exec("chmod 600 #{path}/Wiki.js.env", ssh)
+                        linuxConnection.upload(__dir__ + '/Wiki.js.container', path, options)
 
-                        ssh.scp.upload!(__dir__ + '/Wiki.js.container', path)
-                        self.class.exec("systemctl --user --machine=#{USER}@ daemon-reload", ssh)
-                        self.class.exec("systemctl --user --machine=#{USER}@ restart Wiki.js", ssh)
+                        linuxConnection.reloadUserServices(USER, options)
+                        linuxConnection.restartUserService(USER, 'Wiki.js', options)
 
-                        Framework::LinuxApp.ensurePackages([NGINX_PACKAGE], ssh)
-                        Framework::LinuxApp.ensureServiceAutoStartOverSSH(NGINX_PACKAGE, ssh)
-                        self.class.prepareNginxConfig(target, ssh)
-                        self.writeNginxConfig(__dir__, 'Wiki.js', id, target, state, context, options)
-                        self.deployNginxConfig(id, target, activeState, context, options)
-                        Framework::LinuxApp.startServiceOverSSH(NGINX_PACKAGE, ssh)
-
+                        Nginx.withConnection(linuxConnection) do |nginxConnection|
+                            nginxConnection.provision(__dir__, 'Wiki.js', target, activeState, context, options)
+                        end
                     end
-                else
-                    # TODO
                 end
             end
 
-            def configurePostgreSQL(settings, ssh)
+            def configurePostgreSQL(dbSettings, linuxConnection, options)
                 password = SecureRandom.alphanumeric(20)
-                PostgreSQL.createRemoteUserAndDBOverSSH(settings, USER, password, ssh)
+                PostgreSQL.withConnection(dbSettings, linuxConnection) do |postgresConnection|
+                    postgresConnection.createUserAndDB(USER, password, options)
+                end
                 password
             end
 
         end
     end
 end
-
