@@ -11,44 +11,39 @@ module ConfigLMM
                 raise Framework::PluginProcessError.new('Domain field must be set!') unless target['Domain']
 
                 target['Database'] ||= {}
-                if target['Location'] && target['Location'] != '@me'
-                    uri = Addressable::URI.parse(target['Location'])
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
+                self.withConnection(target['Location'], target) do |connection|
+                    Linux.withConnection(connection) do |linuxConnection|
+                        dbPassword = self.configurePostgreSQL(target['Database'], linuxConnection, options)
+                        Podman.createUser(USER, HOME_DIR, 'Peppermint Ticket Management', linuxConnection, options)
 
-                    self.class.sshStart(uri) do |ssh|
+                        path = Podman.containersPath(HOME_DIR)
 
-                        dbPassword = self.configurePostgreSQL(target['Database'], ssh)
-                        distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
-                        Framework::LinuxApp.configurePodmanServiceOverSSH(USER, HOME_DIR, 'Peppermint Ticket Management', distroInfo, ssh)
+                        linuxConnection.fileWrite("#{path}/Peppermint.env", "DB_HOST=#{HOST_IP}", options)
+                        linuxConnection.fileAppend("#{path}/Peppermint.env", "DB_USERNAME=#{USER}", options)
+                        linuxConnection.fileAppend("#{path}/Peppermint.env", "DB_PASSWORD=#{dbPassword}", { **options, hide: true })
+                        linuxConnection.fileAppend("#{path}/Peppermint.env", "SECRET=#{SecureRandom.urlsafe_base64(60)}", { **options, hide: true })
+                        linuxConnection.fileAppend("#{path}/Peppermint.env", "API_URL=https://#{target['Domain']}/api", options)
 
-                        path = Framework::LinuxApp::SYSTEMD_CONTAINERS_PATH.gsub('~', HOME_DIR)
-                        self.class.sshExec!(ssh, " echo 'DB_HOST=#{HOST_IP}' > #{path}/Peppermint.env")
-                        self.class.sshExec!(ssh, " echo 'DB_USERNAME=#{USER}' >> #{path}/Peppermint.env")
-                        self.class.sshExec!(ssh, " echo 'DB_PASSWORD=#{dbPassword}' >> #{path}/Peppermint.env")
-                        self.class.sshExec!(ssh, " echo 'SECRET=#{SecureRandom.urlsafe_base64(60)}' >> #{path}/Peppermint.env")
-                        self.class.sshExec!(ssh, " echo 'API_URL=https://#{target['Domain']}/api' >> #{path}/Peppermint.env")
-                        self.class.sshExec!(ssh, "chown #{USER}:#{USER} #{path}/Peppermint.env")
-                        self.class.sshExec!(ssh, "chmod 600 #{path}/Peppermint.env")
+                        linuxConnection.setUserGroup("#{path}/Peppermint.env", USER, USER, options)
+                        linuxConnection.setPrivate("#{path}/Peppermint.env", options)
 
-                        ssh.scp.upload!(__dir__ + '/Peppermint.container', path)
-                        self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ daemon-reload")
-                        self.class.sshExec!(ssh, "systemctl --user --machine=#{USER}@ start Peppermint")
+                        linuxConnection.upload(__dir__ + '/Peppermint.container', path, options)
 
-                        Framework::LinuxApp.ensurePackages([NGINX_PACKAGE], ssh)
-                        Framework::LinuxApp.ensureServiceAutoStartOverSSH(NGINX_PACKAGE, ssh)
-                        self.class.prepareNginxConfig(target, ssh)
-                        self.writeNginxConfig(__dir__, 'Peppermint', id, target, state, context, options)
-                        self.deployNginxConfig(id, target, activeState, context, options)
-                        Framework::LinuxApp.startServiceOverSSH(NGINX_PACKAGE, ssh)
+                        linuxConnection.reloadUserServices(USER, options)
+                        linuxConnection.restartUserService(USER, 'Peppermint', options)
+
+                        Nginx.withConnection(linuxConnection) do |nginxConnection|
+                            nginxConnection.provision(__dir__, 'Peppermint', target, activeState, context, options)
+                        end
                     end
-                else
-                    # TODO
                 end
             end
 
-            def configurePostgreSQL(settings, ssh)
+            def configurePostgreSQL(dbSettings, linuxConnection, options)
                 password = SecureRandom.alphanumeric(20)
-                PostgreSQL.createRemoteUserAndDBOverSSH(settings, USER, password, ssh)
+                PostgreSQL.withConnection(dbSettings, linuxConnection) do |postgresConnection|
+                    postgresConnection.createUserAndDB(USER, password, options)
+                end
                 password
             end
 
