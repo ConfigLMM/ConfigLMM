@@ -1,13 +1,15 @@
 
 module ConfigLMM
     module LMM
-        class Matrix < Framework::NginxApp
+        class Matrix < Framework::Plugin
 
             USER = 'matrix'
             HOME_DIR = '/var/lib/matrix'
 
             def actionMatrixBuild(id, target, state, context, options)
-                writeNginxConfig(__dir__, 'Matrix', id, target, state, context, options)
+                Nginx.withConnection(local) do |nginxConnection|
+                    nginxConnection.writeConfig(__dir__, 'Matrix', target, state, context, options)
+                end
             end
 
             def actionMatrixDiff(id, target, activeState, context, options)
@@ -19,86 +21,92 @@ module ConfigLMM
                 raise Framework::PluginProcessError.new('ServerName field must be set!') unless target['ServerName']
 
                 target['Database'] ||= {}
-                if target['Location'] && target['Location'] != '@me'
-                    uri = Addressable::URI.parse(target['Location'])
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
 
-                    self.class.sshStart(uri) do |ssh|
+                self.withConnection(target['Location'], target) do |connection|
+                    Linux.withConnection(connection) do |linuxConnection|
+                        target['Database'] ||= {}
+                        dbPassword = self.configurePostgreSQL(target['Database'], linuxConnection, options)
 
-                        dbPassword = self.configurePostgreSQL(target['Database'], ssh)
-                        distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
+                        Podman.createUser(USER, HOME_DIR, 'Matrix', linuxConnection, options)
+                        linuxConnection.withUserShell(USER) do |shell|
+                            shell.createDirs(options, '~/data')
+                        end
 
-                        Framework::LinuxApp.configurePodmanServiceOverSSH(USER, HOME_DIR, 'Matrix', distroInfo, ssh)
-                        self.class.sshExec!(ssh, "su --login #{USER} --shell /bin/sh --command 'mkdir -p ~/data'")
+                        path = Podman.containersPath(HOME_DIR)
+                        linuxConnection.ensureFile("#{path}/Matrix.env", options)
 
-                        path = Framework::LinuxApp::SYSTEMD_CONTAINERS_PATH.gsub('~', HOME_DIR)
-                        self.class.exec("touch #{path}/Matrix.env", ssh)
+                        linuxConnection.setUserGroup("#{path}/Matrix.env", USER, USER, options)
+                        linuxConnection.setPrivate("#{path}/Matrix.env", options)
 
-                        self.class.exec("chown #{USER}:#{USER} #{path}/Matrix.env", ssh)
-                        self.class.exec("chmod 600 #{path}/Matrix.env", ssh)
+                        linuxConnection.upload(__dir__ + '/homeserver.yaml', HOME_DIR + '/data/', options)
+                        linuxConnection.upload(__dir__ + '/log.config', HOME_DIR + '/data/', options)
+                        linuxConnection.upload(__dir__ + '/config.json', HOME_DIR + '/', options)
+                        linuxConnection.setUserGroup("#{HOME_DIR}/data", USER, USER, options)
 
-                        ssh.scp.upload!(__dir__ + '/homeserver.yaml', HOME_DIR + '/data/')
-                        ssh.scp.upload!(__dir__ + '/log.config', HOME_DIR + '/data/')
-                        ssh.scp.upload!(__dir__ + '/config.json', HOME_DIR + '/')
-                        self.class.exec("chown -R #{USER}:#{USER} #{HOME_DIR}/data", ssh)
+                        linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", '$SERVER_NAME', target['ServerName'], options)
+                        linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", '$SYNAPSE_DOMAIN', target['SynapseDomain'].downcase, options)
+                        linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", '$DB_PASSWORD', dbPassword, { **options, hide: true })
+                        linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", '$SECRET1', SecureRandom.urlsafe_base64(45), { **options, hide: true })
+                        linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", '$SECRET2', SecureRandom.urlsafe_base64(45), { **options, hide: true })
+                        linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", '$SECRET3', SecureRandom.urlsafe_base64(45), { **options, hide: true })
 
-                        self.class.exec("sed -i 's|$SERVER_NAME|#{target['ServerName']}|' #{HOME_DIR}/data/homeserver.yaml", ssh)
-                        self.class.exec("sed -i 's|$SYNAPSE_DOMAIN|#{target['SynapseDomain'].downcase}|' #{HOME_DIR}/data/homeserver.yaml", ssh)
-                        self.class.exec("sed -i 's|$DB_PASSWORD|#{dbPassword}|' #{HOME_DIR}/data/homeserver.yaml", ssh)
-                        self.class.exec("sed -i 's|$SECRET1|#{SecureRandom.urlsafe_base64(45)}|' #{HOME_DIR}/data/homeserver.yaml", ssh)
-                        self.class.exec("sed -i 's|$SECRET2|#{SecureRandom.urlsafe_base64(45)}|' #{HOME_DIR}/data/homeserver.yaml", ssh)
-                        self.class.exec("sed -i 's|$SECRET3|#{SecureRandom.urlsafe_base64(45)}|' #{HOME_DIR}/data/homeserver.yaml", ssh)
-
-                        self.class.exec("sed -i 's|$SYNAPSE_DOMAIN|#{target['SynapseDomain']}|' #{HOME_DIR}/config.json", ssh)
-                        self.class.exec("sed -i 's|$SERVER_NAME|#{target['ServerName']}|' #{HOME_DIR}/config.json", ssh)
+                        linuxConnection.fileReplace("#{HOME_DIR}/config.json", '$SYNAPSE_DOMAIN', target['SynapseDomain'], options)
+                        linuxConnection.fileReplace("#{HOME_DIR}/config.json", '$SERVER_NAME', target['ServerName'], options)
 
                         if target['SMTP']
                             host = target['SMTP']['Host']
                             host = HOST_IP if ['localhost', '127.0.0.1'].include?(host)
-                            self.class.exec("sed -i 's|smtp_host:.*|smtp_host: #{host}|' #{HOME_DIR}/data/homeserver.yaml", ssh)
-                            self.class.exec("sed -i 's|smtp_port:.*|smtp_port: #{target['SMTP']['Port']}|' #{HOME_DIR}/data/homeserver.yaml", ssh)
-                            self.class.exec("sed -i 's|smtp_user:.*|smtp_user: #{target['SMTP']['Username']}|' #{HOME_DIR}/data/homeserver.yaml", ssh)
-                            self.class.exec("sed -i 's|smtp_pass:.*|smtp_pass: #{ENV['MATRIX_SMTP_PASSWORD']}|' #{HOME_DIR}/data/homeserver.yaml", ssh)
-                            self.class.exec("sed -i 's|notif_from:.*|notif_from: #{target['SMTP']['From']}|' #{HOME_DIR}/data/homeserver.yaml", ssh)
+                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", 'smtp_host:.*', "smtp_host: #{host}", options)
+                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", 'smtp_port:.*', "smtp_port: #{target['SMTP']['Port']}", options)
+                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", 'smtp_user:.*', "smtp_user: #{target['SMTP']['Username']}", options)
+                            smtpPassword = ''
+                            if target['SMTP']['SecretId']
+                                smtpPassword = context.secrets.load(target['SMTP']['SecretId'], target['SMTP']['Username'].upcase + '_PASSWORD')
+                            end
+                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", 'smtp_pass:.*', "smtp_pass: #{smtpPassword}", { **options, hide: true })
+                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", 'notif_from:.*', "notif_from: #{target['SMTP']['From']}", options)
 
                             if target['SMTP']['Port'] == 465
-                                self.class.exec("sed -i 's|force_tls:.*|force_tls: true|' #{HOME_DIR}/data/homeserver.yaml", ssh)
+                                linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", 'force_tls:.*', 'force_tls: true', options)
                             end
                         else
-                            self.class.exec("sed -i 's|email:|ignore_email:|' #{HOME_DIR}/data/homeserver.yaml", ssh)
+                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", 'email:', 'ignore_email:', options)
                         end
 
                         if target['OIDC']
-                            self.class.exec("sed -i 's|$OIDC_ISSUER|#{target['OIDC']['Issuer']}|' #{HOME_DIR}/data/homeserver.yaml", ssh)
-                            self.class.exec("sed -i 's|$CLIENT_ID|#{ENV['MATRIX_OIDC_CLIENT_ID']}|' #{HOME_DIR}/data/homeserver.yaml", ssh)
-                            self.class.exec("sed -i 's|$CLIENT_SECRET|#{ENV['MATRIX_OIDC_CLIENT_SECRET']}|' #{HOME_DIR}/data/homeserver.yaml", ssh)
-                            self.class.exec("sed -i 's|enabled: true|enabled: false|' #{HOME_DIR}/data/homeserver.yaml", ssh)
+                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", '$OIDC_ISSUER', "#{target['OIDC']['Issuer']}", options)
+                            clientId = ''
+                            clientSecret = ''
+                            if target['OIDC']['SecretId']
+                                clientId = context.secrets.load(target['OIDC']['SecretId'], 'MATRIX_CLIENT_ID')
+                                clientSecret = context.secrets.load(target['OIDC']['SecretId'], 'MATRIX_CLIENT_SECRET')
+                            end
+                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", '$CLIENT_ID', clientId, { **options, hide: true })
+                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", '$CLIENT_SECRET', clientSecret, { **options, hide: true })
+                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", 'enabled: true', 'enabled: false', options)
                         else
-                            self.class.exec("sed -i 's|oidc_providers:|ignore_oidc_providers:|' #{HOME_DIR}/data/homeserver.yaml", ssh)
+                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", 'oidc_providers:', 'ignore_oidc_providers:', options)
                         end
 
-                        ssh.scp.upload!(__dir__ + '/Synapse.container', path)
-                        ssh.scp.upload!(__dir__ + '/Element.container', path)
-                        self.class.exec("systemctl --user --machine=#{USER}@ daemon-reload", ssh)
-                        self.class.exec("systemctl --user --machine=#{USER}@ restart Synapse", ssh)
-                        self.class.exec("systemctl --user --machine=#{USER}@ restart Element", ssh)
+                        linuxConnection.upload(__dir__ + '/Synapse.container', path, options)
+                        linuxConnection.upload(__dir__ + '/Element.container', path, options)
 
-                        Framework::LinuxApp.ensurePackages([NGINX_PACKAGE], ssh)
-                        Framework::LinuxApp.ensureServiceAutoStartOverSSH(NGINX_PACKAGE, ssh)
-                        self.class.prepareNginxConfig(target, ssh)
-                        self.writeNginxConfig(__dir__, 'Matrix', id, target, state, context, options)
-                        self.deployNginxConfig(id, target, activeState, context, options)
-                        Framework::LinuxApp.startServiceOverSSH(NGINX_PACKAGE, ssh)
+                        linuxConnection.reloadUserServices(USER, options)
+                        linuxConnection.restartUserService(USER, 'Synapse', options)
+                        linuxConnection.restartUserService(USER, 'Element', options)
 
+                        Nginx.withConnection(linuxConnection) do |nginxConnection|
+                            nginxConnection.provision(__dir__, 'Matrix', target, activeState, context, options)
+                        end
                     end
-                else
-                    deployNginxConfig(id, target, activeState, context, options)
                 end
             end
 
-            def configurePostgreSQL(settings, ssh)
+            def configurePostgreSQL(dbSettings, linuxConnection, options)
                 password = SecureRandom.alphanumeric(20)
-                PostgreSQL.createRemoteUserAndDBOverSSH(settings, USER, password, ssh)
+                PostgreSQL.withConnection(dbSettings, linuxConnection) do |postgresConnection|
+                    postgresConnection.createUserAndDB(USER, password, options)
+                end
                 password
             end
 
