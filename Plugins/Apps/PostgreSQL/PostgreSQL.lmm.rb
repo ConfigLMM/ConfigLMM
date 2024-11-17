@@ -210,6 +210,7 @@ module ConfigLMM
                 end
             end
 
+            # DEPRECATED
             def self.createExtensions(settings, db, extensions, connectionOrSSH)
                 self.executeRemotely(settings, ssh) do |connection|
                     extensions.each do |extension|

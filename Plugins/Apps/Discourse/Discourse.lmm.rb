@@ -1,91 +1,100 @@
 
 module ConfigLMM
     module LMM
-        class Discourse < Framework::NginxApp
+        class Discourse < Framework::Plugin
 
             USER = 'discourse'
             HOME_DIR = '/var/lib/discourse'
             HOST_IP = '10.0.2.2'
+            CONTAINER_NAME = 'Discourse'
 
             def actionDiscourseDeploy(id, target, activeState, context, options)
                 raise Framework::PluginProcessError.new('Domain field must be set!') unless target['Domain']
 
                 target['Database'] ||= {}
-                if target['Location'] && target['Location'] != '@me'
-                    uri = Addressable::URI.parse(target['Location'])
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
+                self.withConnection(target['Location'], target) do |connection|
+                    Linux.withConnection(connection) do |linuxConnection|
+                        target['Database'] ||= {}
 
-                    self.class.sshStart(uri) do |ssh|
+                        dbPassword = self.configurePostgreSQL(target['Database'], linuxConnection, options)
 
-                        dbPassword = self.configurePostgreSQL(target['Database'], ssh)
-                        distroInfo = Framework::LinuxApp.currentDistroInfo(ssh)
-                        Framework::LinuxApp.configurePodmanServiceOverSSH(USER, HOME_DIR, 'Discourse', distroInfo, ssh)
-                        self.class.sshExec!(ssh, "su --login #{USER} --shell /bin/sh --command 'mkdir -p ~/data ~/sidekiq'")
+                        Podman.createUser(USER, HOME_DIR, 'Discourse', linuxConnection, options)
+                        linuxConnection.withUserShell(USER) do |shell|
+                            shell.createDirs(options, '~/data', '~/sidekiq')
+                        end
 
-                        path = Framework::LinuxApp::SYSTEMD_CONTAINERS_PATH.gsub('~', HOME_DIR)
-                        self.class.exec("echo 'DISCOURSE_DATABASE_HOST=#{HOST_IP}' > #{path}/Discourse.env", ssh)
-                        self.class.exec("echo 'DISCOURSE_DATABASE_NAME=#{USER}' >> #{path}/Discourse.env", ssh)
-                        self.class.exec(" echo 'DISCOURSE_DATABASE_USER=#{USER}' >> #{path}/Discourse.env", ssh)
-                        self.class.exec(" echo 'DISCOURSE_DATABASE_PASSWORD=#{dbPassword}' >> #{path}/Discourse.env", ssh)
-                        self.class.exec("echo 'DISCOURSE_HOST=#{target['Domain']}' >> #{path}/Discourse.env", ssh)
+                        path = Podman.containersPath(HOME_DIR)
+                        linuxConnection.fileWrite("#{path}/Discourse.env", "DISCOURSE_DATABASE_HOST=#{HOST_IP}", options)
+                        linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_DATABASE_NAME=#{USER}", options)
+                        linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_DATABASE_USER=#{USER}", options)
+                        linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_DATABASE_PASSWORD=#{dbPassword}", { **options, hide: true })
+                        linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_HOST=#{target['Domain']}", options)
+                        linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_REDIS_HOST=#{HOST_IP}", options)
 
-                        self.class.exec("echo 'DISCOURSE_REDIS_HOST=#{HOST_IP}' >> #{path}/Discourse.env", ssh)
-                        self.class.exec(" echo 'DISCOURSE_REDIS_PASSWORD=#{ENV['REDIS_PASSWORD']}' >> #{path}/Discourse.env", ssh)
+                        if target['ValkeySecretId']
+                            linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_REDIS_PASSWORD=#{context.secrets.load(target['ValkeySecretId'], 'VALKEY_PASSWORD')}", { **options, hide: true })
+                        end
 
                         if target['SMTP']
                             host = target['SMTP']['Host']
                             host = HOST_IP if ['localhost', '127.0.0.1'].include?(host)
-                            self.class.exec("echo 'DISCOURSE_SMTP_HOST=#{host}' >> #{path}/Discourse.env", ssh)
-                            self.class.exec("echo 'DISCOURSE_SMTP_PORT_NUMBER=#{target['SMTP']['Port']}' >> #{path}/Discourse.env", ssh)
-                            self.class.exec(" echo 'DISCOURSE_SMTP_USER=#{target['SMTP']['Username']}' >> #{path}/Discourse.env", ssh)
-                            self.class.exec(" echo 'DISCOURSE_SMTP_PASSWORD=#{ENV['DISCOURSE_SMTP_PASSWORD']}' >> #{path}/Discourse.env", ssh)
+
+                            linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_SMTP_HOST=#{host}", options)
+                            linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_SMTP_PORT_NUMBER=#{target['SMTP']['Port']}", options)
+                            linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_SMTP_USER=#{target['SMTP']['Username']}", options)
+
+                            smtpPassword = ''
+                            if target['SMTP']['SecretId']
+                                smtpPassword = context.secrets.load(target['SMTP']['SecretId'], target['SMTP']['Username'].upcase + '_PASSWORD')
+                            end
+                            linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_SMTP_PASSWORD=#{smtpPassword}", { **options, hide: true })
+
                             auth = target['SMTP']['Auth'].to_s.downcase
                             auth = 'plain' if auth.empty?
-                            self.class.exec("echo 'DISCOURSE_SMTP_AUTH=#{auth}' >> #{path}/Discourse.env", ssh)
+                            linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_SMTP_AUTH=#{auth}", options)
                             if target['SMTP']['Port'] == 465
-                                self.class.exec("echo 'DISCOURSE_EXTRA_CONF_CONTENT=smtp_force_tls = true' >> #{path}/Discourse.env", ssh)
+                                linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_EXTRA_CONF_CONTENT=smtp_force_tls = true", options)
                             end
                         end
 
-                        self.class.exec(" echo 'DISCOURSE_PRECOMPILE_ASSETS=no' >> #{path}/Discourse.env", ssh)
-                        self.class.exec("echo 'CHEAP_SOURCE_MAPS=1' >> #{path}/Discourse.env", ssh)
-                        self.class.exec("echo 'JOBS=1' >> #{path}/Discourse.env", ssh)
+                        linuxConnection.fileAppend("#{path}/Discourse.env", 'DISCOURSE_PRECOMPILE_ASSETS=no', options)
+                        linuxConnection.fileAppend("#{path}/Discourse.env", 'CHEAP_SOURCE_MAPS=1', options)
+                        linuxConnection.fileAppend("#{path}/Discourse.env", 'JOBS=1', options)
 
-                        self.class.exec("chown #{USER}:#{USER} #{path}/Discourse.env", ssh)
-                        self.class.exec("chmod 600 #{path}/Discourse.env", ssh)
+                        linuxConnection.setUserGroup("#{path}/Discourse.env", USER, USER, options)
+                        linuxConnection.setPrivate("#{path}/Discourse.env", options)
 
-                        ssh.scp.upload!(__dir__ + '/Discourse.container', path)
-                        ssh.scp.upload!(__dir__ + '/Discourse-Sidekiq.container', path)
-                        self.class.exec("systemctl --user --machine=#{USER}@ daemon-reload", ssh)
-                        self.class.exec("systemctl --user --machine=#{USER}@ restart Discourse", ssh)
-                        self.class.exec("systemctl --user --machine=#{USER}@ restart Discourse-Sidekiq", ssh)
+                        linuxConnection.upload(__dir__ + '/Discourse.container', path, options)
+                        linuxConnection.upload(__dir__ + '/Discourse-Sidekiq.container', path, options)
 
-                        Framework::LinuxApp.ensurePackages([NGINX_PACKAGE], ssh)
-                        Framework::LinuxApp.ensureServiceAutoStartOverSSH(NGINX_PACKAGE, ssh)
-                        self.class.prepareNginxConfig(target, ssh)
-                        self.writeNginxConfig(__dir__, 'Discourse', id, target, state, context, options)
-                        self.deployNginxConfig(id, target, activeState, context, options)
-                        Framework::LinuxApp.startServiceOverSSH(NGINX_PACKAGE, ssh)
+                        linuxConnection.reloadUserServices(USER, options)
+                        linuxConnection.restartUserService(USER, 'Discourse', options)
+                        linuxConnection.restartUserService(USER, 'Discourse-Sidekiq', options)
 
-                        containers = JSON.parse(self.class.exec("su --login #{USER} --shell /usr/bin/sh --command 'podman ps --format json --filter name=^Discourse$'", ssh).strip)
-                        raise 'Failed to find container!' if containers.empty?
-                        if !target['Plugins'].to_a.empty?
-                            target['Plugins'].each do |plugin|
-                                self.class.exec("su --login #{USER} --shell /usr/bin/sh --command \"podman exec --workdir /opt/bitnami/discourse #{containers.first['Id']} sh -c 'RAILS_ENV=production bundle exec rake plugin:install repo=#{plugin}'\"", ssh, true)
-                            end
+                        Nginx.withConnection(linuxConnection) do |nginxConnection|
+                            nginxConnection.provision(__dir__, 'Discourse', target, activeState, context, options)
                         end
 
-                        self.class.exec("su --login #{USER} --shell /usr/bin/sh --command \"podman exec --workdir /opt/bitnami/discourse #{containers.first['Id']} sh -c 'RAILS_ENV=production CHEAP_SOURCE_MAPS=1 JOBS=1 bundle exec rake assets:precompile'\"", ssh)
+                        linuxConnection.withUserShell(USER) do |shellConnection|
+                            Podman.withConnection(shellConnection, Podman.container(CONTAINER_NAME, shellConnection, { **options, 'dry' => false })) do |podmanConnection|
+                                if !target['Plugins'].to_a.empty?
+                                    target['Plugins'].each do |plugin|
+                                        podmanConnection.exec("RAILS_ENV=production bundle exec rake plugin:install repo=#{plugin}", true, { **options, workdir: '/opt/bitnami/discourse' })
+                                    end
+                                end
+                                podmanConnection.exec('RAILS_ENV=production CHEAP_SOURCE_MAPS=1 JOBS=1 bundle exec rake assets:precompile', false, { **options, workdir: '/opt/bitnami/discourse' })
+                            end
+                        end
                     end
-                else
-                    # TODO
                 end
             end
 
-            def configurePostgreSQL(settings, ssh)
+            def configurePostgreSQL(dbSettings, linuxConnection, options)
                 password = SecureRandom.alphanumeric(20)
-                PostgreSQL.createRemoteUserAndDBOverSSH(settings, USER, password, ssh)
-                PostgreSQL.createExtensions(settings, USER, ['hstore', 'pg_trgm'], ssh)
+                PostgreSQL.withConnection(dbSettings, linuxConnection) do |postgresConnection|
+                    postgresConnection.createUserAndDB(USER, password, options)
+                    postgresConnection.createExtensions(USER, ['hstore', 'pg_trgm'], options)
+                end
                 password
             end
 

@@ -11,7 +11,11 @@ module ConfigLMM
             end
 
             def exec(command, allowFailure = false, options = {})
-                cmd = "podman exec #{@container['Id']} sh -c '#{LinuxShell.escapeSingleQuotes(command)}'"
+                workdir = ''
+                if options[:workdir]
+                    workdir = "--workdir #{options[:workdir].shellescape}"
+                end
+                cmd = "podman exec #{workdir} #{@container['Id'].shellescape} sh -c '#{LinuxShell.escapeSingleQuotes(command)}'"
                 @connection.exec(cmd, allowFailure, options)
             end
 

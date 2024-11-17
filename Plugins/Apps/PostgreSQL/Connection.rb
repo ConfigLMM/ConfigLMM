@@ -48,6 +48,12 @@ module ConfigLMM
                  exec("GRANT pg_read_all_data TO #{user}", nil, false, [], options)
             end
 
+            def createExtensions(db, extensions, options)
+                extensions.each do |extension|
+                    exec("CREATE EXTENSION #{extension}", db, true, [], options)
+                end
+            end
+
             def importSQL(owner, db, sqlFile, options = {})
                 cmd = "psql #{db} < #{sqlFile}"
                 output = connection.exec(cmd, false, options)
