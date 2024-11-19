@@ -1,0 +1,19 @@
+
+[Unit]
+Description=Homepage container
+After=local-fs.target
+
+[Container]
+ContainerName=Homepage
+Image=ghcr.io/gethomepage/homepage:latest
+PublishPort=127.0.0.1:13400:3000
+LogDriver=journald
+AutoUpdate=registry
+Volume=/var/lib/homepage/config:/app/config
+
+[Service]
+TimeoutStartSec=3min
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
