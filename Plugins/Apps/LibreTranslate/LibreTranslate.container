@@ -1,0 +1,21 @@
+
+[Unit]
+Description=LibreTranslate container
+After=local-fs.target
+
+[Container]
+ContainerName=LibreTranslate
+Image=docker.io/libretranslate/libretranslate:latest
+Exec=--host 0.0.0.0 $ARGS
+PublishPort=127.0.0.1:15100:5000
+UserNS=keep-id:uid=1032,gid=1032
+Volume=/var/lib/libretranslate/.local:/home/libretranslate/.local
+LogDriver=journald
+AutoUpdate=registry
+
+[Service]
+TimeoutStartSec=32min
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
