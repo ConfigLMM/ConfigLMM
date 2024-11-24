@@ -5,6 +5,7 @@ require 'addressable/uri'
 require 'http'
 require 'securerandom'
 require 'shellwords'
+require 'ipaddr'
 
 module ConfigLMM
     module LMM
@@ -296,6 +297,16 @@ module ConfigLMM
                                         fileLines << "        # dns-* options are implemented by the resolvconf package, if installed\n"
                                         fileLines << "        dns-nameservers #{data['DNS']}\n"
                                         fileLines << "        dns-search #{dnsSearch}\n" if dnsSearch
+                                    end
+                                    if data['NAT']
+                                        addr = IPAddr.new(data['IP'])
+                                        sourceAddr = "#{addr.to_s}/#{addr.prefix}"
+                                        outputInterface = ''
+                                        if data['NAT'].is_a?(String)
+                                            outputInterface = " -o #{data['NAT']}"
+                                        end
+                                        fileLines << "        post-up   iptables -t nat -A POSTROUTING -s #{sourceAddr}#{outputInterface} -j MASQUERADE\n"
+                                        fileLines << "        post-down iptables -t nat -D POSTROUTING -s #{sourceAddr}#{outputInterface} -j MASQUERADE\n"
                                     end
                                 end
                                 fileLines << "\n"
