@@ -15,6 +15,7 @@ module ConfigLMM
                         linuxConnection.ensureServiceAutoStart(SERVICE_NAME, options)
 
                         deploySettings(target, linuxConnection, options)
+                        deployAccounts(target, linuxConnection, context, options)
 
                         linuxConnection.restartService(SERVICE_NAME, options)
                     end
@@ -143,6 +144,58 @@ module ConfigLMM
                 if target['Instance']
                     linuxConnection.exec("postmulti -i #{postfixDirName} -e enable", false, options)
                     linuxConnection.exec("postmulti -i #{postfixDirName} -p start", true, options)
+                end
+            end
+
+            def deployAccounts(target, linuxConnection, context, options)
+                if target['Accounts']
+                    postfixDirName = 'postfix'
+                    postfixDirName = 'postfix-' + target['Instance'] if target['Instance']
+                    postfixDir = '/etc/' + postfixDirName + '/'
+
+                    linuxConnection.ensureFile("#{postfixDir}sender_login", { **options, 'dry' => false })
+                    linuxConnection.download("#{postfixDir}sender_login", options['output'], { **options, 'dry' => false })
+                    senderLoginFile = options['output'] + '/sender_login'
+                    accountData = File.read(senderLoginFile)
+                    addAccounts = []
+                    accountPasswords = linuxConnection.exec('sasldblistusers2', false, { **options, 'dry' => false })
+                    target['Accounts'].each do |account, emails|
+                        accountLine = "#{account} #{account}"
+                        if !accountData.include?(accountLine)
+                            addAccounts << accountLine
+                        end
+                        if !accountPasswords.include?(account + ':')
+                            passwordName = account.upcase + '_PASSWORD'
+                            password = context.secrets.load(target['SecretId'], passwordName)
+                            if password.nil?
+                                password = SecureRandom.urlsafe_base64(20)
+                                context.secrets.store(target['SecretId'], passwordName, password) unless options['dry']
+                            end
+                            linuxConnection.exec("echo '#{password}' | saslpasswd2 -p #{account}", false, { **options, hide: true })
+                        end
+                        if emails.is_a?(String)
+                            accountLine = "#{emails} #{account}"
+                            if !accountData.include?(accountLine)
+                                addAccounts << accountLine
+                            end
+                        elsif emails.is_a?(Array)
+                            emails.each do |email|
+                                accountLine = "#{email} #{account}"
+                                if !accountData.include?(accountLine)
+                                    addAccounts << accountLine
+                                end
+                            end
+                        end
+                    end
+                    if !addAccounts.empty?
+                        addAccounts.each do |accountLine|
+                            accountData << "\n" + accountLine
+                        end
+                        accountData << "\n"
+                        File.write(senderLoginFile, accountData)
+                        linuxConnection.upload(senderLoginFile, "#{postfixDir}sender_login", options)
+                        linuxConnection.exec("postmap #{postfixDir}sender_login", false, options)
+                    end
                 end
             end
 
