@@ -8,10 +8,7 @@ module ConfigLMM
         class LinuxApp < Framework::Plugin
 
             LINUX_FOLDER = __dir__ + '/../../../../Plugins/OS/Linux/'
-            SUSE_NAME = 'openSUSE Leap'
             SUSE_ID = 'opensuse-leap'
-            DEBIAN_NAME = 'Debian'
-            PROXMOXVE_NAME = 'Proxmox VE'
             PODMAN_PACKAGE = 'Podman'
             SYSTEMD_CONTAINERS_PATH = '~/.config/containers/systemd/'
 

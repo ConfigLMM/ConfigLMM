@@ -9,7 +9,7 @@ require 'ipaddr'
 
 module ConfigLMM
     module LMM
-        class Linux < Framework::LinuxApp
+        class Linux < Framework::Plugin
 
             IMAGE_LOCATION = '~/.cache/configlmm/images/'
             HOSTS_FILE = '/etc/hosts'
@@ -20,6 +20,10 @@ module ConfigLMM
             SYSCTL_FILE = '/etc/sysctl.d/90-configlmm.conf'
             FIREWALL_PACKAGE = 'firewalld'
             FIREWALL_SERVICE = 'firewalld'
+
+            SUSE_NAME = 'openSUSE Leap'
+            PROXMOXVE_NAME = 'Proxmox VE'
+            DEBIAN_NAME = 'Debian'
 
             def actionLinuxBuild(id, target, activeState, context, options)
                 prepareConfig(target, context)
@@ -37,6 +41,8 @@ module ConfigLMM
                         deployOverLibvirt(id, target, activeState, context, options)
                     when 'proxmox'
                         deployOverProxmox(id, target, activeState, context, options)
+                    when 'pxe', 'pxe+http'
+                        deployOverPXE(uri, id, target, activeState, context, options)
                     when 'ssh'
                         self.withConnection(uri, target) do |connection|
                             self.class.withConnection(connection) do |connection|
@@ -440,6 +446,50 @@ module ConfigLMM
                 end
             end
 
+            def findNetworkIP(ipaddr)
+                addrs = Socket.getifaddrs.select { |ifaddr| ifaddr.addr.ipv4? && !ifaddr.addr.ipv4_loopback? }
+                addrs.each do |addr|
+                    ip = addr.addr.ip_unpack.first
+                    netmask = addr.netmask.ip_unpack.first
+                    prefix = netmask.split('.').map(&:to_i).map { |octet| octet.to_s(2).count('1') }.sum
+                    if IPAddr.new("#{ip}/#{prefix}") == IPAddr.new(ipaddr)
+                        return ip
+                    end
+                end
+                nil
+            end
+
+            def deployOverPXE(uri, id, target, activeState, context, options)
+                if target['AlternativeLocation']
+                    return if self.ping(target['AlternativeLocation'], target)
+                end
+                networkOptions = target['DefaultNetwork'].dup
+                networkOptions['ID'] = id
+                clientIp = networkOptions['IP']
+                if clientIp == 'dhcp'
+                    networkOptions['IP'] = nil
+                    networkOptions['ClientIP'] = nil
+                else
+                    networkOptions['ClientIP'] = clientIp.split('/').first
+                    networkOptions['IP'] = findNetworkIP(clientIp)
+                end
+                dir = preparePXE(id, target['Distro'], target['Flavour'], options)
+                bootFileResolver = Proc.new do |clientArch|
+                    bootFile = 'lpxelinux.0'
+                    bootFile = 'pxelinux.0' unless File.exist?(dir + bootFile)
+                    if [0x0007, 0x0010].include?(clientArch) # EFI x64 and x64 UEFI HTTP
+                        if target['Distro'] == SUSE_NAME
+                            # Because we reuse Debian netboot archive...
+                            bootFile = 'debian-installer/amd64/bootnetx64.efi'
+                        elsif target['Distro'] == DEBIAN_NAME
+                            bootFile = 'debian-installer/amd64/bootnetx64.efi'
+                        end
+                    end
+                    bootFile
+                end
+                IO::PXE.boot(dir, uri, networkOptions, bootFileResolver, options, logger)
+            end
+
             def buildHostsFile(id, target, options)
                 if target['Hosts']
                     hosts  = "#\n"
@@ -541,6 +591,71 @@ module ConfigLMM
             def installationISO(distro, flavour, location)
                 info = flavourInfo(distro, flavour)
                 downloadImage(info['ISO'])
+            end
+
+            def preparePXE(id, distro, flavour, options)
+                outputFolder = options['output'] + '/pxe/'
+                local.mkdir(outputFolder, false)
+                info = flavourInfo(distro, flavour)
+                image = nil
+                if info['PXE']
+                    image = downloadImage(info['PXE'])
+                    local.exec("tar --extract --file=#{image.shellescape} --directory=#{outputFolder}", false)
+                    if distro == DEBIAN_NAME
+                        local.copy(options['output'] + '/' + id + '/preseed.cfg', outputFolder, false)
+                        local.exec("sed -i 's|default .*|default auto|' #{outputFolder}debian-installer/amd64/boot-screens/syslinux.cfg", false)
+                        local.exec("sed -i 's|--- quiet|file=/preseed.cfg --- quiet|' #{outputFolder}debian-installer/amd64/boot-screens/adtxt.cfg", false)
+                        local.exec("echo \"set default='... Automated install'\" >> #{outputFolder}debian-installer/amd64/grub/grub.cfg", false)
+                        local.exec("echo 'set timeout=1' >> #{outputFolder}debian-installer/amd64/grub/grub.cfg", false)
+                        local.exec("gunzip #{outputFolder}debian-installer/amd64/initrd.gz", false)
+                        local.exec("cd #{options['output'] + '/' + id} && echo preseed.cfg | cpio -H newc -o -O #{outputFolder}debian-installer/amd64/initrd --append", false)
+                        local.exec("gzip #{outputFolder}debian-installer/amd64/initrd", false)
+                    end
+                elsif distro == SUSE_NAME
+                    # openSUSE doesn't provide netboot archive
+                    # and grub.efi from it's ISO doesn't work
+                    # so let's just reuse Debian archive
+                    debianInfo = flavourInfo('Debian', nil)
+                    debianImage = downloadImage(debianInfo['PXE'])
+                    local.exec("tar --extract --file=#{debianImage.shellescape} --directory=#{outputFolder}", false)
+                    local.exec("rm -rf #{outputFolder}pxelinux.cfg", false)
+
+                    syslinux = downloadImage(flavourInfo('Syslinux', nil)['Archive'])
+                    syslinuxFolder = options['output'] + '/syslinux'
+                    local.mkdir(syslinuxFolder, false)
+                    local.mkdir(outputFolder + 'pxelinux.cfg', false)
+                    local.copy(options['output'] + '/' + id + '/autoinst.xml', outputFolder, false)
+                    local.exec("tar --extract --file=#{syslinux.shellescape} --directory=#{syslinuxFolder}", false)
+                    local.exec("cp #{syslinuxFolder}/*/bios/core/lpxelinux.0 #{outputFolder}", false)
+                    local.exec("cp #{syslinuxFolder}/*/bios/com32/elflink/ldlinux/ldlinux.c32 #{outputFolder}", false)
+                    local.exec("cp #{__dir__ + '/Syslinux/default'} #{outputFolder}pxelinux.cfg/", false)
+                    local.exec("sed -i 's|$OPTIONS|install=#{info['FILES']} autoyast=/autoinst.xml|' #{outputFolder}pxelinux.cfg/default", false)
+
+                    # If you have Network/IP configured in UEFI firmware which is different than what we use
+                    # then Syslinux will use that IP instead of ours so you need to reset those settings
+                    #
+                    # Not using Syslinux.efi because for some reason it doesn't work - reboots after loading initrd
+                    #local.exec("cp #{syslinuxFolder}/*/efi64/efi/syslinux.efi #{outputFolder}", false)
+                    #local.exec("cp #{syslinuxFolder}/*/efi64/com32/elflink/ldlinux/ldlinux.e64 #{outputFolder}", false)
+
+                    local.remoteDownload(info['FILES'] + 'boot/x86_64/loader/initrd', outputFolder)
+                    local.remoteDownload(info['FILES'] + 'boot/x86_64/loader/linux', outputFolder)
+
+                    # Not using grub.efi because UEFI Firemware says "Unsupported"
+                    #local.remoteDownload(info['FILES'] + 'EFI/BOOT/bootx64.efi', outputFolder)
+                    #local.remoteDownload(info['FILES'] + 'EFI/BOOT/grub.efi', outputFolder)
+                    #local.remoteDownload(info['FILES'] + 'EFI/BOOT/grub.cfg', outputFolder)
+
+                    local.exec("cp #{__dir__ + '/Grub/grub.cfg'} #{outputFolder}debian-installer/amd64/grub/", false)
+                    local.exec("sed -i 's|$OPTIONS|install=#{info['FILES']} autoyast=/autoinst.xml|' #{outputFolder}debian-installer/amd64/grub/grub.cfg", false)
+
+                    local.exec("xz --decompress --stdout #{outputFolder}initrd > #{outputFolder}initrd.decompressed", false)
+                    local.exec("cd #{options['output'] + '/' + id} && echo autoinst.xml | cpio -H newc -o -O #{outputFolder}initrd.decompressed --append", false)
+                    local.exec("xz --compress --stdout --check=crc32 #{outputFolder}initrd.decompressed > #{outputFolder}initrd", false)
+                else
+                    raise 'Not implemented!'
+                end
+                outputFolder
             end
 
             def buildAutoInstallISO(id, iso, target, options)

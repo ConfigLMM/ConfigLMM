@@ -80,6 +80,17 @@ module ConfigLMM
                 Net::SSH.start(server, nil, params, &block)
             end
 
+            def self.ping(uri, prompt, logger)
+                server, params = self.toParams(uri)
+                options = Net::SSH.configuration_for(server, true).merge(params)
+                server = options[:host_name] || server
+                options[:timeout] = 3 unless options.key?(:timeout)
+                Net::SSH::Transport::Session.new(server, options)
+                true
+            rescue Errno::EHOSTUNREACH, Errno::ECONNREFUSED, Net::SSH::ConnectionTimeout
+                false
+            end
+
             def self.toParams(locationUri)
                 server = locationUri.hostname
                 params = {}

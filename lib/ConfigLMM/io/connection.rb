@@ -112,6 +112,18 @@ module ConfigLMM
                 end
             end
 
+            def self.ping(uri, target, context, prompt, logger)
+                scheme, uri = self.processURI(uri)
+                case scheme
+                when 'local'
+                    return true
+                when 'ssh'
+                    SSH.ping(uri, prompt, logger)
+                else
+                    raise ConnectionError.new("Unimplemented protocol: #{scheme}!")
+                end
+            end
+
             def self.processURI(uri)
                 return 'local' if uri.nil? || uri.to_s.empty? || uri == '@me'
                 uri = Addressable::URI.parse(uri) if uri.is_a?(String)

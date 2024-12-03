@@ -1,0 +1,8 @@
+
+default auto
+prompt   0
+timeout  1
+
+label auto
+  kernel linux
+  append initrd=initrd splash=silent $OPTIONS

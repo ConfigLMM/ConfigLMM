@@ -180,6 +180,10 @@ module ConfigLMM
                 IO::Connection.tunnel(uri, target, self.context, self.prompt, self.logger, &block)
             end
 
+            def ping(uri, target, &block)
+                IO::Connection.ping(uri, target, self.context, self.prompt, self.logger, &block)
+            end
+
             # DEPRECATED
             def self.exec(command, ssh = nil, allowFailure = false, dry = false)
                 IO::Connection.exec(command, ssh, allowFailure, { dry: dry })

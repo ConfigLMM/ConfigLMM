@@ -1,5 +1,6 @@
 openSUSE Leap:
     ISO: https://download.opensuse.org/distribution/leap/15.6/iso/openSUSE-Leap-15.6-NET-x86_64-Media.iso
+    FILES: https://download.opensuse.org/distribution/leap/15.6/repo/oss/
     LXC: opensuse-15.6-default
     Type: opensuse
 
@@ -10,8 +11,12 @@ Arch Linux:
 
 Debian:
     ISO: https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.7.0-amd64-netinst.iso
+    PXE: https://deb.debian.org/debian/dists/bookworm/main/installer-amd64/current/images/netboot/netboot.tar.gz
     LXC: debian-12-standard
     Type: debian
 
 Proxmox VE:
     ISO: https://enterprise.proxmox.com/iso/proxmox-ve_8.2-2.iso
+
+Syslinux:
+    Archive: https://www.kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.gz
