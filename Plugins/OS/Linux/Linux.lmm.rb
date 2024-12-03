@@ -11,7 +11,7 @@ module ConfigLMM
     module LMM
         class Linux < Framework::LinuxApp
 
-            ISO_LOCATION = '~/.cache/configlmm/images/'
+            IMAGE_LOCATION = '~/.cache/configlmm/images/'
             HOSTS_FILE = '/etc/hosts'
             FSTAB_FILE = '/etc/fstab'
             SUBUID_FILE = '/etc/subuid'
@@ -534,23 +534,13 @@ module ConfigLMM
                 flavourInfo
             end
 
+            def downloadImage(url)
+                local.remoteDownload(url, IMAGE_LOCATION)
+            end
+
             def installationISO(distro, flavour, location)
                 info = flavourInfo(distro, flavour)
-                url = info['ISO']
-                filename = File.basename(Addressable::URI.parse(url).path)
-                iso = File.expand_path(ISO_LOCATION + filename)
-                if !File.exist?(iso)
-                    mkdir(File.expand_path(ISO_LOCATION), false)
-                    prompt.say('Downloading... ' + url)
-                    response = HTTP.follow.get(url)
-                    raise "Failed to download file: #{response.status}" unless response.status.success?
-                    File.open(iso, 'wb') do |file|
-                        response.body.each do |chunk|
-                            file.write(chunk)
-                        end
-                    end
-                end
-                iso
+                downloadImage(info['ISO'])
             end
 
             def buildAutoInstallISO(id, iso, target, options)

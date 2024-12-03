@@ -135,6 +135,23 @@ module ConfigLMM
                 upload(folder, target, options)
             end
 
+            def remoteDownload(url, targetDir, options = {})
+                filename = File.basename(Addressable::URI.parse(url).path)
+                targetFile = File.expand_path(targetDir + filename)
+                if !File.exist?(targetFile)
+                    mkdir(File.expand_path(targetDir), false)
+                    prompt.say('Downloading... ' + url)
+                    response = ::HTTP.follow.get(url)
+                    raise "Failed to download file: #{response.status}" unless response.status.success?
+                    File.open(targetFile, 'wb') do |file|
+                        response.body.each do |chunk|
+                            file.write(chunk)
+                        end
+                    end
+                end
+                targetFile
+            end
+
             def renderTemplate(template, target, outputPath, options)
                 variables = {
                     config: target,
