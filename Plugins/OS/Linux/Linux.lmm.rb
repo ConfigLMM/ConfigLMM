@@ -662,7 +662,65 @@ module ConfigLMM
                     target['Services'] << :sshd
                     target['Services'].uniq!
                 end
-                target['Apps'] = self.class.mapPackages(target['Apps'], target['Distro']) if target['Distro']
+                target['Apps'] = Framework::LinuxApp.mapPackages(target['Apps'], target['Distro']) if target['Distro']
+                prepareDefaultNetwork(target)
+            end
+
+            def prepareDefaultNetwork(target)
+                target['DefaultNetwork'] = {}
+                target['DefaultNetwork']['IP'] = 'dhcp'
+                target['DefaultNetwork']['Interface'] = 'enp1s0'
+                target['DefaultNetwork']['VLAN'] = nil
+
+                if target['Network'].is_a?(Hash)
+                    ipaddr = nil
+                    if target['Network']['IP']
+                        ipaddr = target['Network']['IP']
+                    end
+                    gateway = nil
+                    if target['Network']['Gateway']
+                        gateway = target['Network']['Gateway']
+                    end
+                    dns = nil
+                    if target['Network']['DNS']
+                        dns = target['Network']['DNS']
+                    end
+                    interface = nil
+                    vlan = nil
+                    if gateway.nil? && target['Network']['Interfaces'].is_a?(Hash)
+                        cadidates = target['Network']['Interfaces'].select { |name, data| name[0] == 'e' }
+                        target['DefaultNetwork']['Interface'] = cadidates.first unless cadidates.empty?
+                        target['Network']['Interfaces'].each do |name, data|
+                            if data.is_a?(Hash) && data['Gateway']
+                                ipaddr = data['IP']
+                                gateway = data['Gateway']
+                                dns = data['DNS']
+                                interface = name
+                                if data['Ports']
+                                    interface = data['Ports'].first
+                                end
+                                if name.split('.').length == 2
+                                    interface, vlan = name.split('.')
+                                    if target['Network']['Interfaces'][interface].is_a?(Hash) &&
+                                       target['Network']['Interfaces']['Ports']
+                                        interface = target['Network']['Interfaces']['Ports'].first
+                                    end
+                                end
+                                break
+                            end
+                        end
+                    end
+                    if ipaddr
+                        target['DefaultNetwork']['IP'] = ipaddr
+                        addr = IPAddr.new(ipaddr)
+                        target['DefaultNetwork']['Subnet'] = [((1 << 32) - 1) << (32 - addr.prefix)].pack('N').bytes.join('.')
+                        target['DefaultNetwork']['Broadcast'] = addr.to_range.last.to_s
+                    end
+                    target['DefaultNetwork']['Gateway'] = gateway if gateway
+                    target['DefaultNetwork']['DNS'] = dns if dns
+                    target['DefaultNetwork']['Interface'] = interface if interface
+                    target['DefaultNetwork']['VLAN'] = vlan if vlan
+                end
             end
 
             def self.linuxPasswordHash(password)

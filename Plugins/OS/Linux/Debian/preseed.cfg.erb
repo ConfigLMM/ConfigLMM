@@ -3,16 +3,30 @@
 d-i debian-installer/locale string en_US
 d-i keyboard-configuration/xkb-keymap select us
 
-<% if config['Network'].is_a?(Hash) %>
+<% if config['DefaultNetwork']['Interface'] %>
+d-i netcfg/choose_interface <%= config['DefaultNetwork']['Interface'] %>
+<% end %>
+
+<% if config['DefaultNetwork']['IP'] && config['DefaultNetwork']['IP'] != 'dhcp'%>
 d-i netcfg/disable_autoconfig boolean true
 d-i netcfg/dhcp_failed note
 d-i netcfg/dhcp_options select Configure network manually
-
-d-i netcfg/get_ipaddress string <%= config['Network']['IP'].split('/').first %>
-d-i netcfg/get_netmask string <%= [((1 << 32) - 1) << (32 - config['Network']['IP'].split('/').last.to_i)].pack('N').bytes.join('.') %>
-d-i netcfg/get_gateway string <%= config['Network']['Gateway'] %>
-d-i netcfg/get_nameservers string <%= config['Network']['DNS'] %>
+d-i netcfg/get_ipaddress string <%= config['DefaultNetwork']['IP'].split('/').first %>
+d-i netcfg/get_netmask string <%= config['DefaultNetwork']['Subnet'] %>
 d-i netcfg/confirm_static boolean true
+<% end %>
+
+<% if config['DefaultNetwork']['Gateway'] %>
+d-i netcfg/get_gateway string <%= config['DefaultNetwork']['Gateway'] %>
+<% end %>
+
+<% if config['DefaultNetwork']['DNS'] %>
+d-i netcfg/get_nameservers string <%= config['DefaultNetwork']['DNS'] %>
+<% end %>
+
+<% if config['DefaultNetwork']['VLAN'] %>
+d-i netcfg/use_vlan boolean true
+d-i netcfg/vlan_id string <%= config['DefaultNetwork']['VLAN'] %>
 <% end %>
 
 d-i netcfg/get_hostname string <%= Addressable::IDNA.to_ascii(config['Domain']) %>
