@@ -52,18 +52,13 @@ module ConfigLMM
                 if serverInfo['RAM']
                     settings[:memory_size] = Filesize.from(serverInfo['RAM']).to_f('KiB').to_i
                 end
-                volumeName = serverName + '.img'
-                volume = compute.volumes.all.find { |volume| volume.name == volumeName }
-                if volume
-                    settings[:volumes] = [volume]
-                elsif serverInfo['Storage']
-                    storage = Filesize.from(serverInfo['Storage']).to_f('GiB').to_i
-                    volume = compute.volumes.create(
-                        name: volumeName,
-                        pool_name: compute.pools.first.name,
-                        capacity: storage
-                    )
-                    settings[:volumes] = [volume]
+                if serverInfo.key?('Storage')
+                    if serverInfo['Storage'].is_a?(Array)
+                        volumeInfos = serverInfo['Storage']
+                    else
+                        volumeInfos = [{ 'Size' => serverInfo['Storage'] }]
+                    end
+                    settings[:volumes] = getVolumes(compute, serverName, volumeInfos)
                 end
                 if serverInfo['NIC']
                     nics = serverInfo['NIC']
@@ -85,6 +80,29 @@ module ConfigLMM
                 state.save
                 server.start
                 true
+            end
+
+            def getVolumes(compute, baseName, volumeInfos)
+                volumes = []
+                volumeInfos.each_with_index do |volumeInfo, i|
+                    if volumeInfo['Name']
+                        volumeName = volumeInfo['Name'] + '.img'
+                    else
+                        number = i.zero? ? '' : (i + 1).to_s
+                        volumeName = baseName + number + '.img'
+                    end
+                    volume = compute.volumes.all.find { |volume| volume.name == volumeName }
+                    if volume
+                        volumes << volume
+                    else
+                        volumes << compute.volumes.create(
+                            name: volumeName,
+                            pool_name: compute.pools.first.name,
+                            capacity: Filesize.from(volumeInfo['Size']).to_f('GiB').to_i
+                        )
+                    end
+                end
+                volumes
             end
 
             def dirPoolXML(name, path)
