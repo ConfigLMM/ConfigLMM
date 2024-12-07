@@ -63,7 +63,7 @@ module ConfigLMM
                 if serverInfo['NIC']
                     nics = serverInfo['NIC']
                     nics = [nics] unless nics.is_a?(Array)
-                    settings[:nics] = nics
+                    settings[:nics] = nics.map { |nic| nic.transform_keys(&:downcase) }
                 elsif serverInfo['NetworkBridge']
                     nic = {
                         bridge: serverInfo['NetworkBridge'],
