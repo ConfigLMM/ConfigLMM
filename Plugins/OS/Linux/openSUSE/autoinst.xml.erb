@@ -62,7 +62,7 @@
     <users config:type="list">
       <% config['Users'].each do |user, info| %>
         <user>
-          <username>root</username>
+          <username><%= user %></username>
           <% if info['PasswordHash'] %>
             <encrypted config:type="boolean">true</encrypted>
             <user_password><%= info['PasswordHash'] %></user_password>
