@@ -70,6 +70,9 @@ module ConfigLMM
                     }
                     settings[:nics] = [nic]
                 end
+                if serverInfo['Firmware'] && serverInfo['Firmware'].upcase == 'UEFI'
+                    settings[:firmware] = 'efi'
+                end
                 server = compute.servers.new(**settings)
                 if iso
                     server.iso_dir = File.dirname(iso)

@@ -672,38 +672,40 @@ module ConfigLMM
             def buildISOAutoYaST(id, iso, target, options)
                 outputFolder = options['output'] + '/iso/'
                 mkdir(outputFolder, false)
-                self.class.exec("xorriso -osirrox on -indev #{iso} -extract / #{outputFolder}")
+                local.exec("xorriso -osirrox on -indev #{iso} -extract / #{outputFolder}")
                 FileUtils.chmod_R(0750, outputFolder) # Need to make it writeable so it can be deleted
                 copy(options['output'] + '/' + id + '/autoinst.xml', outputFolder, false)
 
                 cfg = outputFolder + "boot/x86_64/loader/isolinux.cfg"
-                self.class.exec("sed -i 's|default harddisk|default linux|' #{cfg}")
-                self.class.exec("sed -i 's|append initrd=initrd splash=silent showopts|append initrd=initrd splash=silent autoyast=device://sr0/autoinst.xml|' #{cfg}")
-                self.class.exec("sed -i 's|prompt		1|prompt		0|' #{cfg}")
-                self.class.exec("sed -i 's|timeout		600|timeout		1|' #{cfg}")
+                local.exec("sed -i 's|default harddisk|default linux|' #{cfg}")
+                local.exec("sed -i 's|append initrd=initrd splash=silent showopts|append initrd=initrd splash=silent autoyast=device://sr0/autoinst.xml|' #{cfg}")
+                local.exec("sed -i 's|prompt		1|prompt		0|' #{cfg}")
+                local.exec("sed -i 's|timeout		600|timeout		1|' #{cfg}")
 
                 cfg = outputFolder + "EFI/BOOT/grub.cfg"
-                self.class.exec("sed -i 's|timeout=.*|timeout=1|' #{cfg}")
-                self.class.exec("sed -i 's|linux splash=silent|linux splash=silent autoyast=device://sr0/autoinst.xml|' #{cfg}")
+                local.exec("sed -i 's|timeout=.*|timeout=1|' #{cfg}")
+                local.exec("sed -i 's|linux splash=silent|linux splash=silent autoyast=device://sr0/autoinst.xml|' #{cfg}")
 
                 patchedIso = File.dirname(iso) + '/patched.iso'
-                self.class.exec("xorriso -as mkisofs -no-emul-boot -boot-info-table -boot-load-size 4 -iso-level 4 -b boot/x86_64/loader/isolinux.bin -c boot/x86_64/loader/boot.cat -eltorito-alt-boot -no-emul-boot -e boot/x86_64/efi -o #{patchedIso} #{outputFolder}")
+                local.exec("xorriso -as mkisofs -no-emul-boot -boot-info-table -boot-load-size 4 -iso-level 4 -b boot/x86_64/loader/isolinux.bin -c boot/x86_64/loader/boot.cat -eltorito-alt-boot -no-emul-boot -e boot/x86_64/efi -o #{patchedIso} #{outputFolder}")
                 patchedIso
             end
 
             def buildISOPreseed(id, iso, target, options)
                 outputFolder = options['output'] + '/iso/'
                 mkdir(outputFolder, false)
-                self.class.exec("xorriso -osirrox on -indev #{iso} -extract / #{outputFolder}")
+                local.exec("xorriso -osirrox on -indev #{iso} -extract / #{outputFolder}", false)
                 FileUtils.chmod_R(0750, outputFolder) # Need to make it writeable so it can be deleted
-                copy(options['output'] + '/' + id + '/preseed.cfg', outputFolder, false)
+                local.copy(options['output'] + '/' + id + '/preseed.cfg', outputFolder, false)
 
-                self.class.exec("sed -i 's|vga=788 --- quiet|auto=true file=/cdrom/preseed.cfg vga=788 --- quiet|' #{outputFolder + "boot/grub/grub.cfg"}")
-                self.class.exec("sed -i 's|--- quiet|file=/cdrom/preseed.cfg --- quiet|' #{outputFolder + "isolinux/adgtk.cfg"}")
-                self.class.exec("sed -i 's|default .*|default autogui|' #{outputFolder + "isolinux/isolinux.cfg"}")
+                local.exec("sed -i 's|vga=788 --- quiet|auto=true file=/cdrom/preseed.cfg vga=788 --- quiet|' #{outputFolder}boot/grub/grub.cfg")
+                local.exec("echo \"set default='... Automated install'\" >> #{outputFolder}boot/grub/grub.cfg", false)
+                local.exec("echo 'set timeout=1' >> #{outputFolder}boot/grub/grub.cfg", false)
+                local.exec("sed -i 's|--- quiet|file=/cdrom/preseed.cfg --- quiet|' #{outputFolder + "isolinux/adgtk.cfg"}")
+                local.exec("sed -i 's|default .*|default autogui|' #{outputFolder + "isolinux/isolinux.cfg"}")
 
                 patchedIso = File.dirname(iso) + '/patched.iso'
-                self.class.exec("xorriso -as mkisofs -no-emul-boot -boot-info-table -boot-load-size 4 -iso-level 4 -b isolinux/isolinux.bin -c isolinux/boot.cat -eltorito-alt-boot -o #{patchedIso} #{outputFolder}")
+                local.exec("xorriso -as mkisofs -no-emul-boot -boot-info-table -boot-load-size 4 -iso-level 4 -b isolinux/isolinux.bin -c isolinux/boot.cat -eltorito-alt-boot -e boot/grub/efi.img -no-emul-boot -o #{patchedIso} #{outputFolder}")
                 patchedIso
             end
 
