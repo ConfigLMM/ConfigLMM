@@ -752,7 +752,7 @@ module ConfigLMM
                 target['Users'].each do |user, info|
                     newKeys = []
                     info['AuthorizedKeys'].to_a.each do |key|
-                        if key.start_with?('/') || key.start_with?('~')
+                        if key.start_with?('/') || key.start_with?('~') || key.start_with?('.') || key.end_with?('.pub')
                             newKeys << File.read(File.expand_path(key)).strip
                         else
                             newKeys << key
