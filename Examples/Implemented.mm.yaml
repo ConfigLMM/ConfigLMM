@@ -61,7 +61,8 @@ Linux:
     Users:
         root:
             Shell: fish
-            SSHKey: yes
+            SSH:
+                Key: yes
             AuthorizedKeys:
                 - ~/.ssh/id_ed25519.pub
     SSH:

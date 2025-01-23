@@ -131,7 +131,7 @@ module ConfigLMM
                         end
                         homeDir = connection.exec("getent passwd #{name} | cut -d ':' -f 6").strip
                         keyFile = homeDir + "/.ssh/id_ed25519"
-                        if info['SSHKey'] && !connection.filePresent?(keyFile)
+                        if info['SSH'].to_h['Key'] && !connection.filePresent?(keyFile)
                             connection.exec("mkdir -p #{homeDir}/.ssh")
                             connection.exec("ssh-keygen -t ed25519 -f #{keyFile} -P ''")
                             connection.exec("chown -R #{name}:#{name} #{homeDir}/.ssh")
@@ -390,7 +390,7 @@ module ConfigLMM
                         end
                         homeDir = connection.exec("getent passwd #{name} | cut -d ':' -f 6", false, options).strip
                         keyFile = homeDir + "/.ssh/id_ed25519"
-                        if info['SSHKey'] && !connection.filePresent?(keyFile, options)
+                        if info['SSH'].to_h['Key'] && !connection.filePresent?(keyFile, options)
                             connection.exec("mkdir -p #{homeDir}/.ssh", false, options)
                             connection.exec("ssh-keygen -t ed25519 -f #{keyFile} -P ''", false, options)
                             connection.exec("chown -R #{name}:#{name} #{homeDir}/.ssh", false, options)
