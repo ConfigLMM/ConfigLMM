@@ -785,7 +785,6 @@ module ConfigLMM
                     info['AuthorizedKeys'] = newKeys
                 end
 
-                packages = YAML.load_file(__dir__ + '/Packages.yaml')
                 newApps = []
                 target['Services'] ||= []
                 target['Packages'] = target['Apps'].dup
