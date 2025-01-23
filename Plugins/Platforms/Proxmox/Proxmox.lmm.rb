@@ -182,16 +182,16 @@ module ConfigLMM
                 end
 
                 if serverInfo['RAM']
-                    settings[:memory] = Filesize.from(serverInfo['RAM']).to_f('MiB').to_i
+                    settings[:memory] = Filesize.from(serverInfo['RAM'].to_s).to_f('MiB').to_i
                 end
 
                 if serverInfo['Swap']
-                    settings[:swap] = Filesize.from(serverInfo['Swap']).to_f('MiB').to_i
+                    settings[:swap] = Filesize.from(serverInfo['Swap'].to_s).to_f('MiB').to_i
                 end
 
                 if serverInfo['Storage']
                     storages = node.storages.list_by_content_type('rootdir')
-                    settings[:rootfs] = storages.first.storage + ':' + Filesize.from(serverInfo['Storage']).to_f('GiB').to_i.to_s
+                    settings[:rootfs] = storages.first.storage + ':' + Filesize.from(serverInfo['Storage'].to_s).to_f('GiB').to_i.to_s
                 end
 
                 if serverInfo['Domain']
