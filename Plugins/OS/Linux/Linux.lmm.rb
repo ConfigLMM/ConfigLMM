@@ -542,10 +542,34 @@ module ConfigLMM
                     template = ERB.new(File.read(__dir__ + '/openSUSE/autoinst.xml.erb'))
                     renderTemplate(template, target, outputFolder + 'autoinst.xml', options)
                 elsif target['Distro'] == DEBIAN_NAME
+                    variables = prepareDebianStorage(target, options)
                     outputFolder = options['output'] + '/' + id + '/'
                     template = ERB.new(File.read(__dir__ + '/Debian/preseed.cfg.erb'))
-                    renderTemplate(template, target, outputFolder + 'preseed.cfg', options)
+                    renderTemplate(template, variables, outputFolder + 'preseed.cfg', options)
                 end
+            end
+
+            def prepareDebianStorage(target, options)
+                variables = target.dup
+                variables['AutoPartition'] = true
+                variables['Disks'] = []
+                if target.key?('StorageDevices')
+                    if target['StorageDevices'].length == 1
+                        variables['Disks'] = [target['StorageDevices'].first['Device']]
+                        if !target['StorageDevices'].first['Partitions'].to_a.empty?
+                            variables['AutoPartition'] = false
+                        end
+                    elsif !target['StorageDevices'].empty?
+                        variables['AutoPartition'] = false
+                    end
+                end
+                if target.key?('Mounts') && !target['Mounts'].empty?
+                    variables['AutoPartition'] = false
+                end
+                if !variables['AutoPartition']
+                    logger.warn('Specified disk/partition configuration is not implemented! You will have to configure it manually!')
+                end
+                variables
             end
 
             def deployLocalHostsFile(target, options)
