@@ -244,6 +244,16 @@ module ConfigLMM
                 end
             end
 
+            def hasBinaries?(names, options)
+                names = [names] unless names.is_a?(Array)
+                names.each do |name|
+                    connection.exec("which #{name}", true, options) if options['dry']
+                    result = connection.exec("which #{name}", true, { **options, 'dry' => false })
+                    return false if result.include?("no #{name}")
+                end
+                true
+            end
+
             def ensureServiceAutoStart(name, options = {})
                 name = convertServiceName(name)
                 execDistroCommand(name, 'AutoStartService', false, options)
