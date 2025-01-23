@@ -17,6 +17,8 @@ Debian:
 
 Proxmox VE:
     ISO: https://enterprise.proxmox.com/iso/proxmox-ve_8.2-2.iso
+    # Just install Debian first
+    PXE: https://deb.debian.org/debian/dists/bookworm/main/installer-amd64/current/images/netboot/netboot.tar.gz
 
 Syslinux:
     Archive: https://www.kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.gz
