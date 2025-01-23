@@ -78,6 +78,8 @@ module ConfigLMM
 
                     target['Listen'].each do |addr|
                         if addr != 'localhost' && !addr.start_with?('127.0.0.1') && !addr.start_with?('::1')
+                            addr += '/0' if addr == '0.0.0.0'
+                            addr += '/32' if addr =~ /^\d+\.\d+\.\d+\.\d+$/
                             hbaLines << "host    all             all             #{addr}            scram-sha-256\n"
                         end
                     end
