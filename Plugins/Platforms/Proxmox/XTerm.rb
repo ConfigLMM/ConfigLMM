@@ -46,6 +46,11 @@ module ConfigLMM
                 end
 
                 def download(source, target, dry = false)
+                    if dry
+                        message = "Would download proxmox+xterm:#{source}"
+                        prompt.say(message)
+                        return
+                    end
                     checksum = self.exec("md5sum #{source}").split(' ').first.strip
                     @State[:mutex].synchronize {
                         @State[:stage] = :raw
@@ -62,6 +67,11 @@ module ConfigLMM
                 end
 
                 def upload(source, target, dry = false)
+                    if dry
+                        message = "Would upload #{source} to proxmox+xterm:#{target}"
+                        prompt.say(message)
+                        return
+                    end
                     data = File.read(source)
                     checksum = Digest::MD5.hexdigest(data)
                     @State[:mutex].synchronize {
@@ -89,10 +99,10 @@ module ConfigLMM
                 def updateFile(file, options, atTop = false, comment = '#', &block)
                     localFile = options['output'] + '/' + SecureRandom.alphanumeric(10)
                     File.write(localFile, '')
-                    self.exec("touch #{file}")
-                    self.download(file, localFile)
+                    self.exec("touch #{file}", false, options)
+                    self.download(file, localFile, options['dry'])
                     IO::Local.new(self.prompt, self.logger).updateFile(localFile, options, atTop, comment, &block)
-                    self.upload(localFile, file)
+                    self.upload(localFile, file, options['dry'])
                 end
 
             end
@@ -282,7 +292,7 @@ module ConfigLMM
 
             def self.sendMessage(ws, message)
                 return unless ws
-                length = message.length
+                length = message.bytesize
                 data = '0:' + length.to_s + ':' + message
                 ws.send(data)
             end
