@@ -129,12 +129,18 @@ module ConfigLMM
                                 connection.exec("#{distroInfo['ModifyUser']} --add-subgids #{id} #{name}")
                             end
                         end
-                        homeDir = connection.exec("getent passwd #{name} | cut -d ':' -f 6").strip
+                        homeDir = connection.exec("getent passwd #{name} | cut -d ':' -f 6", false, { **options, 'dry' => false }).strip
+                        hostname = connection.exec("hostname", false, { **options, 'dry' => false }).strip
                         keyFile = homeDir + "/.ssh/id_ed25519"
-                        if info['SSH'].to_h['Key'] && !connection.filePresent?(keyFile)
-                            connection.exec("mkdir -p #{homeDir}/.ssh")
-                            connection.exec("ssh-keygen -t ed25519 -f #{keyFile} -P ''")
-                            connection.exec("chown -R #{name}:#{name} #{homeDir}/.ssh")
+                        if info['SSH'].to_h['Key'] && !connection.filePresent?(keyFile, options)
+                            connection.exec("mkdir -p #{homeDir}/.ssh", false, options)
+                            connection.exec("ssh-keygen -t ed25519 -f #{keyFile} -P '' -C '#{name}@#{hostname}'", false, options)
+                            connection.exec("chown -R #{name}:#{name} #{homeDir}/.ssh", false, options)
+                        end
+                        if !info['SSH'].to_h['Config'].to_h.empty?
+                            connection.exec("mkdir -p #{homeDir}/.ssh", false, options)
+                            deploySSHConfig(connection, info['SSH']['Config'], "#{homeDir}/.ssh/config", target, options)
+                            connection.exec("chown -R #{name}:#{name} #{homeDir}/.ssh", false, options)
                         end
                     end
                 end
@@ -366,7 +372,7 @@ module ConfigLMM
 
             def deployLocal(connection, target, options)
                 deployLocalHostsFile(target, options)
-                deployLocalSSHConfig(target, options)
+                deployLocalSSHConfig(connection, target, options)
                 if target['Sysctl']
                     updateLocalFile(SYSCTL_FILE, options) do |fileLines|
                         target['Sysctl'].each do |name, value|
@@ -516,8 +522,8 @@ module ConfigLMM
                     sshConfig += IO::Local::CONFIGLMM_SECTION_BEGIN
                     target['SSH']['Config'].each do |name, info|
                         sshConfig += "Host #{name} #{info['HostName']}\n"
-                        sshConfig += "    HostName " + info['HostName'] + "\n" if info['HostName']
-                        sshConfig += "    Port " + info['Port'] + "\n" if info['Port']
+                        sshConfig += "    HostName " + Addressable::IDNA.to_ascii(info['HostName']) + "\n" if info['HostName']
+                        sshConfig += "    Port " + info['Port'].to_s + "\n" if info['Port']
                         sshConfig += "    User " + info['User'] + "\n" if info['User']
                         sshConfig += "    IdentityFile " + info['IdentityFile'] + "\n" if info['IdentityFile']
                         sshConfig += "\n"
@@ -583,19 +589,27 @@ module ConfigLMM
                 end
             end
 
-            def deployLocalSSHConfig(target, options)
-                if !target['SSH']['Config'].empty?
-                    updateLocalFile(File.expand_path(SSH_CONFIG), options) do |configLines|
-                        target['SSH']['Config'].each do |name, info|
-                            configLines << "Host #{name} #{info['HostName']}\n"
-                            configLines << "    HostName " + info['HostName'] + "\n" if info['HostName']
-                            configLines << "    Port " + info['Port'] + "\n" if info['Port']
-                            configLines << "    User " + info['User'] + "\n" if info['User']
-                            configLines << "    IdentityFile " + info['IdentityFile'] + "\n" if info['IdentityFile']
-                        end
-                        configLines
+            def deployLocalSSHConfig(connection, target, options)
+                deploySSHConfig(connection, target['SSH']['Config'], File.expand_path(SSH_CONFIG), target, options)
+            end
+
+            def deploySSHConfig(connection, config, path, target, options)
+                if !config.to_h.empty?
+                    connection.updateFile(path, options) do |configLines|
+                        processSSHConfig(config, configLines)
                     end
                 end
+            end
+
+            def processSSHConfig(config, lines)
+                config.each do |name, info|
+                    lines << "Host #{name} #{info['HostName']}\n"
+                    lines << "    HostName " + Addressable::IDNA.to_ascii(info['HostName']) + "\n" if info['HostName']
+                    lines << "    Port " + info['Port'].to_s + "\n" if info['Port']
+                    lines << "    User " + info['User'] + "\n" if info['User']
+                    lines << "    IdentityFile " + info['IdentityFile'] + "\n" if info['IdentityFile']
+                end
+                lines
             end
 
             def flavourInfo(distro, flavour)
