@@ -157,7 +157,12 @@ module ConfigLMM
                     importRemoteSchema(name, data['Database'], password, authParams, postgres, options)
 
                     sql = "CREATE SUBSCRIPTION #{name} CONNECTION '#{connection}' PUBLICATION #{data['Publication']}"
-                    postgres.exec(sql, data['Database'], true, [], options)
+                    message = postgres.exec(sql, data['Database'], true, [], options)
+                    # 'ERROR:  subscription "$NAME" already exists' - is fine
+                    # but other errors aren't like ERROR:  could not create replication slot "$NAME": ERROR:  replication slot "$NAME" already exists
+                    if message.include?('ERROR') && !(message.include?('subscription') && message.include?('already exists'))
+                        raise message
+                    end
                 end
             end
 
