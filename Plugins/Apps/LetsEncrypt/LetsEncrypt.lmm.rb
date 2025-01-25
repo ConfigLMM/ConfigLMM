@@ -7,48 +7,58 @@ module ConfigLMM
             CONFIG_DIR = '/etc/letsencrypt/'
 
             def actionLetsEncryptDeploy(id, target, activeState, context, options)
-                self.ensurePackage(PACKAGE_NAME, target['Location'])
+                self.withConnection(target['Location'], target) do |connection|
+                    Linux.withConnection(connection) do |linuxConnection|
+                        linuxConnection.ensurePackage(PACKAGE_NAME, options)
 
-                if target['Location'] && target['Location'] != '@me'
-                    uri = Addressable::URI.parse(target['Location'])
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Protocol: #{uri.scheme}!") if uri.scheme != 'ssh'
-
-                    self.class.sshStart(uri) do |ssh|
-                        ssh.scp.upload!(__dir__ + '/rfc2136.ini', CONFIG_DIR)
-                        ssh.scp.upload!(__dir__ + '/renew-certificates.service', '/etc/systemd/system/')
-                        ssh.scp.upload!(__dir__ + '/renew-certificates.timer', '/etc/systemd/system/')
-                        self.class.exec("mkdir -p #{CONFIG_DIR}renewal-hooks/deploy", ssh)
+                        linuxConnection.upload(__dir__ + '/rfc2136.ini', CONFIG_DIR, options)
+                        linuxConnection.upload(__dir__ + '/renew-certificates.service', '/etc/systemd/system/', options)
+                        linuxConnection.upload(__dir__ + '/renew-certificates.timer', '/etc/systemd/system/', options)
+                        linuxConnection.createDirs(options, CONFIG_DIR + "renewal-hooks/deploy")
                         target['Hooks'].to_a.each do |hook|
-                            ssh.scp.upload!(__dir__ + '/hooks/' + hook + '.sh', "#{CONFIG_DIR}renewal-hooks/deploy/")
+                            linuxConnection.upload(__dir__ + '/hooks/' + hook + '.sh', "#{CONFIG_DIR}renewal-hooks/deploy/", options)
                         end
-                        self.class.exec("chmod +x #{CONFIG_DIR}renewal-hooks/deploy/*.sh", ssh)
-                        self.class.exec("sed -i 's|$IP|#{target['DNS']['IP']}|' #{CONFIG_DIR}/rfc2136.ini", ssh)
-                        self.class.exec("sed -i 's|$SECRET|#{ENV['LETSENCRYPT_DNS_SECRET']}|' #{CONFIG_DIR}/rfc2136.ini", ssh)
-                        self.class.exec("chmod 600 #{CONFIG_DIR}/rfc2136.ini", ssh)
+                        linuxConnection.exec("chmod +x #{CONFIG_DIR}renewal-hooks/deploy/*.sh", false, options)
+                        linuxConnection.fileReplace(CONFIG_DIR + 'rfc2136.ini', '$IP', target['DNS']['IP'] , options)
+
+                        secretId, secretName = target['DNS']['SecretId'].to_s.split('.')
+                        key = nil
+                        key = context.secrets.load(secretId, secretName) if secretId && secretName
+                        key = ENV['LETSENCRYPT_DNS_SECRET'] if key.nil?
+                        raise Framework::PluginProcessError.new('LetsEncrypt missing RFC2136 TSIG key! Specify DNS.SecretId or LETSENCRYPT_DNS_SECRET env variable') unless key
+
+                        linuxConnection.fileReplace(CONFIG_DIR + 'rfc2136.ini', '$SECRET', key, options)
+                        linuxConnection.setPrivate(CONFIG_DIR + 'rfc2136.ini', options)
                         if target['Domain']
-                            createCertificate('Wildcard', target['Domain'], target, ssh)
+                            createCertificate('Wildcard', target['Domain'], target, linuxConnection, options)
                         end
                         target['Certificates'].to_h.each do |name, domain|
-                            createCertificate(name, domain, target, ssh)
+                            createCertificate(name, domain, target, linuxConnection, options)
                         end
 
-                        self.class.exec("systemctl daemon-reload", ssh)
-                        self.class.exec("systemctl enable renew-certificates.timer", ssh)
-                        self.class.exec("systemctl start renew-certificates.timer", ssh)
+                        linuxConnection.reloadServiceManager(options)
+                        linuxConnection.ensureServiceAutoStart('renew-certificates.timer', options)
+                        linuxConnection.startService('renew-certificates.timer', options)
+
+                        target['Hooks'].to_a.each do |hook|
+                            linuxConnection.exec("#{CONFIG_DIR}renewal-hooks/deploy/#{hook}.sh", false, options)
+                        end
                     end
-                else
-                    # TODO
                 end
             end
 
-            def createCertificate(name, domain, target, ssh)
+            def createCertificate(name, domain, target, connection, options)
+                return if connection.fileLink?("#{CONFIG_DIR}live/#{name}/fullchain.pem", options)
+                connection.exec("rm -rf #{CONFIG_DIR}live/#{name}", false, options)
+
                 domains = ['--domains "' + Addressable::IDNA.to_ascii(domain) + '"']
                 if domain.start_with?('*.')
                     domains << '--domains "' + Addressable::IDNA.to_ascii(domain[2..-1]) + '"'
                 end
                 extra = ''
                 extra = '--dns-rfc2136-propagation-seconds ' + target['DNS']['Propagation'].to_s if target['DNS']['Propagation']
-                self.class.exec("certbot certonly --dns-rfc2136 --dns-rfc2136-credentials=/etc/letsencrypt/rfc2136.ini #{extra} --non-interactive --agree-tos --email #{target['EMail']} --cert-name '#{name}' #{domains.join(' ')}", ssh)
+
+                connection.exec("certbot certonly --dns-rfc2136 --dns-rfc2136-credentials=#{CONFIG_DIR}rfc2136.ini #{extra} --non-interactive --agree-tos --email #{target['EMail']} --cert-name '#{name}' #{domains.join(' ')}", false, options)
             end
 
         end

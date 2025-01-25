@@ -56,8 +56,16 @@ module ConfigLMM
             end
 
             def filePresent?(file, options = {})
-                result = self.exec("stat #{file}", true, options)
+                self.exec("stat #{file}", true, options) if options['dry']
+                result = self.exec("stat #{file}", true, { **options, 'dry' => false })
                 !result.start_with?('stat: cannot')
+            end
+
+            def fileLink?(file, options = {})
+                self.exec("stat #{file}", true, options) if options['dry']
+                result = self.exec("stat #{file}", true, { **options, 'dry' => false })
+                return false if result.start_with?('stat: cannot')
+                result.include?('symbolic link') && !result.include?('regular file')
             end
 
             def updateFile(file, options, atTop = false, comment = '#', &block)

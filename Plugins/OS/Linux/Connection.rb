@@ -55,6 +55,10 @@ module ConfigLMM
                 connection.filePresent?(*args)
             end
 
+            def fileLink?(*args)
+                connection.fileLink?(*args)
+            end
+
             def upload(*args)
                 connection.upload(*args)
             end
