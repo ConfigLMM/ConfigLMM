@@ -36,6 +36,7 @@ module ConfigLMM
                             end
                         end
                         if !target.key?('Proxy') || target['Proxy'] != 'only'
+                            Podman.ensurePresent(linuxConnection, options)
                             Podman.createUser(USER, GOLLUM_PATH, 'gollum', linuxConnection, options)
                             linuxConnection.withUserShell(USER) do |shell|
                                 shell.createDirs(options, '~/data')

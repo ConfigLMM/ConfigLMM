@@ -22,6 +22,7 @@ module ConfigLMM
 
                         dbPassword = self.configurePostgreSQL(target['Database'], linuxConnection, options)
 
+                        Podman.ensurePresent(linuxConnection, options)
                         Podman.createUser(USER, HOME_DIR, 'Authentik IdP and SSO', linuxConnection, options)
                         linuxConnection.withUserShell(USER) do |shell|
                             shell.createDirs(options, '~/media', '~/templates', '~/certs')
@@ -55,6 +56,7 @@ module ConfigLMM
             def deployProxyOutpost(target, linuxConnection, options)
                 return unless target['Outposts'].to_a.include?('Proxy')
 
+                Podman.ensurePresent(linuxConnection, options)
                 path = Podman.containersPath(HOME_DIR)
                 linuxConnection.fileWrite("#{path}/ProxyOutpost.env", "AUTHENTIK_HOST=https://#{target['Domain'].downcase}", options)
                 linuxConnection.fileAppend("#{path}/ProxyOutpost.env", 'AUTHENTIK_INSECURE=false', options)

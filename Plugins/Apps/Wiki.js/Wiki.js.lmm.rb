@@ -16,6 +16,7 @@ module ConfigLMM
                         target['Database'] ||= {}
                         dbPassword = self.configurePostgreSQL(target['Database'], linuxConnection, options)
 
+                        Podman.ensurePresent(linuxConnection, options)
                         Podman.createUser(USER, HOME_DIR, 'Wiki.js', linuxConnection, options)
 
                         path = Podman.containersPath(HOME_DIR)

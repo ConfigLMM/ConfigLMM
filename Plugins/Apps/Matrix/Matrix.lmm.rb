@@ -27,6 +27,7 @@ module ConfigLMM
                         target['Database'] ||= {}
                         dbPassword = self.configurePostgreSQL(target['Database'], linuxConnection, options)
 
+                        Podman.ensurePresent(linuxConnection, options)
                         Podman.createUser(USER, HOME_DIR, 'Matrix', linuxConnection, options)
                         linuxConnection.withUserShell(USER) do |shell|
                             shell.createDirs(options, '~/data')

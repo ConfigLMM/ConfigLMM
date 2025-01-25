@@ -5,9 +5,14 @@ module ConfigLMM
     module LMM
         class Podman < Framework::Plugin
 
+            PACKAGE_NAME = 'Podman'
             SYSTEM_CONTAINERS_PATH = '/etc/containers/systemd'
             USER_CONTAINERS_PATH = '~/.config/containers/systemd'
             HOST_IP = '10.0.2.2'
+
+            def self.ensurePresent(linuxConnection, options = {})
+                linuxConnection.ensurePackage(PACKAGE_NAME, options)
+            end
 
             def self.container(name, connection, options = {})
                 result = connection.exec("podman ps --format json --filter name='^#{name}$'", false, { **options, dry: false }).strip

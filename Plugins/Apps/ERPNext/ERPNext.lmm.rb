@@ -46,6 +46,7 @@ module ConfigLMM
 
                         dbPassword = self.configureMariaDB(target['Database'], activeState, linuxConnection, options)
 
+                        Podman.ensurePresent(linuxConnection, options)
                         Podman.createUser(USER, HOME_DIR, 'ERPNext', linuxConnection, options)
 
                         cmd = IO::SSH.cmd(target['Location'])

@@ -15,6 +15,7 @@ module ConfigLMM
             def actionClickHouseDeploy(id, target, activeState, context, options)
                 self.withConnection(target['Location'], target) do |connection|
                     Linux.withConnection(connection) do |linuxConnection|
+                        Podman.ensurePresent(linuxConnection, options)
                         Podman.createUser(USER, HOME_DIR, 'ClickHouse', linuxConnection, options)
                         linuxConnection.withUserShell(USER) do |shell|
                             shell.createDirs(options, '~/data', '~/logs', '~/server/config.d' ,'~/server/users.d')

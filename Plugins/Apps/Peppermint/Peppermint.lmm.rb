@@ -14,8 +14,9 @@ module ConfigLMM
                 self.withConnection(target['Location'], target) do |connection|
                     Linux.withConnection(connection) do |linuxConnection|
                         dbPassword = self.configurePostgreSQL(target['Database'], linuxConnection, options)
-                        Podman.createUser(USER, HOME_DIR, 'Peppermint Ticket Management', linuxConnection, options)
 
+                        Podman.ensurePresent(linuxConnection, options)
+                        Podman.createUser(USER, HOME_DIR, 'Peppermint Ticket Management', linuxConnection, options)
                         path = Podman.containersPath(HOME_DIR)
 
                         linuxConnection.fileWrite("#{path}/Peppermint.env", "DB_HOST=#{HOST_IP}", options)

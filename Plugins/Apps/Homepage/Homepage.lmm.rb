@@ -17,6 +17,7 @@ module ConfigLMM
                 self.withConnection(target['Location'], target) do |connection|
                     Linux.withConnection(connection) do |linuxConnection|
                         if !target.key?('Proxy') || target['Proxy'] != 'only'
+                            Podman.ensurePresent(linuxConnection, options)
                             Podman.createUser(USER, HOME_DIR, 'Homepage', linuxConnection, options)
                             linuxConnection.withUserShell(USER) do |shell|
                                 shell.createDirs(options, '~/config')

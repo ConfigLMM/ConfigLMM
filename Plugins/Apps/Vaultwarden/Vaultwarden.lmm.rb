@@ -25,6 +25,7 @@ module ConfigLMM
                     Linux.withConnection(connection) do |linuxConnection|
                         if !target.key?('Proxy') || target['Proxy'] != 'only'
 
+                            Podman.ensurePresent(linuxConnection, options)
                             Podman.createUser(USER, HOME_DIR, 'Vaultwarden', linuxConnection, options)
                             linuxConnection.withUserShell(USER) do |shell|
                                 shell.createDirs(options, '~/data')

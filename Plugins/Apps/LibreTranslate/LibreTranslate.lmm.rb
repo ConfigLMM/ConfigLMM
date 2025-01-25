@@ -10,6 +10,7 @@ module ConfigLMM
 
                 self.withConnection(target['Location'], target) do |connection|
                     Linux.withConnection(connection) do |linuxConnection|
+                        Podman.ensurePresent(linuxConnection, options)
                         Podman.createUser(USER, HOME_DIR, 'LibreTranslate', linuxConnection, options)
 
                         path = Podman.containersPath(HOME_DIR)

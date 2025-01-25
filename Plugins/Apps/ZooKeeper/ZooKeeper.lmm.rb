@@ -10,6 +10,7 @@ module ConfigLMM
             def actionZooKeeperDeploy(id, target, activeState, context, options)
                 self.withConnection(target['Location'], target) do |connection|
                     Linux.withConnection(connection) do |linuxConnection|
+                        Podman.ensurePresent(linuxConnection, options)
                         Podman.createUser(USER, HOME_DIR, 'ZooKeeper', linuxConnection, options)
                         linuxConnection.withUserShell(USER) do |shell|
                             shell.createDirs(options, '~/data')

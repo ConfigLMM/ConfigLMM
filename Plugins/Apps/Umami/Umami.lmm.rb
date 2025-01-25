@@ -14,6 +14,7 @@ module ConfigLMM
                     Linux.withConnection(connection) do |linuxConnection|
                         if !target.key?('Proxy') || target['Proxy'] == false
                             dbUser, dbPassword = self.configurePostgreSQL(target, linuxConnection, context, options)
+                            Podman.ensurePresent(linuxConnection, options)
                             Podman.createUser(USER, HOME_DIR, 'Umami', linuxConnection, options)
 
                             path = Podman.containersPath(HOME_DIR)

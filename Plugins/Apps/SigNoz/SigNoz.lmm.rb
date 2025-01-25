@@ -40,6 +40,7 @@ module ConfigLMM
             end
 
             def deploySigNozService(linuxConnection, target, activeState, context, options)
+                Podman.ensurePresent(linuxConnection, options)
                 username, password = self.configureClickHouseSigNoz(target, linuxConnection, activeState, context, options)
                 Podman.createUser(USER, HOME_DIR, 'SigNoz', linuxConnection, options)
                 linuxConnection.withUserShell(USER) do |shell|
@@ -117,6 +118,7 @@ module ConfigLMM
             def actionSigNozCollectorDeploy(id, target, activeState, context, options)
                 self.withConnection(target['Location'], target) do |connection|
                     Linux.withConnection(connection) do |linuxConnection|
+                        Podman.ensurePresent(linuxConnection, options)
                         username, password = self.configureClickHouseCollector(target, linuxConnection, activeState, context, options)
                         Podman.createUser(COLLECTOR_USER, COLLECTOR_HOME_DIR, 'SigNoz Collector', linuxConnection, options)
 
