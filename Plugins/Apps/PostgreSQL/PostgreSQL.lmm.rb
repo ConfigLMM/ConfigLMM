@@ -87,6 +87,10 @@ module ConfigLMM
                     cmd = "sed -i 's|^host    all             all             127.0.0.1/32            ident|host    all             all             127.0.0.1/32            scram-sha-256|'"
                     postgres.connection.exec(cmd + ' ' + postgres.pgsqlDir + HBA_FILE, false, options)
                 end
+                postgres.connection.exec('sed -i "s|^log_destination|#log_destination|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
+                postgres.connection.exec('sed -i "s|^logging_collector|#logging_collector|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
+                settingLines << "log_destination = 'jsonlog'\n"
+                settingLines << "logging_collector = on\n"
                 #if !target['Publications'].to_h.empty?
                 #    target['Settings'] ||= {}
                 #    target['Settings']['wal_level'] = 'logical'
