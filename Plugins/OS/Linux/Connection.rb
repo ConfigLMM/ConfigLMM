@@ -327,7 +327,8 @@ module ConfigLMM
 
             def createServiceUser(user, homedir, userComment = '', options = {})
                 addUserCmd = "#{distroInfo['CreateServiceUser']} --home-dir #{homedir.shellescape} --create-home --comment #{userComment.shellescape} #{user.shellescape}"
-                connection.exec(addUserCmd, true, options)
+                result = connection.exec(addUserCmd, true, options)
+                raise Framework::PluginProcessError.new(result) if result.strip.start_with?('useradd:') && !result.include?("user '#{user}' already exists")
                 connection.exec("chmod o-rwx #{homedir.shellescape}", false, options)
             end
 
