@@ -30,8 +30,15 @@ module ConfigLMM
                         linuxConnection.restartService('GitLab', options)
 
                         configFile = HOME_DIR + '/config/gitlab.rb'
-                        while !linuxConnection.filePresent?(configFile, options)
-                            sleep(2)
+                        if options['dry']
+                            linuxConnection.filePresent?(configFile, options)
+                        else
+                            counter = 200
+                            while !linuxConnection.filePresent?(configFile, options)
+                                counter -= 1
+                                raise "Timeout while waiting for #{configFile}!" if counter <= 0
+                                sleep(2)
+                            end
                         end
                         linuxConnection.updateFile(configFile, options, true) do |fileLines|
                             fileLines << "external_url 'https://#{target['Domain']}'\n"
