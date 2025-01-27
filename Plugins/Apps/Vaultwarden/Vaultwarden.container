@@ -15,6 +15,7 @@ LogDriver=journald
 AutoUpdate=registry
 
 [Service]
+TimeoutStartSec=6min
 Restart=on-failure
 
 [Install]
