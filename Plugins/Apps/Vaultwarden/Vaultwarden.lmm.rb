@@ -1,5 +1,7 @@
 
 require 'fileutils'
+require 'argon2'
+require 'securerandom'
 
 module ConfigLMM
     module LMM
@@ -46,7 +48,10 @@ module ConfigLMM
                                 adminToken = SecureRandom.alphanumeric(40)
                                 context.secrets.store(target['SecretId'], 'VAULTWARDEN_ADMIN_TOKEN', adminToken)
                             end
-                            linuxConnection.fileAppend("#{path}/Vaultwarden.env", "ADMIN_TOKEN=#{adminToken}", { **options, hide: true })
+
+                            adminTokenHash = Argon2::Password.new(profile: :rfc_9106_low_memory).create(adminToken)
+
+                            linuxConnection.fileAppend("#{path}/Vaultwarden.env", "ADMIN_TOKEN=#{adminTokenHash}", { **options, hide: true })
                             linuxConnection.setUserGroup("#{path}/Vaultwarden.env", USER, USER, options)
                             linuxConnection.setPrivate("#{path}/Vaultwarden.env", options)
                             linuxConnection.upload(__dir__ + '/Vaultwarden.container', path, options)

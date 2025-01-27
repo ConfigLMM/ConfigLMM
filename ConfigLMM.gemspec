@@ -31,6 +31,7 @@ Gem::Specification.new do |spec|
     spec.require_paths = ['lib']
 
     spec.add_dependency 'addressable'
+    spec.add_dependency 'argon2'
     spec.add_dependency 'bcrypt_pbkdf' # for net-ssh ed25519 key support
     spec.add_dependency 'ed25519'
     spec.add_dependency 'faraday-retry'
