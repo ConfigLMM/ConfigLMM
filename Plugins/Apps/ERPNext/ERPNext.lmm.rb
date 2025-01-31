@@ -32,6 +32,11 @@ module ConfigLMM
 
                     if !IO::Connection.cmdSuccess?("podman image exists #{IMAGE_ID}")
                         appsJSON = Base64.urlsafe_encode64(File.read(__dir__ + '/sites/apps.json').gsub('$VERSION', VERSION))
+                        # if you see error like "newuidmap 5227 0 1000 1 1 100000 65536: newuidmap: write to uid_map failed: Operation not permitted"
+                        # then for LXC you need to set idmap like:
+                        # LXC:
+                        #     - idmap: u 0 100000 165536
+                        #     - idmap: g 0 100000 165536
                         localLinux.exec("cd #{REPOS_CACHE}/frappe_docker && podman build --tag=#{IMAGE_ID} --build-arg APPS_JSON_BASE64=#{appsJSON} --build-arg FRAPPE_BRANCH=version-#{VERSION}  --file images/custom/Containerfile .", false, options)
                     end
                 end
