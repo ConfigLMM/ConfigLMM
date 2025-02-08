@@ -1,5 +1,6 @@
 
 require_relative 'Shell'
+require_relative 'HTTP'
 
 require 'shellwords'
 
@@ -117,6 +118,28 @@ module ConfigLMM
 
             def createDirs(options, *paths)
                 connection.exec("mkdir -p #{paths.join(' ')}", false, options)
+            end
+
+            def http(url, options, headers = {}, method = 'GET', data = nil, cookieFile = nil)
+                cmd = "curl --no-progress-meter #{url.shellescape} -X #{method}"
+                if cookieFile
+                    cmd += " --cookie #{cookieFile.shellescape} --cookie-jar #{cookieFile.shellescape}"
+                end
+                headers.each do |name, value|
+                    cmd += " -H '#{name}: #{value}'"
+                end
+                if !data.nil?
+                    cmd += " --data-raw #{data.shellescape}"
+                end
+                connection.exec(cmd, false, options)
+            end
+
+            def withHTTP(options)
+                http = HttpConnection.new(self, options)
+                result = yield(http)
+                result
+            ensure
+                http.cleanup
             end
 
             def withUserShell(user)
