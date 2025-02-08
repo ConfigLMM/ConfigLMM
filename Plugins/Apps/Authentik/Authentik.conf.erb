@@ -1,7 +1,7 @@
 
 # Upstream where your authentik server is hosted.
 upstream authentik {
-    server localhost:19000;
+    server 127.0.0.1:19000;
 
     # Improve performance by keeping some connections alive.
     keepalive 10;
@@ -20,11 +20,12 @@ server {
         listen [::]:443 ssl http2;
     <% end %>
 
+    include config-lmm/gateway-errors.conf;
+    include config-lmm/security.conf;
     include config-lmm/ssl.conf;
 
     server_name <%= config['Domain'] %>;
 
-    # Proxy site
     location / {
         proxy_pass http://authentik;
         include config-lmm/proxy.conf;
@@ -32,7 +33,7 @@ server {
 
     <% if config['Outposts'].to_a.include?('Proxy') %>
         location /outpost.goauthentik.io {
-            proxy_pass http://localhost:19010/outpost.goauthentik.io;
+            proxy_pass http://127.0.0.1:19010/outpost.goauthentik.io;
             include config-lmm/proxy.conf;
         }
     <% end %>
