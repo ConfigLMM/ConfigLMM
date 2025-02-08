@@ -15,6 +15,7 @@ Volume=/var/lib/erpnext/logs:/home/frappe/frappe-bench/logs
 LogDriver=journald
 
 [Service]
+TimeoutStartSec=16min
 Restart=on-failure
 
 [Install]
