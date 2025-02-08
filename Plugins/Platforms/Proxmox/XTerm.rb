@@ -33,6 +33,11 @@ module ConfigLMM
                         prompt.say(message)
                         return ''
                     end
+                    if options[:hide]
+                        logger.debug("[xterm]# **HIDDEN**")
+                    else
+                        logger.debug("[xterm]# #{command}")
+                    end
                     @State[:mutex].synchronize {
                         @State[:stage] = :command
                         ProxmoxXTerm.sendMessage($WS, command + "\n")

@@ -113,11 +113,23 @@ module ConfigLMM
                 output = ''
                 if options[:hide]
                     command = ' ' + command
+                    if logger
+                        logger.debug("[#{ssh.transport.host}:#{ssh.transport.port}]# **HIDDEN**")
+                    end
+                else
+                    if logger
+                        logger.debug("[#{ssh.transport.host}:#{ssh.transport.port}]# #{command}")
+                    end
                 end
+
                 channel = ssh.exec(command, status: status) do |channel, stream, data|
                     output += data
                 end
                 channel.wait
+                output = output.dup.force_encoding(Encoding::UTF_8)
+                if logger
+                    logger.debug("[#{ssh.transport.host}:#{ssh.transport.port}](#{status[:exit_code]})> #{output}")
+                end
                 if !allowFailure && (status[:exit_code].nil? || !status[:exit_code].zero?) && status[:exit_signal].to_i != 4 # SIGILL... Sometimes this happens for unknown reason
                     raise ExecError.new("Failed '#{command}'", command, output, output, status)
                 end

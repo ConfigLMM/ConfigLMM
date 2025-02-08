@@ -177,12 +177,22 @@ module ConfigLMM
                 end
                 if options[:hide]
                     command = ' ' + command
+                    if logger
+                        logger.debug("# **HIDDEN**")
+                    end
+                else
+                    if logger
+                        logger.debug("# #{command}")
+                    end
                 end
                 stdout, stdeerr, status = Open3.capture3(command)
                 if !allowFailure && !status.success?
                     $stderr.puts(stdout)
                     $stderr.puts(stdeerr)
                     raise ExecError.new("Failed '#{command}'", command, stdout, stdeerr, status)
+                end
+                if logger
+                    logger.debug("(#{status.exitstatus})> #{stdout + stdeerr}")
                 end
                 stdout + stdeerr
             rescue Errno::ENOENT => error
