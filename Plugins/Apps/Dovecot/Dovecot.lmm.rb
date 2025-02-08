@@ -50,6 +50,9 @@ module ConfigLMM
                         self.class.cutConfigSection(DOVECOT_DIR + 'conf.d/15-mailboxes.conf', 'namespace inbox', options, linuxConnection)
                         linuxConnection.updateFile(DOVECOT_DIR + 'conf.d/15-mailboxes.conf', options) do |configLines|
                             configLines << "namespace inbox {\n"
+                            configLines << "    mailbox INBOX {\n"
+                            configLines << "        auto = subscribe\n"
+                            configLines << "    }\n"
                             configLines << "    mailbox Drafts {\n"
                             configLines << "        special_use = \\Drafts\n"
                             configLines << "        auto = subscribe\n"
