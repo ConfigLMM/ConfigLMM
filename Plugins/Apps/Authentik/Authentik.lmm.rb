@@ -15,6 +15,16 @@ module ConfigLMM
             end
 
             def actionAuthentikDeploy(id, target, activeState, context, options)
+
+                if target['Location'].start_with?('http')
+                    apiURL = target['Location']
+                    configureAuthentik(apiURL, id, target, activeState, context, options)
+                else
+                    deployServer(id, target, activeState, context, options)
+                end
+            end
+
+            def deployServer(id, target, activeState, context, options)
                 raise Framework::PluginProcessError.new('Domain field must be set!') unless target['Domain']
 
                 self.withConnection(target['Location'], target) do |connection|
@@ -117,6 +127,15 @@ module ConfigLMM
                             self.deployProxyOutpost(target, linuxConnection, options)
                         end
                     end
+                end
+
+                apiURL = "https://#{target['Domain']}/"
+                configureAuthentik(apiURL, id, target, activeState, context, options)
+            end
+
+            def configureAuthentik(apiURL, id, target, activeState, context, options)
+                if target['Groups'] || target['Providers'] || target['Applications']
+                    prompt.say('Configuring specified settings for Authentik is not implemented! You\'ll have to configure those manually.', :color => :magenta)
                 end
             end
 
