@@ -36,9 +36,40 @@ module ConfigLMM
                             linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_REDIS_PASSWORD=#{context.secrets.load(target['ValkeySecretId'], 'VALKEY_PASSWORD')}", { **options, hide: true })
                         end
 
+                        username = 'user'
+                        if target['Admin']
+                            if target['Admin']['Username']
+                                linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_USERNAME=#{target['Admin']['Username']}", options)
+                            end
+
+                            if target['Admin']['EMail']
+                                linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_EMAIL=#{target['Admin']['EMail']}", options)
+                            end
+
+                            if target['Admin'].key?('FirstName')
+                                firstName = target['Admin']['FirstName'].to_s
+                                firstName = '""' if firstName.empty?
+                                linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_FIRST_NAME=#{firstName}", options)
+                            end
+
+                            if target['Admin'].key?('LastName')
+                                lastName = target['Admin']['LastName'].to_s
+                                lastName = '""' if lastName.empty?
+                                linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_LAST_NAME=#{lastName}", options)
+                            end
+                        end
+
+                        adminPassword = context.secrets.load(target['SecretId'], 'ADMIN_PASSWORD')
+                        if adminPassword.nil?
+                            adminPassword = SecureRandom.alphanumeric(20)
+                            context.secrets.store(target['SecretId'], 'ADMIN_PASSWORD', adminPassword)
+                            context.secrets.print("Discourse Admin '#{username}' password", adminPassword)
+                        end
+                        linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_PASSWORD=#{adminPassword}", { **options, hide: true })
+
                         if target['SMTP']
                             host = target['SMTP']['Host']
-                            host = HOST_IP if ['localhost', '127.0.0.1'].include?(host)
+                            host = HOST_IP if host.to_s.empty? || ['localhost', '127.0.0.1'].include?(host)
 
                             linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_SMTP_HOST=#{host}", options)
                             linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_SMTP_PORT_NUMBER=#{target['SMTP']['Port']}", options)
@@ -56,6 +87,11 @@ module ConfigLMM
                             if target['SMTP']['Port'] == 465
                                 linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_EXTRA_CONF_CONTENT=smtp_force_tls = true", options)
                             end
+                        else
+                            linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_SMTP_HOST=#{HOST_IP}", options)
+                            linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_SMTP_PORT_NUMBER=25", options)
+                            linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_SMTP_USER=\"\"", options)
+                            linuxConnection.fileAppend("#{path}/Discourse.env", "DISCOURSE_SMTP_PASSWORD=\"\"", options)
                         end
 
                         linuxConnection.fileAppend("#{path}/Discourse.env", 'DISCOURSE_PRECOMPILE_ASSETS=no', options)
@@ -83,9 +119,24 @@ module ConfigLMM
                                         podmanConnection.exec("RAILS_ENV=production bundle exec rake plugin:install repo=#{plugin}", true, { **options, workdir: '/opt/bitnami/discourse' })
                                     end
                                 end
+
+                                waitForMigrations(podmanConnection, options)
                                 podmanConnection.exec('RAILS_ENV=production CHEAP_SOURCE_MAPS=1 JOBS=1 bundle exec rake assets:precompile', false, { **options, workdir: '/opt/bitnami/discourse' })
                             end
                         end
+                    end
+                end
+            end
+
+            def waitForMigrations(podmanConnection, options)
+                if !options['dry']
+                    timeout = 3600 # 1h
+                    loop do
+                        result = podmanConnection.exec('RAILS_ENV=production bundle exec rake db:migrate:status', false, { **options, workdir: '/opt/bitnami/discourse' })
+                        break unless result.include?('  down  ')
+                        timeout -= 30
+                        raise "Timeout while waiting for Discourse migrations to complete!" if timeout <= 0
+                        sleep(30)
                     end
                 end
             end
