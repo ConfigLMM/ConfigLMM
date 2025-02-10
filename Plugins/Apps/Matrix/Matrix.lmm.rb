@@ -39,55 +39,19 @@ module ConfigLMM
                         linuxConnection.setUserGroup("#{path}/Matrix.env", USER, USER, options)
                         linuxConnection.setPrivate("#{path}/Matrix.env", options)
 
-                        linuxConnection.upload(__dir__ + '/homeserver.yaml', HOME_DIR + '/data/', options)
+                        homeserver = YAML.load_file(__dir__ + '/homeserver.yaml')
+                        configureHomeserver(homeserver, dbPassword, target)
+                        homeserverFile = options['output'] + '/homeserver.yaml'
+                        File.write(homeserverFile, homeserver.to_yaml)
+
+                        linuxConnection.upload(homeserverFile, HOME_DIR + '/data/', options)
+
                         linuxConnection.upload(__dir__ + '/log.config', HOME_DIR + '/data/', options)
                         linuxConnection.upload(__dir__ + '/config.json', HOME_DIR + '/', options)
                         linuxConnection.setUserGroup("#{HOME_DIR}/data", USER, USER, options)
 
-                        linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", '$SERVER_NAME', target['ServerName'], options)
-                        linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", '$SYNAPSE_DOMAIN', target['SynapseDomain'].downcase, options)
-                        linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", '$DB_PASSWORD', dbPassword, { **options, hide: true })
-                        linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", '$SECRET1', SecureRandom.urlsafe_base64(45), { **options, hide: true })
-                        linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", '$SECRET2', SecureRandom.urlsafe_base64(45), { **options, hide: true })
-                        linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", '$SECRET3', SecureRandom.urlsafe_base64(45), { **options, hide: true })
-
                         linuxConnection.fileReplace("#{HOME_DIR}/config.json", '$SYNAPSE_DOMAIN', target['SynapseDomain'], options)
                         linuxConnection.fileReplace("#{HOME_DIR}/config.json", '$SERVER_NAME', target['ServerName'], options)
-
-                        if target['SMTP']
-                            host = target['SMTP']['Host']
-                            host = HOST_IP if ['localhost', '127.0.0.1'].include?(host)
-                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", 'smtp_host:.*', "smtp_host: #{host}", options)
-                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", 'smtp_port:.*', "smtp_port: #{target['SMTP']['Port']}", options)
-                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", 'smtp_user:.*', "smtp_user: #{target['SMTP']['Username']}", options)
-                            smtpPassword = ''
-                            if target['SMTP']['SecretId']
-                                smtpPassword = context.secrets.load(target['SMTP']['SecretId'], target['SMTP']['Username'].upcase + '_PASSWORD')
-                            end
-                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", 'smtp_pass:.*', "smtp_pass: #{smtpPassword}", { **options, hide: true })
-                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", 'notif_from:.*', "notif_from: #{target['SMTP']['From']}", options)
-
-                            if target['SMTP']['Port'] == 465
-                                linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", 'force_tls:.*', 'force_tls: true', options)
-                            end
-                        else
-                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", 'email:', 'ignore_email:', options)
-                        end
-
-                        if target['OIDC']
-                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", '$OIDC_ISSUER', "#{target['OIDC']['Issuer']}", options)
-                            clientId = ''
-                            clientSecret = ''
-                            if target['OIDC']['SecretId']
-                                clientId = context.secrets.load(target['OIDC']['SecretId'], 'MATRIX_CLIENT_ID')
-                                clientSecret = context.secrets.load(target['OIDC']['SecretId'], 'MATRIX_CLIENT_SECRET')
-                            end
-                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", '$CLIENT_ID', clientId, { **options, hide: true })
-                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", '$CLIENT_SECRET', clientSecret, { **options, hide: true })
-                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", 'enabled: true', 'enabled: false', options)
-                        else
-                            linuxConnection.fileReplace("#{HOME_DIR}/data/homeserver.yaml", 'oidc_providers:', 'ignore_oidc_providers:', options)
-                        end
 
                         linuxConnection.upload(__dir__ + '/Synapse.container', path, options)
                         linuxConnection.upload(__dir__ + '/Element.container', path, options)
@@ -100,6 +64,63 @@ module ConfigLMM
                             nginxConnection.provision(__dir__, 'Matrix', target, activeState, context, options)
                         end
                     end
+                end
+            end
+
+            def configureHomeserver(homeserver, dbPassword, target)
+                homeserver['server_name'] = target['ServerName']
+                homeserver['public_baseurl'] = "https://#{target['SynapseDomain'].downcase}/"
+
+                homeserver['database']['args']['password'] = dbPassword
+
+                homeserver['registration_shared_secret'] = SecureRandom.urlsafe_base64(45)
+                homeserver['macaroon_secret_key'] = SecureRandom.urlsafe_base64(45)
+                homeserver['form_secret'] = SecureRandom.urlsafe_base64(45)
+
+                if target['SMTP']
+                    host = target['SMTP']['Host']
+                    host = Podman::HOST_IP if host.to_s.empty? || ['localhost', '127.0.0.1'].include?(host)
+
+                    homeserver['email']['smtp_host'] = host
+                    if target['SMTP']['Port']
+                        homeserver['email']['smtp_port'] = target['SMTP']['Port']
+                    end
+                    if target['SMTP']['Username']
+                        homeserver['email']['smtp_user'] = target['SMTP']['Username']
+                        smtpPassword = nil
+                        if target['SMTP']['SecretId']
+                            smtpPassword = context.secrets.load(target['SMTP']['SecretId'], target['SMTP']['Username'].upcase + '_PASSWORD')
+                        end
+                        homeserver['email']['smtp_pass'] = smtpPassword if smtpPassword
+                    end
+
+                    homeserver['email']['notif_from'] = target['SMTP']['From']
+
+                    if target['SMTP']['Port'] == 465
+                        homeserver['email']['force_tls'] = true
+                    end
+                else
+                    homeserver.delete('email')
+                end
+
+                if target['OIDC']
+                    raise Framework::PluginProcessError.new('OIDC.SecretId must be set!') if target['OIDC']['SecretId'].to_s.empty?
+
+                    homeserver['oidc_providers'][0]['issuer'] = target['OIDC']['Issuer']
+
+                    clientId = context.secrets.load(target['OIDC']['SecretId'], 'MATRIX_CLIENT_ID')
+                    clientSecret = context.secrets.load(target['OIDC']['SecretId'], 'MATRIX_CLIENT_SECRET')
+
+                    if !clientId || !clientSecret
+                        prompt.say("Secrets #{context.secrets.getID(target['OIDC']['SecretId'], 'MATRIX_CLIENT_ID')} and #{context.secrets.getID(target['OIDC']['SecretId'], 'MATRIX_CLIENT_SECRET')} must be set!", :color => :magenta)
+                        raise 'Required secrets are missing!'
+                    end
+
+                    homeserver['oidc_providers'][0]['client_id'] = clientId
+                    homeserver['oidc_providers'][0]['client_secret'] = clientSecret
+                    homeserver['password_config']['enabled'] = false
+                else
+                    homeserver.delete('oidc_providers')
                 end
             end
 
