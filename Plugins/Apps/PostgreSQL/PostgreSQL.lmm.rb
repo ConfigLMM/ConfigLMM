@@ -259,10 +259,10 @@ module ConfigLMM
             def self.createUserAndDBOverSSH(user, password, connectionOrSSH)
                 if connectionOrSSH.is_a?(IO::Connection)
                     connectionOrSSH.exec("su --login #{USER_NAME} --command 'createuser #{user}'", true)
-                    connectionOrSSH.exec("su --login #{USER_NAME} --command 'createdb --owner=#{user} #{user}'", true)
+                    connectionOrSSH.exec("su --login #{USER_NAME} --command 'createdb --locale=C --template=template0 --owner=#{user} #{user}'", true)
                 else
                     self.sshExec!(connectionOrSSH, "su --login #{USER_NAME} --command 'createuser #{user}'", true)
-                    self.sshExec!(connectionOrSSH, "su --login #{USER_NAME} --command 'createdb --owner=#{user} #{user}'", true)
+                    self.sshExec!(connectionOrSSH, "su --login #{USER_NAME} --command 'createdb --locale=C --template=template0 --owner=#{user} #{user}'", true)
                 end
                 if password
                     sql = "ALTER USER #{user} WITH PASSWORD '#{password}'"

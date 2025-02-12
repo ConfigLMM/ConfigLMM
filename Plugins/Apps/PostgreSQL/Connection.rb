@@ -30,7 +30,7 @@ module ConfigLMM
 
             def createDB(db, owner = nil, options = {})
                 ownerSQL = owner ? "--owner=#{owner.shellescape}" : ''
-                connection.exec("createdb #{ownerSQL} #{db.shellescape}", true, options)
+                connection.exec("createdb --locale=C --template=template0 #{ownerSQL} #{db.shellescape}", true, options)
             end
 
             def createUserAndDB(user, password, options = {})
