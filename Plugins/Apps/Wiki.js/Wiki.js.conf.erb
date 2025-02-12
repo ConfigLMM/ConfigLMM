@@ -22,7 +22,7 @@ server {
 
     server_name <%= config['Domain'] %>;
 
-    include config-lmm/errors.conf;
+    include config-lmm/gateway-errors.conf;
     include config-lmm/security.conf;
 
     location / {
