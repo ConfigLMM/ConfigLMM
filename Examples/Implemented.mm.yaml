@@ -131,9 +131,9 @@ GitLab:
     Location: ssh://example.org/
     Domain: git.example.org
     SMTP:
-        HostName: email.example.org
+        Host: email.example.org
         Port: 465
-        User: git@example.org
+        Username: git@example.org
         TLS: yes
 
 # https://github.com/gollum/gollum

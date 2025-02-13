@@ -50,9 +50,9 @@ module ConfigLMM
                             fileLines << "mattermost_nginx['listen_port'] = 80\n"
                             fileLines << "mattermost_nginx['listen_https'] = false\n"
                             if target['SMTP']
-                                fileLines << "gitlab_rails['smtp_address'] = '#{target['SMTP']['HostName']}'\n"
+                                fileLines << "gitlab_rails['smtp_address'] = '#{target['SMTP']['Host']}'\n"
                                 fileLines << "gitlab_rails['smtp_port'] = '#{target['SMTP']['Port']}'\n"
-                                fileLines << "gitlab_rails['smtp_user_name'] = '#{target['SMTP']['User']}'\n"
+                                fileLines << "gitlab_rails['smtp_user_name'] = '#{target['SMTP']['Username']}'\n"
                                 if target['SMTP']['TLS']
                                     fileLines << "gitlab_rails['smtp_tls'] = true\n"
                                     fileLines << "gitlab_rails['smtp_openssl_verify_mode'] = 'peer'\n"
