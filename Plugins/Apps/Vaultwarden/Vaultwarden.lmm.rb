@@ -50,8 +50,35 @@ module ConfigLMM
                             end
 
                             adminTokenHash = Argon2::Password.new(profile: :rfc_9106_low_memory).create(adminToken)
-
                             linuxConnection.fileAppend("#{path}/Vaultwarden.env", "ADMIN_TOKEN=#{adminTokenHash}", { **options, hide: true })
+
+
+                            if target['SMTP']
+                                host = target['SMTP']['Host']
+                                host = HOST_IP if host.to_s.empty? || ['localhost', '127.0.0.1'].include?(host)
+
+                                linuxConnection.fileAppend("#{path}/Vaultwarden.env", "SMTP_HOST=#{host}", options)
+                                if target['SMTP']['Port']
+                                    linuxConnection.fileAppend("#{path}/Vaultwarden.env", "SMTP_PORT=#{target['SMTP']['Port']}", options)
+                                end
+
+                                raise 'SMTP.FromAddress must be set!' unless target['SMTP']['FromAddress']
+                                linuxConnection.fileAppend("#{path}/Vaultwarden.env", "SMTP_FROM=#{target['SMTP']['FromAddress']}", options)
+
+                                if target['SMTP']['Username']
+                                    linuxConnection.fileAppend("#{path}/Vaultwarden.env", "SMTP_USERNAME=#{target['SMTP']['Username']}", options)
+                                end
+
+                                if target['SMTP']['SecretId']
+                                    smtpPassword = context.secrets.load(target['SMTP']['SecretId'], target['SMTP']['Username'].upcase + '_PASSWORD')
+                                    linuxConnection.fileAppend("#{path}/Vaultwarden.env", "SMTP_PASSWORD=#{smtpPassword}", { **options, hide: true })
+                                end
+
+                                if target['SMTP']['Port'] == 465
+                                    linuxConnection.fileAppend("#{path}/Vaultwarden.env", "SMTP_SECURITY=force_tls", options)
+                                end
+                            end
+
                             linuxConnection.setUserGroup("#{path}/Vaultwarden.env", USER, USER, options)
                             linuxConnection.setPrivate("#{path}/Vaultwarden.env", options)
                             linuxConnection.upload(__dir__ + '/Vaultwarden.container', path, options)
