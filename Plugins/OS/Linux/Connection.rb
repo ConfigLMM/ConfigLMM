@@ -121,6 +121,10 @@ module ConfigLMM
                 connection.exec("chmod 600 #{path.shellescape}", false, options)
             end
 
+            def makeAccessible(path, options = {})
+                connection.exec("chmod og+rX #{path.shellescape}", false, options)
+            end
+
             def createDirs(options, *paths)
                 connection.exec("mkdir -p #{paths.join(' ')}", false, options)
             end

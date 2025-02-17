@@ -40,6 +40,7 @@ openSUSE Leap:
         - php8-devel
         - php8-mbstring
         - php8-fpm
+        - php8-imagick
         - php8-redis
         - php8-pgsql
         - php8-mysql
@@ -79,6 +80,7 @@ Debian:
     PHP-FPM:
         - php-mbstring
         - php-fpm
+        - php-imagick
         - php-redis
         - php-pgsql
         - php-mysql
