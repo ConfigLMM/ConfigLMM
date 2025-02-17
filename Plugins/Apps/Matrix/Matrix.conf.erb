@@ -25,7 +25,7 @@ server {
     include config-lmm/errors.conf;
 
     location / {
-        proxy_pass http://localhost:18300;
+        proxy_pass http://127.0.0.1:18300;
         include config-lmm/proxy.conf;
     }
 }
@@ -63,7 +63,7 @@ server {
         # note: do not add a path (even a single /) after the port in `proxy_pass`,
         # otherwise nginx will canonicalise the URI and cause signature verification
         # errors.
-        proxy_pass http://localhost:8008;
+        proxy_pass http://127.0.0.1:8008;
         include config-lmm/proxy.conf;
         proxy_intercept_errors off;
 
