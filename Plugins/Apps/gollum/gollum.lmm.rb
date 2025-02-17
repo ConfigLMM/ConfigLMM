@@ -42,12 +42,18 @@ module ConfigLMM
                                 shell.createDirs(options, '~/data')
                             end
 
-                            if target['Config']
-                                local.copy(target['Config'], "#{options['output'] + GOLLUM_PATH}/config/config.rb", options['dry'])
+                            if !linuxConnection.filePresent?(GOLLUM_PATH, options)
+                                if target['Config']
+                                    local.copy(target['Config'], "#{options['output'] + GOLLUM_PATH}/config/config.rb", options['dry'])
+                                else
+                                    local.fileWrite(options['output'] + GOLLUM_PATH + "/config/config.rb", '', options['dry'])
+                                end
+                                linuxConnection.uploadFolder(options['output'] + GOLLUM_PATH, '/srv', options)
                             else
-                                local.fileWrite(options['output'] + GOLLUM_PATH + "/config/config.rb", '', options['dry'])
+                                if target['Config']
+                                    linuxConnection.upload(target['Config'], "#{GOLLUM_PATH}/config/config.rb", options)
+                                end
                             end
-                            linuxConnection.uploadFolder(options['output'] + GOLLUM_PATH, '/srv', options)
 
                             path = Podman.containersPath(GOLLUM_PATH)
                             linuxConnection.upload(__dir__ + '/gollum.container', path, options)
