@@ -164,10 +164,6 @@ module ConfigLMM
                 self.filePresent?(file, ssh)
             end
 
-            def self.remoteFileContains?(file, content, ssh)
-                !IO::SSH.exec!(ssh, "grep '#{content}' #{file}", true).strip.empty?
-            end
-
             def self.uploadFolder(folder, target, ssh)
                 target += '/' + File.basename(folder) + '/'
                 IO::SSH.exec!(ssh, "mkdir -p #{target}")

@@ -81,6 +81,10 @@ module ConfigLMM
                 connection.exec("touch #{file.shellescape}", false, options)
             end
 
+            def fileContains?(file, content, options = {})
+                !connection.exec("grep #{content.shellescape} #{file}", true, options).strip.empty?
+            end
+
             def fileWrite(target, data, options = {})
                 hide = ''
                 hide = ' ' if options[:hide]
@@ -100,7 +104,8 @@ module ConfigLMM
             def fileReplace(target, placeholder, result, options = {})
                 hide = ''
                 hide = ' ' if options[:hide]
-                pattern = "s|#{placeholder}|#{result.to_s.gsub('\\', '\\\\\\').gsub('&', '\\\\&').gsub('|', '\\\\|')}|"
+                result = result.to_s.gsub('\\', '\\\\\\') if options[:escape] != false
+                pattern = "s|#{placeholder}|#{result.to_s.gsub('&', '\\\\&').gsub('|', '\\\\|')}|"
                 connection.exec("#{hide}sed -i #{pattern.shellescape} #{target}", false, options)
             end
 

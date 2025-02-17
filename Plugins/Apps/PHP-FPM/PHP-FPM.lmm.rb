@@ -1,4 +1,6 @@
 
+require_relative 'Connection'
+
 module ConfigLMM
     module LMM
         class PHP_FPM < Framework::LinuxApp
@@ -16,6 +18,7 @@ module ConfigLMM
                 end
             end
 
+            # DEPRECATED
             def self.writeConfig(name, target, distroInfo, configLines)
                 target['PHP-FPM'] ||= {}
 
@@ -28,11 +31,11 @@ module ConfigLMM
                     configLines << "listen = /run/php-fpm/#{name}.sock\n"
                     configLines << "listen.owner = #{target['User']}\n"
                     group = 'http'
-                    group = 'nginx' if distroInfo['Name'] == 'openSUSE Leap'
+                    group = 'nginx' if distroInfo['Name'] == Linux::SUSE_NAME
                     configLines << "listen.group = #{group}\n"
                 end
                 configLines << "pm = dynamic\n"
-                configLines << "pm.max_children = 5\n"
+                configLines << "pm.max_children = 10\n"
                 configLines << "pm.min_spare_servers = 1\n"
                 configLines << "pm.max_spare_servers = 3\n"
                 configLines << "pm.start_servers = 2\n"
@@ -50,6 +53,7 @@ module ConfigLMM
                 configLines << "php_admin_value[mail.log] = /var/log/php/$pool.mail.log\n"
             end
 
+            # DEPRECATED
             def self.phpConfig(distroInfo)
                 if distroInfo['Name'] == 'openSUSE Leap'
                     '/etc/php8/fpm/php.ini'
@@ -58,19 +62,23 @@ module ConfigLMM
                 end
             end
 
+            # DEPRECATED
             def self.peclInstallOverSSH(name, ssh)
                 self.sshExec!(ssh, "printf \"\\n\" | pecl install #{name}", true)
             end
 
+            # DEPRECATED
             def self.enableExtensionOverSSH(name, distroInfo, ssh)
                 phpFile = self.phpConfig(distroInfo)
-                if self.remoteFileContains?(phpFile, "extension=#{name}", ssh)
+                contains = IO::SSH.exec!(ssh, "grep 'extension=#{name}' #{phpFile}", true).strip.empty?
+                if contains
                     self.sshExec!(ssh, "sed -i 's|^;extension=#{name}|extension=#{name}|' #{phpFile}")
                 else
                     self.sshExec!(ssh, "sed -i 's|extension=zip|extension=zip\\nextension=#{name}|' #{phpFile}")
                 end
             end
 
+            # DEPRECATED
             def self.configFileDir(distroInfo)
                 if distroInfo['Name'] == 'openSUSE Leap'
                     '/etc/php8/fpm/'
@@ -79,6 +87,7 @@ module ConfigLMM
                 end
             end
 
+            # DEPRECATED
             def self.configDir(distroInfo)
                 if distroInfo['Name'] == 'openSUSE Leap'
                     '/etc/php8/fpm/php-fpm.d/'
@@ -87,12 +96,17 @@ module ConfigLMM
                 end
             end
 
+            # DEPRECATED
             def self.webappsDir(distroInfo)
                 if distroInfo['Name'] == 'openSUSE Leap'
                     '/srv/www/htdocs/'
                 else
                     '/usr/share/webapps/'
                 end
+            end
+
+            def self.withConnection(linuxConnection)
+                yield(PHPFPMConnection.new(linuxConnection))
             end
 
             # DEPRECATED
