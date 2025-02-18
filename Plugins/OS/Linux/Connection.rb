@@ -187,7 +187,7 @@ module ConfigLMM
                     end
                 end
                 repos.each do |repoName|
-                    addRepo(repoName)
+                    addRepo(repoName, options)
                 end
 
                 if !pkgs.empty?
@@ -271,10 +271,10 @@ module ConfigLMM
                 connection.adminExec(command, true, options)
             end
 
-            def addRepo(name)
-                if distroName == 'openSUSE Leap'
-                    connection.exec("zypper addrepo https://download.opensuse.org/repositories/#{name}/#{distroVersion}/#{name}.repo", true)
-                    connection.exec("zypper --gpg-auto-import-keys refresh")
+            def addRepo(name, options)
+                if distroName == Linux::SUSE_NAME
+                    connection.exec("zypper addrepo https://download.opensuse.org/repositories/#{name}/#{distroVersion}/#{name}.repo", true, options)
+                    connection.exec("zypper --gpg-auto-import-keys refresh", false, options)
                 else
                     raise 'Not Implemented!'
                 end
