@@ -66,7 +66,7 @@ module ConfigLMM
 
                         path = Podman.containersPath(HOME_DIR)
                         linuxConnection.exec(" echo 'FRAPPE_DB_PASSWORD=#{dbPassword}' > #{path}/ERPNext.env", false, options)
-                        linuxConnection.exec("echo 'FRAPPE_SITE_NAME_HEADER=erpnext' >> #{path}/ERPNext.env", false, options)
+                        linuxConnection.exec("echo 'FRAPPE_SITE_NAME_HEADER=site' >> #{path}/ERPNext.env", false, options)
                         #linuxConnection.exec("echo 'UPSTREAM_REAL_IP_ADDRESS=127.0.0.1' >> #{path}/ERPNext.env", false, options)
                         #linuxConnection.exec("echo 'UPSTREAM_REAL_IP_RECURSIVE=on' >> #{path}/ERPNext.env", false, options)
                         linuxConnection.exec("echo 'BACKEND=10.90.50.10:8000' >> #{path}/ERPNext.env", false, options)
@@ -126,10 +126,10 @@ module ConfigLMM
                                         adminPassword = SecureRandom.alphanumeric(20)
                                         dbAdminPassword = connectionDB.createAdmin(options)
                                         linuxConnection.exec("rm -rf " + HOME_DIR + '/sites/erpnext', false, options)
-                                        #podmanConnection.exec("bench new-site --no-setup-db --db-name erpnext --db-user erpnext --admin-password #{adminPassword} --install-app erpnext --set-default erpnext", false, { **options, hide: true })
+                                        #podmanConnection.exec("bench new-site --no-setup-db --db-name erpnext --db-user erpnext --admin-password #{adminPassword} --install-app erpnext --set-default site", false, { **options, hide: true })
                                         connectionDB.dropDB(USER, options)
-                                        podmanConnection.exec("bench new-site --db-root-username admin --db-root-password #{dbAdminPassword} --db-name erpnext --admin-password #{adminPassword} --install-app erpnext --set-default erpnext", false, { **options, hide: true })
-                                        podmanConnection.exec("bench --site erpnext install-app hrms", false, options)
+                                        podmanConnection.exec("bench new-site --db-root-username admin --db-root-password #{dbAdminPassword} --db-name erpnext --admin-password #{adminPassword} --install-app erpnext --set-default site", false, { **options, hide: true })
+                                        podmanConnection.exec("bench --site site install-app hrms", false, options)
                                         prompt.say("Administrator password: #{adminPassword}", :color => :magenta)
                                         connectionDB.dropAdmin(options)
                                     end
