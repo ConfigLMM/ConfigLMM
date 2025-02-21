@@ -71,6 +71,7 @@ server {
         location /outpost.goauthentik.io {
             proxy_pass              https://<%= config['AuthentikDomain'] %>/outpost.goauthentik.io;
             proxy_ssl_protocols     TLSv1.2 TLSv1.3;
+            proxy_set_header        X-Authentik-Host $host;
             proxy_set_header        X-Original-URL $scheme://$http_host$request_uri;
             proxy_pass_request_body off;
             proxy_set_header        Content-Length "";
