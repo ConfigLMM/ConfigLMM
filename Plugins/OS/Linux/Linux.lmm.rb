@@ -108,14 +108,24 @@ module ConfigLMM
                         if userId.empty?
                             shell = ''
                             if info['Shell']
-                                shell = "--shell '/usr/bin/#{info['Shell']}'"
+                                result = connection.exec("which #{info['Shell']}", true, { **options, 'dry' => false }).strip
+                                if !result.empty? && !result.include?("no #{info['Shell']}")
+                                    shell = "--shell '#{result}'"
+                                else
+                                    prompt.say("Shell '#{info['Shell']}' not found! Skipping setting!", :color => :red)
+                                end
                             end
                             badname = '--badname'
                             badname = '--badnames' if distroInfo['Name'] == 'openSUSE Leap'
                             connection.exec("useradd #{badname} --create-home --user-group #{shell} #{name}", false, options)
                         elsif info['Shell']
-                            shell = "--shell '/usr/bin/#{info['Shell']}'"
-                            connection.exec("chsh #{shell} #{name}")
+                            result = connection.exec("which #{info['Shell']}", true, { **options, 'dry' => false }).strip
+                            if !result.empty? && !result.include?("no #{info['Shell']}")
+                                shell = "--shell '#{result}'"
+                                connection.exec("chsh #{shell} #{name}")
+                            else
+                                prompt.say("Shell '#{info['Shell']}' not found! Skipping setting!", :color => :red)
+                            end
                         end
                         if info['Subuids']
                             connection.exec("sed -i '/^#{name}:.*/d' #{SUBUID_FILE}", false, options)
