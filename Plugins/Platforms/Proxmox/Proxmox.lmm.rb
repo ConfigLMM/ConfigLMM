@@ -16,7 +16,7 @@ module ConfigLMM
                 uri
             end
 
-            def self.getNode(uri, context)
+            def self.getAuthParams(uri, context)
                 uri = Addressable::URI.parse(uri) if uri.is_a?(String)
                 raise 'Invalid Proxmox URL!' unless uri.scheme == 'proxmox'
                 connectionOptions = { }
@@ -43,20 +43,41 @@ module ConfigLMM
                     proxmox_username: proxmoxUsername,
                     proxmox_password: proxmoxPassword
                 }
+                authParams
+            end
 
+            def self.getNode(authParams)
                 # For some reason Proxmox doesn't handle SSL shutdown correctly so we use this workaround
                 OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] |= OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
 
                 compute = Fog::Compute.new(provider: :proxmox, **authParams)
                 node = compute.nodes.find { |node| node.node == 'pve' }
                 raise 'Couldn\'t find pve node!' unless node
-                [node, compute, authParams]
+                [node, compute]
+            ensure
+                OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] &= ~OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
+            end
+
+            def actionProxmoxDeploy(id, target, activeState, context, options)
+                authParams = self.class.getAuthParams(target['Location'], context)
+                OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] |= OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
+
+                if !target['Storage'].to_h.empty?
+                    storage = Fog::Storage.new(provider: :proxmox, **authParams)
+                    all = storage.list
+                    target['Storage'].each do |name, data|
+                        if all.none? { |entry| entry['storage'] == name }
+                            storage.create({ 'storage' => name, **data })
+                        end
+                    end
+                end
             ensure
                 OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] &= ~OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
             end
 
             def createVM(serverName, serverInfo, targetUri, iso, activeState, context)
-                node, compute, authParams = self.class.getNode(targetUri, context)
+                authParams = self.class.getAuthParams(targetUri, context)
+                node, compute = self.class.getNode(authParams)
                 OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] |= OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
                 server = node.servers.find { |server| server.name == serverName }
                 if server
@@ -147,7 +168,8 @@ module ConfigLMM
             end
 
             def createContainer(serverInfo, targetUri, flavourInfo, activeState, context)
-                node, compute, authParams = self.class.getNode(targetUri, context)
+                authParams = self.class.getAuthParams(targetUri, context)
+                node, compute = self.class.getNode(authParams)
                 OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] |= OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
 
                 serverInfo['Domain'] = serverInfo['Name'] unless serverInfo['Domain']
@@ -297,7 +319,8 @@ module ConfigLMM
 
             def self.withXTerm(targetUri, target, context, prompt, logger, &block)
                 targetUri.scheme = 'proxmox'
-                node, compute, authParams = getNode(targetUri, context)
+                authParams = getAuthParams(targetUri, context)
+                node, compute = getNode(authParams)
                 name = nil
                 name = CGI.parse(targetUri.query)['name'] if targetUri.query
                 name = name.first if name
