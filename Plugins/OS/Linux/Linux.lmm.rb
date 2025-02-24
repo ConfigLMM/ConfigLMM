@@ -70,7 +70,7 @@ module ConfigLMM
                 if target['Domain'] || target['Hosts']
                     hostsLines = []
                     if target['Domain']
-                        envs = connection.exec("env").split("\n")
+                        envs = connection.exec("env", false, { **options, 'dry' => false }).split("\n")
                         envVars = Hash[envs.map { |vars| vars.split('=', 2) }]
                         if envVars['SSH_CONNECTION']
                             ipAddr = envVars['SSH_CONNECTION'].split[-2]
@@ -88,7 +88,7 @@ module ConfigLMM
                 convertFlavour(distroInfo, target, connection, options)
                 configureNetwork(distroInfo, target, connection, options)
                 if target['Tmpfs']
-                    connection.exec("sed -i '/ \\/tmp /d' #{FSTAB_FILE}")
+                    connection.exec("sed -i '/ \\/tmp /d' #{FSTAB_FILE}", false, options)
                     connection.updateFile(FSTAB_FILE, options, false) do |fileLines|
                         fileLines << "tmpfs                                      /tmp                    tmpfs  nodev,nosuid,size=#{target['Tmpfs']}          0  0\n"
                     end
@@ -97,14 +97,14 @@ module ConfigLMM
                     connection.updateFile(SYSCTL_FILE, options, false) do |fileLines|
                         target['Sysctl'].each do |name, value|
                             fileLines << "#{name} = #{value}\n"
-                            connection.exec("sysctl #{name}=#{value}")
+                            connection.exec("sysctl #{name}=#{value}", false, options)
                         end
                         fileLines
                     end
                 end
                 if target['Users']
                     target['Users'].each do |name, info|
-                        userId = connection.exec("id -u #{name} 2>/dev/null", true).strip
+                        userId = connection.exec("id -u #{name} 2>/dev/null", true, { **options, 'dry' => false }).strip
                         if userId.empty?
                             shell = ''
                             if info['Shell']
@@ -112,21 +112,21 @@ module ConfigLMM
                             end
                             badname = '--badname'
                             badname = '--badnames' if distroInfo['Name'] == 'openSUSE Leap'
-                            connection.exec("useradd #{badname} --create-home --user-group #{shell} #{name}")
+                            connection.exec("useradd #{badname} --create-home --user-group #{shell} #{name}", false, options)
                         elsif info['Shell']
                             shell = "--shell '/usr/bin/#{info['Shell']}'"
                             connection.exec("chsh #{shell} #{name}")
                         end
                         if info['Subuids']
-                            connection.exec("sed -i '/^#{name}:.*/d' #{SUBUID_FILE}")
+                            connection.exec("sed -i '/^#{name}:.*/d' #{SUBUID_FILE}", false, options)
                             info['Subuids'].each do |id|
-                                connection.exec("#{distroInfo['ModifyUser']} --add-subuids #{id} #{name}")
+                                connection.exec("#{distroInfo['ModifyUser']} --add-subuids #{id} #{name}", false, options)
                             end
                         end
                         if info['Subgids']
-                            connection.exec("sed -i '/^#{name}:.*/d' #{SUBGID_FILE}")
+                            connection.exec("sed -i '/^#{name}:.*/d' #{SUBGID_FILE}", false, options)
                             info['Subgids'].each do |id|
-                                connection.exec("#{distroInfo['ModifyUser']} --add-subgids #{id} #{name}")
+                                connection.exec("#{distroInfo['ModifyUser']} --add-subgids #{id} #{name}", false, options)
                             end
                         end
                         homeDir = connection.exec("getent passwd #{name} | cut -d ':' -f 6", false, { **options, 'dry' => false }).strip
@@ -165,20 +165,20 @@ module ConfigLMM
                         if distroInfo['Name'] != DEBIAN_NAME
                             raise 'Can\'t convert flavour!'
                         end
-                        if connection.filePresent?('/etc/apt/sources.list.d/pve-install-repo.list')
-                            needInstall = connection.exec('dpkg --status proxmox-ve 2>/dev/null | grep Status | grep installed | wc -l').strip.to_i.zero?
+                        if connection.filePresent?('/etc/apt/sources.list.d/pve-install-repo.list', { **options, 'dry' => false })
+                            needInstall = connection.exec('dpkg --status proxmox-ve 2>/dev/null | grep Status | grep installed | wc -l', false, { **options, 'dry' => false }).strip.to_i.zero?
                             if needInstall
-                                connection.exec('DEBIAN_FRONTEND=noninteractive apt install --assume-yes proxmox-ve postfix open-iscsi chrony')
-                                connection.exec("apt remove --assume-yes os-prober linux-image-amd64 'linux-image-*'")
-                                connection.exec('update-grub')
+                                connection.exec('DEBIAN_FRONTEND=noninteractive apt install --assume-yes proxmox-ve postfix open-iscsi chrony', false, options)
+                                connection.exec("apt remove --assume-yes os-prober linux-image-amd64 'linux-image-*'", false, options)
+                                connection.exec('update-grub', false, options)
                             end
                         else
-                            connection.exec('echo "deb [arch=amd64] http://download.proxmox.com/debian/pve bookworm pve-no-subscription" > /etc/apt/sources.list.d/pve-install-repo.list')
+                            connection.exec('echo "deb [arch=amd64] http://download.proxmox.com/debian/pve bookworm pve-no-subscription" > /etc/apt/sources.list.d/pve-install-repo.list', false, options)
                             File.write(options['output'] + 'proxmox-release-bookworm.gpg', HTTP.follow.get('https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg').body)
-                            connection.upload(options['output'] + 'proxmox-release-bookworm.gpg', '/etc/apt/trusted.gpg.d/proxmox-release-bookworm.gpg')
-                            connection.exec('apt update && apt full-upgrade --assume-yes')
-                            connection.exec('apt install --assume-yes proxmox-default-kernel')
-                            connection.exec('systemctl reboot')
+                            connection.upload(options['output'] + 'proxmox-release-bookworm.gpg', '/etc/apt/trusted.gpg.d/proxmox-release-bookworm.gpg', options)
+                            connection.exec('apt update && apt full-upgrade --assume-yes', false, options)
+                            connection.exec('apt install --assume-yes proxmox-default-kernel', false, options)
+                            connection.exec('systemctl reboot', false, options)
                         end
                         target['Network'] = {} unless target['Network'].is_a?(Hash)
                         target['Network']['Interfaces'] = {} unless target['Network']['Interfaces'].is_a?(Hash)
@@ -212,11 +212,11 @@ module ConfigLMM
                             configFile = '/etc/sysconfig/network/config'
                             dns = target['Network']['DNS']
                             dns = [dns] unless dns.is_a?(Array)
-                            connection.exec("sed -i 's|^NETCONFIG_DNS_STATIC_SERVERS=.*|NETCONFIG_DNS_STATIC_SERVERS=\"#{dns.join(' ')}\"|' #{configFile}")
+                            connection.exec("sed -i 's|^NETCONFIG_DNS_STATIC_SERVERS=.*|NETCONFIG_DNS_STATIC_SERVERS=\"#{dns.join(' ')}\"|' #{configFile}", false, options)
                         end
                         if target['Network']['Gateway']
                             routesFile = '/etc/sysconfig/network/routes'
-                            connection.exec("sed -i 's|^default |#default |' #{routesFile}")
+                            connection.exec("sed -i 's|^default |#default |' #{routesFile}", false, options)
                             connection.updateFile(routesFile, options) do |fileLines|
                                 fileLines << "default #{target['Network']['Gateway']}\n"
                             end
@@ -225,7 +225,7 @@ module ConfigLMM
                         links = self.networkLinks(connection)
                         raise 'Didn\'t find network links!' if links.empty?
                         linkType = nil
-                        dnsSearch = connection.exec('cat /etc/resolv.conf | grep search').strip.split(' ').last
+                        dnsSearch = connection.exec('cat /etc/resolv.conf | grep search', false, { **options, 'dry' => false }).strip.split(' ').last
                         if target['Network'].is_a?(String)
                             linkType = target['Network']
                             target['Network'] = {}
@@ -335,12 +335,12 @@ module ConfigLMM
             def updateNetworkInterface(config, interface, connection, options)
                 baseFile = '/etc/sysconfig/network/ifcfg-'
                 networkFile = baseFile + interface
-                connection.exec("touch #{networkFile}")
-                connection.exec("sed -i \"/^BOOTPROTO=.*/d\" #{networkFile}")
-                connection.exec("sed -i \"/^STARTMODE=.*/d\" #{networkFile}")
-                connection.exec("sed -i \"/^ZONE=.*/d\" #{networkFile}")
+                connection.exec("touch #{networkFile}", false, options)
+                connection.exec("sed -i \"/^BOOTPROTO=.*/d\" #{networkFile}", false, options)
+                connection.exec("sed -i \"/^STARTMODE=.*/d\" #{networkFile}", false, options)
+                connection.exec("sed -i \"/^ZONE=.*/d\" #{networkFile}", false, options)
                 if config['IP']
-                    connection.exec("sed -i 's|^IPADDR=|#IPADDR=|' #{networkFile}")
+                    connection.exec("sed -i 's|^IPADDR=|#IPADDR=|' #{networkFile}", false, options)
                 end
                 connection.updateFile(networkFile, options, false) do |fileLines|
                     fileLines << "STARTMODE=auto\n"
@@ -384,7 +384,7 @@ module ConfigLMM
                 end
                 if target['Users']
                     target['Users'].each do |name, info|
-                        userId = connection.exec("id -u #{name} 2>/dev/null", true).strip
+                        userId = connection.exec("id -u #{name} 2>/dev/null", true, { **options, 'dry' => false }).strip
                         if userId.empty?
                             shell = ''
                             if info['Shell']
