@@ -257,6 +257,9 @@ module ConfigLMM
                            end
                         end
                         if target['Network']['Interfaces'].key?('vmbr0')
+                            if !target['Network']['Interfaces']['vmbr0'].is_a?(Hash)
+                                target['Network']['Interfaces']['vmbr0'] = { }
+                            end
                             if target['Network']['Interfaces']['vmbr0']['Ports'].nil?
                                 target['Network']['Interfaces']['vmbr0']['Ports'] = [links.first]
                                 target['Network']['Interfaces'][links.first] = 'manual'
