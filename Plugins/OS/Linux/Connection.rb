@@ -284,8 +284,8 @@ module ConfigLMM
                 names = [names] unless names.is_a?(Array)
                 names.each do |name|
                     connection.exec("which #{name}", true, options) if options['dry']
-                    result = connection.exec("which #{name}", true, { **options, 'dry' => false })
-                    return false if result.include?("no #{name}")
+                    result = connection.exec("which #{name}", true, { **options, 'dry' => false }).strip
+                    return false if result.empty? || result.include?("no #{name}")
                 end
                 true
             end
