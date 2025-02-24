@@ -190,8 +190,12 @@ module ConfigLMM
                 end
 
                 if serverInfo['Storage']
-                    storages = node.storages.list_by_content_type('rootdir')
-                    settings[:rootfs] = storages.first.storage + ':' + Filesize.from(serverInfo['Storage'].to_s).to_f('GiB').to_i.to_s
+                    storagePool = serverInfo['StoragePool']
+                    if !storagePool
+                        storages = node.storages.list_by_content_type('rootdir')
+                        storagePool = storages.first.storage
+                    end
+                    settings[:rootfs] = storagePool + ':' + Filesize.from(serverInfo['Storage'].to_s).to_f('GiB').to_i.to_s
                 end
 
                 if serverInfo['Domain']
