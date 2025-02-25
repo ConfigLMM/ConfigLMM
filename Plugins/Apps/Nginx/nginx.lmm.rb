@@ -6,7 +6,7 @@ module ConfigLMM
         class Nginx < Framework::NginxApp
             PACKAGE_NAME = 'Nginx'
             SERVICE_NAME = :nginx
-            ERROR_PAGES_REPO = 'https://github.com/HttpErrorPages/HttpErrorPages.git'
+            ERROR_PAGES_REPO = 'https://github.com/ConfigLMM/HttpErrorPages.git'
 
             def actionNginxBuild(id, target, activeState, context, options)
                 dir = options['output'] + '/nginx/'
@@ -67,14 +67,12 @@ module ConfigLMM
                                     local.mkdir(File.expand_path(REPOS_CACHE), options['dry'])
                                     begin
                                         Linux.withConnection(local) do |localLinux|
-                                            localLinux.ensurePackages(['git', 'Yarn'], options) unless localLinux.hasBinaries?(['git', 'yarn'], options)
+                                            localLinux.ensurePackages(['git'], options) unless localLinux.hasBinaries?(['git'], options)
                                         end
                                     rescue RuntimeError => error
                                         prompt.say(error, :color => :red)
                                     end
                                     local.exec("cd #{REPOS_CACHE} && git clone --quiet #{ERROR_PAGES_REPO}", false, options)
-                                    local.exec("cd #{errorPages} && yarn install --silent", false, options)
-                                    local.exec("cd #{errorPages} && yarn run static config-dist.json", false, options)
                                     local.exec("cd #{errorPages} && cp -R dist errors", false, options)
                                 end
                                 linuxConnection.uploadFolder(errorPages + '/errors', NginxConnection::WWW_DIR, options)
