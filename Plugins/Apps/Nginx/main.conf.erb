@@ -6,7 +6,9 @@ server {
 
     include config-lmm/errors.conf;
 
-    deny all;
+    location / {
+        return 308 https://$host$request_uri;
+    }
 }
 
 server {
@@ -21,11 +23,13 @@ server {
 
     server_name _;
 
-    deny all;
-
     ssl_early_data on;
 
     include config-lmm/errors.conf;
     include config-lmm/security.conf;
     include config-lmm/ssl.conf;
+
+    location / {
+        return 403;
+    }
 }
