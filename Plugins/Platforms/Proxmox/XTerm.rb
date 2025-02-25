@@ -292,7 +292,10 @@ module ConfigLMM
             end
 
             def self.cleanupMessage(message)
-                Strings::ANSI.sanitize(message).gsub("\r\r\n", "\n").gsub("\u000F", '')
+                Strings::ANSI.sanitize(message)
+                    .gsub("\r\r\n", "\n")
+                    .gsub("\u000F", '')
+                    .gsub("\e(B", '') # should be removed by sanitize but looks like bug there https://github.com/piotrmurach/strings-ansi/issues/4
             end
 
             def self.sendMessage(ws, message)
