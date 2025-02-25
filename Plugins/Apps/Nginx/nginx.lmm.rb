@@ -15,6 +15,7 @@ module ConfigLMM
                 local.copy(__dir__ + '/config-lmm', dir, options[:dry])
                 local.copy(__dir__ + '/nginx.conf', dir, options[:dry])
                 local.copy(__dir__ + '/conf.d/configlmm.conf', dir + 'conf.d/', options[:dry])
+                local.copy(__dir__ + '/conf.d/languages.conf', dir + 'conf.d/', options[:dry])
 
                 local.mkdir(options['output'] + NginxConnection::WWW_DIR + 'root', options[:dry])
                 local.mkdir(options['output'] + NginxConnection::WWW_DIR + 'errors', options[:dry])
@@ -44,6 +45,7 @@ module ConfigLMM
 
                             linuxConnection.upload(dir + 'nginx.conf', NginxConnection::CONFIG_DIR + 'nginx.conf', options)
                             linuxConnection.upload(dir + 'conf.d/configlmm.conf', NginxConnection::CONFIG_DIR + 'conf.d/configlmm.conf', options)
+                            linuxConnection.upload(dir + 'conf.d/languages.conf', NginxConnection::CONFIG_DIR + 'conf.d/languages.conf', options)
 
                             if options['dry']
                                 linuxConnection.exec("cat /etc/resolv.conf | grep 'nameserver' | grep -v ':' | head -n 1 | cut -d ' ' -f 2", { **options, 'dry': true })
@@ -61,7 +63,7 @@ module ConfigLMM
                             local.renderTemplate(template, target, dir + 'main.conf', options)
                             linuxConnection.upload(dir + 'main.conf', NginxConnection::CONFIG_DIR + 'main.conf', options)
 
-                            if !linuxConnection.filePresent?(NginxConnection::WWW_DIR + 'errors/HTTP500.html', { **options, 'dry' => false })
+                            if !linuxConnection.filePresent?(NginxConnection::WWW_DIR + 'errors/HTTP500.en_US.html', { **options, 'dry' => false })
                                 errorPages = File.expand_path(REPOS_CACHE + '/HttpErrorPages')
                                 if !File.exist?(errorPages)
                                     local.mkdir(File.expand_path(REPOS_CACHE), options['dry'])
@@ -73,6 +75,9 @@ module ConfigLMM
                                         prompt.say(error, :color => :red)
                                     end
                                     local.exec("cd #{REPOS_CACHE} && git clone --quiet #{ERROR_PAGES_REPO}", false, options)
+                                    local.exec("cd #{errorPages} && cp -R dist errors", false, options)
+                                else
+                                    local.exec("cd #{REPOS_CACHE}/HttpErrorPages && git pull", false, options)
                                     local.exec("cd #{errorPages} && cp -R dist errors", false, options)
                                 end
                                 linuxConnection.uploadFolder(errorPages + '/errors', NginxConnection::WWW_DIR, options)
