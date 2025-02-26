@@ -32,8 +32,8 @@ module ConfigLMM
                         if target['Domain']
                             createCertificate('Wildcard', target['Domain'], target, linuxConnection, options)
                         end
-                        target['Certificates'].to_h.each do |name, domain|
-                            createCertificate(name, domain, target, linuxConnection, options)
+                        target['Certificates'].to_h.each do |name, domains|
+                            createCertificate(name, domains, target, linuxConnection, options)
                         end
 
                         linuxConnection.reloadServiceManager(options)
@@ -47,18 +47,22 @@ module ConfigLMM
                 end
             end
 
-            def createCertificate(name, domain, target, connection, options)
+            def createCertificate(name, domains, target, connection, options)
                 return if connection.fileLink?("#{CONFIG_DIR}live/#{name}/fullchain.pem", options)
                 connection.exec("rm -rf #{CONFIG_DIR}live/#{name}", false, options)
 
-                domains = ['--domains "' + Addressable::IDNA.to_ascii(domain) + '"']
-                if domain.start_with?('*.')
-                    domains << '--domains "' + Addressable::IDNA.to_ascii(domain[2..-1]) + '"'
+                domainList = []
+                domains = [domains] unless domains.is_a?(Array)
+                domains.each do |domain|
+                    domainList << '--domains "' + Addressable::IDNA.to_ascii(domain) + '"'
+                    if domain.start_with?('*.')
+                        domainList << '--domains "' + Addressable::IDNA.to_ascii(domain[2..-1]) + '"'
+                    end
                 end
                 extra = ''
                 extra = '--dns-rfc2136-propagation-seconds ' + target['DNS']['Propagation'].to_s if target['DNS']['Propagation']
 
-                connection.exec("certbot certonly --dns-rfc2136 --dns-rfc2136-credentials=#{CONFIG_DIR}rfc2136.ini #{extra} --non-interactive --agree-tos --email #{target['EMail']} --cert-name '#{name}' #{domains.join(' ')}", false, options)
+                connection.exec("certbot certonly --dns-rfc2136 --dns-rfc2136-credentials=#{CONFIG_DIR}rfc2136.ini #{extra} --non-interactive --agree-tos --email #{target['EMail']} --cert-name '#{name}' #{domainList.join(' ')}", false, options)
             end
 
         end
