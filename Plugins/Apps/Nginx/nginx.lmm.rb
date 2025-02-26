@@ -39,57 +39,72 @@ module ConfigLMM
                 self.withConnection(target['Location'], target) do |connection|
                     Linux.withConnection(connection) do |linuxConnection|
                         self.class.withConnection(linuxConnection) do |nginxConnection|
-                            linuxConnection.ensurePackage(PACKAGE_NAME, options)
+                            target['Deploy'] = true unless target.key?('Deploy')
 
-                            linuxConnection.createDirs(options, "#{NginxConnection::CONFIG_DIR}conf.d", "#{NginxConnection::WWW_DIR}root", "#{NginxConnection::WWW_DIR}errors")
+                            if target['Deploy']
+                                linuxConnection.ensurePackage(PACKAGE_NAME, options)
 
-                            linuxConnection.upload(dir + 'nginx.conf', NginxConnection::CONFIG_DIR + 'nginx.conf', options)
-                            linuxConnection.upload(dir + 'conf.d/configlmm.conf', NginxConnection::CONFIG_DIR + 'conf.d/configlmm.conf', options)
-                            linuxConnection.upload(dir + 'conf.d/languages.conf', NginxConnection::CONFIG_DIR + 'conf.d/languages.conf', options)
+                                linuxConnection.createDirs(options, "#{NginxConnection::CONFIG_DIR}conf.d", "#{NginxConnection::WWW_DIR}root", "#{NginxConnection::WWW_DIR}errors")
 
-                            if options['dry']
-                                linuxConnection.exec("cat /etc/resolv.conf | grep 'nameserver' | grep -v ':' | head -n 1 | cut -d ' ' -f 2", { **options, 'dry': true })
-                            end
-                            resolverIP = linuxConnection.exec("cat /etc/resolv.conf | grep 'nameserver' | grep -v ':' | head -n 1 | cut -d ' ' -f 2", { **options, 'dry': false }).strip
+                                linuxConnection.upload(dir + 'nginx.conf', NginxConnection::CONFIG_DIR + 'nginx.conf', options)
+                                linuxConnection.upload(dir + 'conf.d/configlmm.conf', NginxConnection::CONFIG_DIR + 'conf.d/configlmm.conf', options)
+                                linuxConnection.upload(dir + 'conf.d/languages.conf', NginxConnection::CONFIG_DIR + 'conf.d/languages.conf', options)
 
-                            linuxConnection.fileReplace('/etc/nginx/conf.d/configlmm.conf', '^resolver .*', "resolver #{resolverIP};", options)
-
-                            linuxConnection.uploadFolder(dir + 'config-lmm', NginxConnection::CONFIG_DIR, options)
-                            linuxConnection.uploadFolder(dir + 'servers-lmm', NginxConnection::CONFIG_DIR, options)
-
-                            target = target.dup
-                            target['NginxVersion'] = nginxConnection.nginxVersion
-                            template = ERB.new(File.read(__dir__ + '/main.conf.erb'))
-                            local.renderTemplate(template, target, dir + 'main.conf', options)
-                            linuxConnection.upload(dir + 'main.conf', NginxConnection::CONFIG_DIR + 'main.conf', options)
-
-                            if !linuxConnection.filePresent?(NginxConnection::WWW_DIR + 'errors/HTTP500.en_US.html', { **options, 'dry' => false })
-                                errorPages = File.expand_path(REPOS_CACHE + '/HttpErrorPages')
-                                if !File.exist?(errorPages)
-                                    local.mkdir(File.expand_path(REPOS_CACHE), options['dry'])
-                                    begin
-                                        Linux.withConnection(local) do |localLinux|
-                                            localLinux.ensurePackages(['git'], options) unless localLinux.hasBinaries?(['git'], options)
-                                        end
-                                    rescue RuntimeError => error
-                                        prompt.say(error, :color => :red)
-                                    end
-                                    local.exec("cd #{REPOS_CACHE} && git clone --quiet #{ERROR_PAGES_REPO}", false, options)
-                                    local.exec("cd #{errorPages} && cp -R dist errors", false, options)
-                                else
-                                    local.exec("cd #{REPOS_CACHE}/HttpErrorPages && git pull", false, options)
-                                    local.exec("cd #{errorPages} && cp -R dist errors", false, options)
+                                if options['dry']
+                                    linuxConnection.exec("cat /etc/resolv.conf | grep 'nameserver' | grep -v ':' | head -n 1 | cut -d ' ' -f 2", { **options, 'dry': true })
                                 end
-                                linuxConnection.uploadFolder(errorPages + '/errors', NginxConnection::WWW_DIR, options)
+                                resolverIP = linuxConnection.exec("cat /etc/resolv.conf | grep 'nameserver' | grep -v ':' | head -n 1 | cut -d ' ' -f 2", { **options, 'dry': false }).strip
+
+                                linuxConnection.fileReplace('/etc/nginx/conf.d/configlmm.conf', '^resolver .*', "resolver #{resolverIP};", options)
+
+                                linuxConnection.uploadFolder(dir + 'config-lmm', NginxConnection::CONFIG_DIR, options)
+                                linuxConnection.uploadFolder(dir + 'servers-lmm', NginxConnection::CONFIG_DIR, options)
+
+                                target = target.dup
+                                target['NginxVersion'] = nginxConnection.nginxVersion
+                                template = ERB.new(File.read(__dir__ + '/main.conf.erb'))
+                                local.renderTemplate(template, target, dir + 'main.conf', options)
+                                linuxConnection.upload(dir + 'main.conf', NginxConnection::CONFIG_DIR + 'main.conf', options)
+
+                                if !linuxConnection.filePresent?(NginxConnection::WWW_DIR + 'errors/HTTP500.en_US.html', { **options, 'dry' => false })
+                                    errorPages = File.expand_path(REPOS_CACHE + '/HttpErrorPages')
+                                    if !File.exist?(errorPages)
+                                        local.mkdir(File.expand_path(REPOS_CACHE), options['dry'])
+                                        begin
+                                            Linux.withConnection(local) do |localLinux|
+                                                localLinux.ensurePackages(['git'], options) unless localLinux.hasBinaries?(['git'], options)
+                                            end
+                                        rescue RuntimeError => error
+                                            prompt.say(error, :color => :red)
+                                        end
+                                        local.exec("cd #{REPOS_CACHE} && git clone --quiet #{ERROR_PAGES_REPO}", false, options)
+                                        local.exec("cd #{errorPages} && cp -R dist errors", false, options)
+                                    else
+                                        local.exec("cd #{REPOS_CACHE}/HttpErrorPages && git pull", false, options)
+                                        local.exec("cd #{errorPages} && cp -R dist errors", false, options)
+                                    end
+                                    linuxConnection.uploadFolder(errorPages + '/errors', NginxConnection::WWW_DIR, options)
+                                end
+
+                                linuxConnection.createWildecardCertificate(options)
                             end
 
-                            linuxConnection.createWildecardCertificate(options)
+                            if target['Servers']
+                                target['Servers'].each do |source|
+                                    name = File.basename(source)
+                                    linuxConnection.upload(source, NginxConnection::CONFIG_DIR + 'servers-lmm/' + name, options)
+                                end
+                            end
 
-                            linuxConnection.ensureServiceAutoStart(SERVICE_NAME, options)
-                            linuxConnection.startService(SERVICE_NAME, options)
+                            if target['Deploy']
+                                linuxConnection.ensureServiceAutoStart(SERVICE_NAME, options)
+                                linuxConnection.startService(SERVICE_NAME, options)
 
-                            linuxConnection.firewallAddService('http', options)
-                            linuxConnection.firewallAddService('https', options)
+                                linuxConnection.firewallAddService('http', options)
+                                linuxConnection.firewallAddService('https', options)
+                            else
+                                linuxConnection.reloadService(SERVICE_NAME, options)
+                            end
                         end
                     end
                 end
