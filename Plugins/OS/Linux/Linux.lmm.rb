@@ -115,9 +115,13 @@ module ConfigLMM
                                     prompt.say("Shell '#{info['Shell']}' not found! Skipping setting!", :color => :red)
                                 end
                             end
+                            params = '--create-home --user-group'
                             badname = '--badname'
                             badname = '--badnames' if distroInfo['Name'] == 'openSUSE Leap'
-                            connection.exec("useradd #{badname} --create-home --user-group #{shell} #{name}", false, options)
+                            if info['System']
+                                params += ' --system'
+                            end
+                            connection.exec("useradd #{badname} #{params} #{shell} #{name}", false, options)
                         elsif info['Shell']
                             result = connection.exec("which #{info['Shell']}", true, { **options, 'dry' => false }).strip
                             if !result.empty? && !result.include?("no #{info['Shell']}")
