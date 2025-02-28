@@ -9,6 +9,7 @@ Arch Linux:
     MariaDB: mariadb
     Nextcloud: nextcloud
     nginx: nginx
+    nodejs: nodejs
     otelcol-contrib: AUR|otelcol-contrib
     PHP-FPM: php-fpm
     php-pecl: php-pecl
@@ -35,6 +36,7 @@ openSUSE Leap:
     MariaDB: mariadb
     Nextcloud: server:php:applications|nextcloud
     nginx: nginx
+    nodejs: nodejs-default
     otelcol-contrib: GitHub|open-telemetry/opentelemetry-collector-releases:otelcol-contrib_*_linux_amd64.rpm
     PHP-FPM:
         - php8-devel
@@ -76,6 +78,7 @@ Debian:
     MariaDB: mariadb-server
     Nextcloud:
     nginx: nginx
+    nodejs: nodejs
     otelcol-contrib: GitHub|open-telemetry/opentelemetry-collector-releases:otelcol-contrib_*_linux_amd64.deb
     PHP-FPM:
         - php-mbstring
