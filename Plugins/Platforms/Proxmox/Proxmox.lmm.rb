@@ -298,6 +298,11 @@ module ConfigLMM
                     self.addLXCOptions(serverInfo, targetUri, compute, node.node, container.vmid, context)
                 end
 
+                # TODO - Need to be readable/executable by everyone. Otherwise some things will break inside container like `su`
+                # if storageIsSubvolume
+                #    proxmoxServer.exec("chmod +rx #{storagePath}/images/$ID/subvol-$ID-disk-0.subvol")
+                #end
+
                 if container.status != 'running'
                     container.action('start')
                     container.wait_for { container.ready? }
