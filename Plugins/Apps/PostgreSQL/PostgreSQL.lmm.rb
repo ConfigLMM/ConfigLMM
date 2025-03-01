@@ -126,7 +126,8 @@ module ConfigLMM
 
             def createDatabases(target, postgres, context, options)
                 target['Databases'].to_a.each do |db, info|
-                    postgres.createDB(db, nil, options)
+                    owner = info['Owner'] ? info['Owner'] : nil
+                    postgres.createDB(db, owner, options)
                 end
             end
 
