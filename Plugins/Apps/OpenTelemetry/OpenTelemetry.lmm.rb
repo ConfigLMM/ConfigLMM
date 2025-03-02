@@ -81,6 +81,11 @@ module ConfigLMM
                         receiverName = 'filelog/php_json'
                         config['receivers'][receiverName] = config['receiverTemplate'][receiverName]
                         config['service']['pipelines']['logs']['receivers'] << receiverName
+                    elsif name == 'postgresql' || name == 'postgres'
+                        linuxConnection.exec("usermod -a -G postgres otelcol-contrib", false, options)
+                        receiverName = 'filelog/postgresql_json'
+                        config['receivers'][receiverName] = config['receiverTemplate'][receiverName]
+                        config['service']['pipelines']['logs']['receivers'] << receiverName
                     end
                 end
                 config.delete('receiverTemplate')

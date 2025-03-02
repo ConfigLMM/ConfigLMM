@@ -24,9 +24,15 @@ module ConfigLMM
                                 linuxConnection.ensureServiceAutoStart(SERVICE_NAME, options)
                                 linuxConnection.startService(SERVICE_NAME, options)
 
-                                updateSettings(target, postgres, options)
-                                linuxConnection.withUserShell(USER_NAME) do |shellConnection|
-                                    shellConnection.exec("pg_ctl reload -D #{postgres.pgsqlDir}data", false, options)
+                                updateSettings(target, linuxConnection, postgres, options)
+
+                                if activeState['Status'] == State::STATUS_DEPLOYED
+                                    linuxConnection.withUserShell(USER_NAME) do |shellConnection|
+                                        shellConnection.exec("pg_ctl reload -D #{postgres.pgsqlDir}data", false, options)
+                                    end
+                                else
+                                    # Restart only on first deploy
+                                    linuxConnection.restartService(SERVICE_NAME, options)
                                 end
                             end
 
@@ -61,7 +67,7 @@ module ConfigLMM
                 end
             end
 
-            def updateSettings(target, postgres, options)
+            def updateSettings(target, linuxConnection, postgres, options)
                 settingLines = []
                 hbaLines = []
                 if target['ListenAll']
@@ -89,8 +95,18 @@ module ConfigLMM
                 end
                 postgres.connection.exec('sed -i "s|^log_destination|#log_destination|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
                 postgres.connection.exec('sed -i "s|^logging_collector|#logging_collector|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
+                postgres.connection.exec('sed -i "s|^log_directory|#log_directory|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
+                postgres.connection.exec('sed -i "s|^log_file_mode|#log_file_mode|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
                 settingLines << "log_destination = 'jsonlog'\n"
                 settingLines << "logging_collector = on\n"
+
+                # So that OpenTelemetry can read logs
+                linuxConnection.createDirs(options, '/var/log/postgresql')
+                linuxConnection.exec("chown postgres:postgres /var/log/postgresql", false, options)
+                linuxConnection.exec("chmod 750 /var/log/postgresql", false, options)
+                settingLines << "log_directory = '/var/log/postgresql'\n"
+                settingLines << "log_file_mode = 0640\n"
+
                 #if !target['Publications'].to_h.empty?
                 #    target['Settings'] ||= {}
                 #    target['Settings']['wal_level'] = 'logical'

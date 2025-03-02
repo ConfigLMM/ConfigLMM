@@ -232,6 +232,37 @@ receiverTemplate:
         parse_from: attributes.level
         overwrite_text: true
 
+  filelog/postgresql_json:
+    include: /var/log/postgresql/*.json
+    storage: file_storage
+    resource:
+      service.name: postgresql
+    operators:
+      - type: json_parser
+        timestamp:
+          parse_from: attributes.timestamp
+          layout_type: strptime
+          layout: "%F %T.%L %Z"
+      - type: copy
+        from: attributes.message
+        to: resource['log.message']
+      - if: attributes.pid != nil
+        type: copy
+        from: attributes.pid
+        to: resource['process.pid']
+      - type: severity_parser
+        parse_from: attributes.error_severity
+        overwrite_text: true
+        mapping:
+          debug: DEBUG
+          info: INFO
+          info2: LOG
+          info3: NOTICE
+          warn: WARNING
+          error: ERROR
+          fatal: FATAL
+          fatal2: PANIC
+
 extensions:
   health_check:
   pprof:
