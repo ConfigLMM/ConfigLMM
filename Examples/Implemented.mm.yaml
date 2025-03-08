@@ -41,6 +41,21 @@ GoDaddy:
                 - AAAA=2606:2800:21f:cb07:6820:80da:af6b:8b2c
                 - AAAA=2606:2800:21f:cb07:6820:80da:af6b:0153
 
+# https://letsencrypt.org/
+LetsEncrypt:
+    Type: LetsEncrypt
+    EMail: DNS@Example.org
+    Domain: '*.Example.org'
+    DNS:
+        IP: 127.0.0.1
+        SecretId: PowerDNS.TSIG_ConfigLMM_KEY
+        Propagation: 5
+    Certificates:
+        Example: '*.Example.com'
+    Hooks:
+        - nginx
+        - postfix
+
 Linux:
     Type: Linux
     Location: qemu:///session
@@ -92,6 +107,22 @@ Systemd:
     Location: ssh://example.org/
     UserCgroups: yes # Need for Podman
 
+# https://answer.apache.org/
+Answer:
+    Type: Answer
+    Domain: example.org
+    Plugins:
+        - github.com/apache/answer-plugins/connector-basic
+        - github.com/apache/answer-plugins/editor-chart
+        - github.com/apache/answer-plugins/editor-formula
+    Site:
+        Name: Answer
+        ContactEMail: answer@example.org
+        Language: en-US
+    Admin:
+        Username: admin
+        EMail: admin@example.org
+
 # https://www.arubanetworks.com/
 ArubaInstant:
     Type: ArubaInstant
@@ -108,6 +139,14 @@ Authentik:
     Type: Authentik
     Location: ssh://example.org/
     Domain: auth.example.org
+    Admin:
+        EMail: Admin@Example.org
+    SMTP:
+        SecretId: Postfix
+        Host: Example.org
+        Port: 465
+        Username: EMail@Example.org
+        From: Auth <EMail@Example.org>
 
 # https://bitmagnet.io/
 Bitmagnet:
@@ -120,10 +159,43 @@ Cassandra:
     Location: ssh://example.org/
     ClusterName: Cluster
 
+# https://clickhouse.com/
+ClickHouse:
+    Type: ClickHouse
+
+Discourse:
+    Type: Discourse
+    Domain: Discourse.example.org
+    ValkeySecretId: Valkey
+    Admin:
+        Username: Admin
+        EMail: Admin@example.org
+        FirstName: Admin
+        LastName: Admin
+    SMTP:
+        SecretId: Postfix
+        Host: example.org
+        Port: 465
+        Username: EMail@Example.org
+    Plugins:
+        - https://github.com/discourse/discourse-openid-connect
+
 # https://www.dovecot.org/
 Dovecot:
     Type: Dovecot
     Location: ssh://example.org/
+    Protocols:
+        - imap
+        - lmtp
+
+# https://frappe.io/erpnext
+ERPNext:
+    Type: ERPNext
+    Proxy: no
+    Valkey: localhost:6379
+    ValkeySecretId: Valkey
+    Database:
+        HostName: localhost
 
 # https://about.gitlab.com/
 GitLab:
@@ -140,6 +212,7 @@ GitLab:
 Gollum:
     Type: Gollum
     Domain: gollum.example.org
+    Config: Gollum.rb
 
 # https://grafana.com/
 Grafana:
@@ -147,6 +220,10 @@ Grafana:
     Domain: grafana.example.org
     Proxy: unix:/run/grafana/grafana.sock
     Private: yes
+
+# https://gethomepage.dev/
+Homepage:
+    Type: Homepage
 
 # https://ipfs.tech/
 IPFS:
@@ -167,6 +244,33 @@ Jackett:
 Jellyfin:
     Type: Jellyfin
     Domain: jellyfin.example.org
+
+# https://github.com/ggml-org/llama.cpp
+Llamacpp:
+    Type: llama.cpp
+    Model: google/gemma-3-4b-it-qat-q4_0-gguf
+
+# https://libretranslate.com/
+LibreTranslate:
+    Type: LibreTranslate
+
+# https://github.com/lobsters/lobsters
+Lobsters:
+    Type: Lobsters
+    Domain: example.org
+    Admin:
+        Username: admin
+        EMail: admin@example.org
+    SMTP:
+        SecretId: Secret
+        Host: mail@example.org
+        Port: 465
+        Username: lobsters
+
+# https://mariadb.org/
+MariaDB:
+    Type: MariaDB
+    Listen: 192.168.1.2
 
 # https://github.com/mastodon/mastodon
 Mastodon:
@@ -189,6 +293,17 @@ Mastodon:
 Matrix:
     Type: Matrix
     Domain: matrix.example.org
+    SynapseDomain: Synapse.example.org
+    ServerName: example.org
+    SMTP:
+        SecretId: Postfix
+        Host: example.org
+        Port: 465
+        Username: Matrix@example.org
+        From: Matrix <Matrix@example.org>
+    OIDC:
+        SecretId: Authentik
+        Issuer: https://auth.example.org/application/o/matrix/
 
 # https://www.netdata.cloud/
 Netdata:
@@ -202,6 +317,11 @@ Nextcloud:
     Database:
         Type: pgsql
         HostName: localhost
+    Admin:
+        Name: Admin
+    Valkey:
+        SecretId: Valkey
+        Host: localhost
 
 # https://www.odoo.com/
 Odoo:
@@ -210,11 +330,37 @@ Odoo:
     Database:
         HostName: db.example.org
 
+# https://ollama.com/
+Ollama:
+    Type: Ollama
+
+# https://opentelemetry.io/
+OtelCollector:
+    Type: OtelCollector
+    Services:
+        postgresql:
+    Exporters:
+        otlp:
+            endpoint: 192.168.1.3:4317
+            tls:
+                insecure: true
+
 # https://peppermint.sh/
 Peppermint:
     Type: Peppermint
     Location: ssh://example.org/
     Domain: Peppermint.example.org
+
+# https://github.com/ItzCrazyKns/Perplexica/
+Perplexica:
+    Type: Perplexica
+    Ollama:
+        URL: http://localhost:11434/
+
+PHPFPM:
+    Type: PHPFPM
+    Settings:
+        memory_limit: 1G
 
 # https://www.postfix.org/
 Postfix:
@@ -226,23 +372,41 @@ Postfix:
     ForwardDovecot: yes
     Settings:
         inet_interfaces: $myhostname, localhost
+    Accounts:
+        Example@Example.org:
 
 PostgreSQL:
     Type: PostgreSQL
     Location: ssh://example.org/
     ListenAll: yes
+    Replicate:
+        Connection: host=192.168.1.1 user=replication password=${SECRET:POSTGRESQL:REPLICATION_PASSWORD}
+        Slot: standby
+    AllowReplication:
+        - 192.168.1.1/24
     Users:
         replication:
             Replication: yes
             Password: ${ENV:POSTGRES_REPLICATION_PASSWORD}
     Subscriptions:
         db:
-            Connection: user=replication dbname=db password=${ENV:POSTGRES_REPLICATION_PASSWORD}
+            Connection: user=replication dbname=db password=${GENERATE:POSTGRESQL:REPLICATION_PASSWORD}
+    Settings:
+        wal_level: logical # for Logical Replication
 
 # https://pterodactyl.io/
 Pterodactyl:
     Type: Pterodactyl
     Domain: pterodactyl.example.org
+
+# https://rvm.io/
+RVM:
+    Type: RVM
+    User: rvm
+    Packages:
+        - git
+    Gems:
+        - webrick
 
 # https://pterodactyl.io/
 Wings:
@@ -263,10 +427,40 @@ Scrutiny:
     Proxy: http://127.0.0.1:7080
     Private: yes
 
+# https://github.com/searxng/searxng
+SearXNG:
+    Type: SearXNG
+    Valkey:
+        Host: valkey
+        SecretId: secret
+    Settings:
+        search:
+            formats:
+                - html
+                - json
+
+# https://signoz.io/
+SigNoz:
+    Type: SigNoz
+
+# https://signoz.io/
+SigNozCollector:
+    Type: SigNozCollector
+    Listen: 0.0.0.0
+    Environment: production
+
+# https://solr.apache.org/
+Solr:
+    Type: Solr
+
 # https://app.lizardbyte.dev/Sunshine/
 Sunshine:
     Type: Sunshine
     Domain: sunshine.example.org
+
+Systemd:
+    Type: systemd
+    UserCgroups: yes
 
 # https://valkey.io/ (Redis fork)
 Valkey:
@@ -277,6 +471,21 @@ Valkey:
 Vaultwarden:
     Type: Vaultwarden
     Domain: vaultwarden.example.org
+    SMTP:
+        SecretId: Postfix
+        Host: example.org
+        Port: 465
+        Username: vaultwarden@example.org
+        FromAddress: vaultwarden@example.org
+
+# https://github.com/vllm-project/vllm
+VLLM:
+    Type: vLLM
+
+# https://js.wiki/
+Wiki.js:
+    Type: WikiJS
+    Domain: wiki.example.org
 
 # https://www.wireguard.com/
 WireGuard:
@@ -286,3 +495,29 @@ WireGuard:
     Peers:
         example:
             Endpoint: example.example.org
+            SecretId: WireGuard
+            AllowedIPs: 172.20.0.2/32
+            PersistentKeepalive: 25
+
+# https://yacy.net/
+YaCy:
+    Type: YaCy
+    Admin:
+        Username: admin
+    PeerName: YaCy
+    SeedURL: https://YaCy.example.org/seed.txt
+    Settings:
+        staticIP: YaCy.example.org
+        publicPort: 443
+    Profile:
+        name: YaCy
+        nickname: YaCy
+
+# https://umami.is/
+Umami:
+    Type: Umami
+    Domain: Umami.example.org
+
+# https://zookeeper.apache.org/
+ZooKeeper:
+    Type: ZooKeeper
