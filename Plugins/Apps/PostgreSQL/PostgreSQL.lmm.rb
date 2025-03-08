@@ -22,6 +22,13 @@ module ConfigLMM
                             if target['Deploy']
                                 linuxConnection.ensurePackage(PACKAGE_NAME, options)
                                 linuxConnection.ensureServiceAutoStart(SERVICE_NAME, options)
+
+                                # So that OpenTelemetry can read logs
+                                linuxConnection.createDirs(options, '/var/log/postgresql')
+                                linuxConnection.exec("chown postgres:postgres /var/log/postgresql", false, options)
+                                linuxConnection.exec("chmod 750 /var/log/postgresql", false, options)
+
+                                replicate(target, linuxConnection, postgres, context, options)
                                 linuxConnection.startService(SERVICE_NAME, options)
 
                                 updateSettings(target, linuxConnection, postgres, options)
@@ -67,6 +74,21 @@ module ConfigLMM
                 end
             end
 
+            def replicate(target, linuxConnection, postgres, context, options)
+                if target['Replicate']
+                    if !linuxConnection.filePresent?(postgres.pgsqlDir + "data")
+                        linuxConnection.withUserShell(USER_NAME) do |shellConnection|
+                            connection = Framework::Variables.stringEval(target['Replicate']['Connection'], context)
+                            extra = ''
+                            if target['Replicate']['Slot']
+                                extra = "--create-slot --slot=#{target['Replicate']['Slot'].downcase}"
+                            end
+                            shellConnection.exec("pg_basebackup --dbname=#{connection.shellescape} --write-recovery-conf #{extra} --pgdata #{postgres.pgsqlDir}data", false, options)
+                        end
+                    end
+                end
+            end
+
             def updateSettings(target, linuxConnection, postgres, options)
                 settingLines = []
                 hbaLines = []
@@ -93,17 +115,21 @@ module ConfigLMM
                     cmd = "sed -i 's|^host    all             all             127.0.0.1/32            ident|host    all             all             127.0.0.1/32            scram-sha-256|'"
                     postgres.connection.exec(cmd + ' ' + postgres.pgsqlDir + HBA_FILE, false, options)
                 end
+                if target['AllowReplication']
+                    addresses = target['AllowReplication']
+                    addresses = [addresses] unless addresses.is_a?(Array)
+                    addresses.each do |addr|
+                        addr += '/0' if addr == '0.0.0.0'
+                        addr += '/32' if addr =~ /^\d+\.\d+\.\d+\.\d+$/
+                        hbaLines << "host    replication     all             #{addr}            scram-sha-256\n"
+                    end
+                end
                 postgres.connection.exec('sed -i "s|^log_destination|#log_destination|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
                 postgres.connection.exec('sed -i "s|^logging_collector|#logging_collector|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
                 postgres.connection.exec('sed -i "s|^log_directory|#log_directory|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
                 postgres.connection.exec('sed -i "s|^log_file_mode|#log_file_mode|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
                 settingLines << "log_destination = 'jsonlog'\n"
                 settingLines << "logging_collector = on\n"
-
-                # So that OpenTelemetry can read logs
-                linuxConnection.createDirs(options, '/var/log/postgresql')
-                linuxConnection.exec("chown postgres:postgres /var/log/postgresql", false, options)
-                linuxConnection.exec("chmod 750 /var/log/postgresql", false, options)
                 settingLines << "log_directory = '/var/log/postgresql'\n"
                 settingLines << "log_file_mode = 0640\n"
 
