@@ -1,3 +1,37 @@
+
+## [0.5.0] - 2025-04-25
+
+Implement:
+- VM and LXC deployment over Proxmox
+- `proxmox+xterm` connection/tunnel
+- Secrets EnvStore and FileStore
+- Support for `_INCLUDE_` and `_VARIABLES_`
+- PXE TFTP (BIOS and UEFI) and PXE HTTP (BIOS and UEFI)
+- Umami - https://umami.is/
+- ZooKeeper - https://zookeeper.apache.org/
+- ClickHouse - https://clickhouse.com/
+- SigNoz - https://signoz.io/
+- OpenTelemetry Collector - https://opentelemetry.io/
+- LibreTranslate - https://libretranslate.com/
+- Homepage - https://gethomepage.dev/
+- Mastodon - https://github.com/mastodon/mastodon
+- Apache Answer - https://answer.apache.org/
+- Apache Solr - https://solr.apache.org/
+- Lobsters - https://github.com/lobsters/lobsters
+- SearXNG - https://github.com/searxng/searxng
+- Ollama -  https://ollama.com/
+- Perplexica - https://github.com/ItzCrazyKns/Perplexica/
+- llama.cpp - https://github.com/ggml-org/llama.cpp
+- vLLM - https://github.com/vllm-project/vllm
+- YaCy - https://yacy.net/
+- RVM - https://rvm.io/
+- SSH Config for Users
+- command debug logging
+- Filesystem
+
+Other improvements:
+- Way too many to list, see commit log
+
 ## [0.4.0] - 2024-10-04
 
 Implement:
