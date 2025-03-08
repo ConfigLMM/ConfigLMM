@@ -266,7 +266,9 @@ module ConfigLMM
                                     linuxConnection.setUserGroup(apiKeyFile, USER, USER, options)
                                     linuxConnection.setPrivate(apiKeyFile, options)
                                 end
-                                self.configurePostgreSQL(target['Settings'], linuxConnection, options)
+                                if !target.key?('Database') || target['Database']
+                                    self.configurePostgreSQL(target['Settings'], linuxConnection, options)
+                                end
                             end
                             linuxConnection.firewallAddService('dns', options)
                             linuxConnection.restartService(SERVICE_NAME, options)
