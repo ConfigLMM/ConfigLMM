@@ -224,7 +224,7 @@ module ConfigLMM
             end
 
             def self.withConnection(settings, linuxConnection)
-                if settings['HostName'].nil? || settings['HostName'] == 'localhost'
+                if settings['HostName'].nil? || settings['HostName'] == 'localhost' || settings['HostName'].start_with?('/')
                     settings = settings.dup
                     settings.delete('HostName')
                     settings.delete('Port')
