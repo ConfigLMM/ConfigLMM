@@ -202,17 +202,9 @@ module ConfigLMM
                 githubPackages.each do |pkg|
                     repo, name = pkg.split(':')
                     namePattern = name.gsub('.', '\\.').gsub('*', '.*')
-                    response = HTTP.get("https://api.github.com/repos/#{repo}/releases")
-                    if response.status.success?
-                        releases = response.parse
-                        releases.each do |release|
-                            next if release['draft'] || release['prerelease']
-                            if installGitHubRelease(release, namePattern, options)
-                                break
-                            end
-                        end
-                    else
-                        raise response
+                    releases = GitHub::getReleases(repo, logger, {}, options)
+                    releases.each do |release|
+                        break if installGitHubRelease(release, namePattern, options)
                     end
                 end
             end

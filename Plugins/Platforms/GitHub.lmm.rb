@@ -52,6 +52,27 @@ module ConfigLMM
                 true
             end
 
+            def self.getReleases(repoId, logger, context, options)
+                response = HTTP.get("https://api.github.com/repos/#{repoId}/releases")
+                if response.status.success?
+                    releases = response.parse
+                    releases.reject! { |release| release['draft'] || release['prerelease'] }
+                    return releases
+                end
+                logger.error("Failed to load GitHub release for #{repoId}")
+                raise response
+            end
+
+            def self.getReleaseAsset(name, releases)
+                pattern = name.gsub('.', '\\.').gsub('*', '.*')
+                releases.each do |release|
+                    release['assets'].each do |asset|
+                        return asset if asset['name'].match?(pattern)
+                    end
+                end
+                raise "Couldn't find GitHub asset #{name}!"
+            end
+
         end
     end
 end
