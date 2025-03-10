@@ -575,16 +575,20 @@ receivers:
         to: resource['thread.id']
 
       - if: body.info != nil and body.info.level != nil
+        type: regex_replace
+        regex_name: ansi_control_sequences
+        field: body.info.level
+      - if: body.info != nil and body.info.level != nil
         type: severity_parser
         parse_from: body.info.level
         overwrite_text: true
         mapping:
           info:
             - Information
-            - "\u001b[34mINFO\u001b[0m"
-          warn: "\u001b[33mWARN\u001b[0m"
-          error: "\u001b[31mERROR\u001b[0m"
-          fatal: "\u001b[31mFATAL\u001b[0m"
+            - INFO
+          warn: WARN
+          error: ERROR
+          fatal: FATAL
 
   hostmetrics:
     collection_interval: 30s
