@@ -55,7 +55,7 @@ module ConfigLMM
                 domains = [domains] unless domains.is_a?(Array)
                 domains.each do |domain|
                     domainList << '--domains "' + Addressable::IDNA.to_ascii(domain) + '"'
-                    if domain.start_with?('*.')
+                    if addBaseDomain?(domain, domains)
                         domainList << '--domains "' + Addressable::IDNA.to_ascii(domain[2..-1]) + '"'
                     end
                 end
@@ -63,6 +63,13 @@ module ConfigLMM
                 extra = '--dns-rfc2136-propagation-seconds ' + target['DNS']['Propagation'].to_s if target['DNS']['Propagation']
 
                 connection.exec("certbot certonly --dns-rfc2136 --dns-rfc2136-credentials=#{CONFIG_DIR}rfc2136.ini #{extra} --non-interactive --agree-tos --email #{target['EMail']} --cert-name '#{name}' #{domainList.join(' ')}", false, options)
+            end
+
+            def addBaseDomain?(domain, domains)
+                return false unless domain.start_with?('*.')
+                match = '*.' + domain[2..-1].split('.')[1..].join('.')
+                return false if match == '*.' || domains.any? { |d| d.casecmp?(match) }
+                true
             end
 
         end
