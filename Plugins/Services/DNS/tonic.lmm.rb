@@ -21,16 +21,26 @@ module ConfigLMM
                 errors
             end
 
+            def getPassword(target, context)
+                tonicPassword = context.secrets.load(target['SecretId'], 'PASSWORD')
+                tonicPassword = context.secrets.load('TONIC', 'PASSWORD') if tonicPassword.nil?
+                raise Framework::PluginProcessError.new('Missing Tonic DNS password!') unless tonicPassword
+                tonicPassword
+            end
+
             def actionTonicDNSRefresh(id, target, activeState, context, options)
                 domain = target['Domain'].split('.').first
                 if domain.empty?
                     raise Framework::PluginProcessError.new('Invalid Domain for ' + id)
                 end
+
+                tonicPassword = getPassword(target, context)
+
                 response = HTTP.post(EDIT_URL, :form => {
                                             command: 'editdns',
                                             error: 'badpass.htm',
                                             sld: domain,
-                                            password: ENV['TONIC_PASSWORD'],
+                                            password: tonicPassword,
                                             'B1.x' => "40",
                                             'B1.y' => "20"
                                     })
@@ -49,7 +59,7 @@ module ConfigLMM
                         raise Framework::PluginProcessError.new('Unexpected value in response for  ' + id)
                     end
                 else
-                    raise Framework::PluginProcessError.new("Couldn't refresh " + id + "! Invalid TONIC_PASSWORD ?")
+                    raise Framework::PluginProcessError.new("Couldn't refresh " + id + "! Invalid Tonic password?")
                 end
             end
 
@@ -72,11 +82,13 @@ module ConfigLMM
                 hosts = target['Nameservers'].keys.map { |ns| Addressable::IDNA.to_ascii(ns) }
                 addrs = target['Nameservers'].values
 
+                tonicPassword = getPassword(target, context)
+
                 response = HTTP.post(EDIT_URL, :form => {
                                             command: 'editdns',
                                             error: 'badpass.htm',
                                             sld: domain,
-                                            password: ENV['TONIC_PASSWORD'],
+                                            password: tonicPassword,
                                             'B1.x' => "40",
                                             'B1.y' => "20"
                                     })
@@ -109,10 +121,11 @@ module ConfigLMM
             end
 
             def authenticate(actionMethod, target, activeState, context, options)
-                authSecret = ENV['TONIC_PASSWORD']
+                authSecret = context.secrets.load(target['SecretId'], 'PASSWORD')
+                authSecret = context.secrets.load('TONIC', 'PASSWORD') if authSecret.nil?
                 if authSecret.to_s.empty?
-                    prompt.say('Set your Tonic DNS password to TONIC_PASSWORD as Environment Variable')
-                    raise Framework::PluginPrerequisite.new('Need TONIC_PASSWORD')
+                    prompt.say("Set your Tonic DNS password in #{target['SecretId']}_PASSWORD")
+                    raise Framework::PluginPrerequisite.new('Need Tonic DNS password!')
                 end
                 true
             end
