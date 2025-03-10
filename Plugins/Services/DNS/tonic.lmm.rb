@@ -67,7 +67,7 @@ module ConfigLMM
                 shouldMatch(id, activeState['Config'], 'Domain', target, 'Domain')
                 nameservers = activeState['Nameservers']&.transform_keys { |ns| Addressable::IDNA.to_unicode(ns) }
                 if target['Nameservers'] != nameservers
-                    @Diff.update({'Nameservers' => [target['Nameservers'], nameservers]})
+                    @Diff.update({'Nameservers' => [nameservers, target['Nameservers']]})
                 end
             end
 
@@ -117,6 +117,7 @@ module ConfigLMM
                                         })
 
                     prompt.say(Nokogiri::HTML(response.to_s).at('//title/text()'))
+                    activeState['Nameservers'] = target['Nameservers']
                 end
             end
 
