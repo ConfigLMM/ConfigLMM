@@ -23,7 +23,12 @@ server {
 
     server_name <%= config['Domain'] %>;
 
-    include config-lmm/errors.conf;
+    <% if !config.key?('HandleErrors') || config['HandleErrors'] %>
+        include config-lmm/errors.conf;
+    <% else %>
+       include config-lmm/gateway-errors.conf;
+    <% end %>
+
     include config-lmm/security.conf;
 
     <% if config['Private'] %>
