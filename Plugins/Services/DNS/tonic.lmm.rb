@@ -54,7 +54,7 @@ module ConfigLMM
             end
 
             def actionTonicDNSDiff(id, target, activeState, context, options)
-                shouldMatch(id, 'Domain', 'Domain', target, activeState['Config'])
+                shouldMatch(id, activeState['Config'], 'Domain', target, 'Domain')
                 nameservers = activeState['Nameservers']&.transform_keys { |ns| Addressable::IDNA.to_unicode(ns) }
                 if target['Nameservers'] != nameservers
                     @Diff.update({'Nameservers' => [target['Nameservers'], nameservers]})

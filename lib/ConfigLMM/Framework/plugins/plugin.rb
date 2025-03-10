@@ -97,11 +97,11 @@ module ConfigLMM
                 @Local
             end
 
-            def shouldMatch(id, targetKey, stateKey, target, activeState)
+            def shouldMatch(id, activeState, stateKey, target, targetKey)
                 data = nil
                 data = activeState[stateKey] if activeState.is_a?(Hash)
                 if target[targetKey] != data
-                    @Diff.update({targetKey => [target[targetKey], data]})
+                    @Diff.update({targetKey => [data, target[targetKey]]})
                 end
             end
 
