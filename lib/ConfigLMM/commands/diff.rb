@@ -25,17 +25,21 @@ module ConfigLMM
                 configDiffs.each do |id, diffs|
                     prompt.say(' ' + id + ':')
                     diffs.each do |name, diff|
-                        if diff.first.is_a?(Hash)
+                        if diff.first.is_a?(Hash) || diff.last.is_a?(Hash)
                             prompt.say('     ' + name + ':')
-                            diff.first.each do |name, value|
-                                prompt.say('-      ' + name + ': ' + value, :color => :red)
+                            if !diff.first.nil?
+                                diff.first.each do |name, value|
+                                    prompt.say('-      ' + name + ': ' + value, :color => :red)
+                                end
                             end
-                            diff.last.each do |name, value|
-                                prompt.say('+      ' + name + ': ' + value, :color => :green)
+                            if !diff.last.nil?
+                                diff.last.each do |name, value|
+                                    prompt.say('+      ' + name + ': ' + value, :color => :green)
+                                end
                             end
                         else
-                            prompt.say('-    ' + name + ': ' + diff.first, :color => :red)
-                            prompt.say('+    ' + name + ': ' + diff.last, :color => :green)
+                            prompt.say('-    ' + name + ': ' + diff.first, :color => :red) unless diff.first.nil?
+                            prompt.say('+    ' + name + ': ' + diff.last, :color => :green) unless diff.last.nil?
                         end
                     end
                 end
