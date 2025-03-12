@@ -6,8 +6,9 @@ module ConfigLMM
         class GitHub < Framework::Plugin
 
             def actionGitHubOrganizationRefresh(id, target, activeState, context, options)
-
-                client = Octokit::Client.new(:access_token => ENV['GITHUB_TOKEN'])
+                authToken = context.secrets.load(target['SecretId'], 'TOKEN')
+                authToken = context.secrets.load('GITHUB', 'TOKEN') if authToken.nil?
+                client = Octokit::Client.new(:access_token => authToken)
                 orgs = client.organizations.select { |org| org[:login] == target['Name'] }
                 if orgs.empty?
                     prompt.say("Didn\'t find organization with name #{target['Name']}")
@@ -43,11 +44,12 @@ module ConfigLMM
             end
 
             def authenticate(actionMethod, target, activeState, context, options)
-                authToken = ENV['GITHUB_TOKEN']
+                authToken = context.secrets.load(target['SecretId'], 'TOKEN')
+                authToken = context.secrets.load('GITHUB', 'TOKEN') if authToken.nil?
                 if authToken.to_s.empty?
                     prompt.say('Open https://github.com/settings/tokens and create a token!')
-                    prompt.say('Then set it\'s value to GITHUB_TOKEN as Environment Variable')
-                    raise Framework::PluginPrerequisite.new('Need GITHUB_TOKEN!')
+                    prompt.say("Then set it\'s value in #{target['SecretId']}_TOKEN")
+                    raise Framework::PluginPrerequisite.new('Need GitHub token!')
                 end
                 true
             end

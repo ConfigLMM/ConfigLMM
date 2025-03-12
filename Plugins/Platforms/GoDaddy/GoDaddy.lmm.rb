@@ -42,7 +42,9 @@ module ConfigLMM
 
             def actionGoDaddyDNSRefresh(id, target, activeState, context, options)
                 if USE_API
-                    http = HTTP.auth("sso-key #{ENV['GODADDY_SECRET']}")
+                    authSecret = context.secrets.load(target['SecretId'], 'SECRET')
+                    authSecret = context.secrets.load('GODADDY', 'SECRET') if authSecret.nil?
+                    http = HTTP.auth("sso-key #{authSecret}")
                     apiDomain = (options['dry'] || target['Test']) ? TEST_API_DOMAIN : API_DOMAIN
 
                     target['DNS'].each do |domain, records|
@@ -73,11 +75,12 @@ module ConfigLMM
 
             def authenticate(actionMethod, target, activeState, context, options)
                 if USE_API
-                    authSecret = ENV['GODADDY_SECRET']
+                    authSecret = context.secrets.load(target['SecretId'], 'SECRET')
+                    authSecret = context.secrets.load('GODADDY', 'SECRET') if authSecret.nil?
                     if authSecret.to_s.empty?
                         prompt.say('Open https://developer.godaddy.com/keys and create API Key!')
-                        prompt.say('Then set "KEY:SECRET" to GODADDY_SECRET as Environment Variable')
-                        raise Framework::PluginPrerequisite.new('Need GODADDY_SECRET')
+                        prompt.say("Then set \"KEY:SECRET\" in #{target['SecretId']}_SECRET")
+                        raise Framework::PluginPrerequisite.new('Need GoDaddy secret!')
                     end
                 end
                 true

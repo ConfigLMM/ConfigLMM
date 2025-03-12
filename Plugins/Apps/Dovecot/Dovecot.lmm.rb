@@ -100,11 +100,18 @@ module ConfigLMM
                                 if target['OAuth2']['Introspection']
                                     configLines << "introspection_url = #{target['OAuth2']['Introspection']}\n"
                                 end
-                                if target['OAuth2']['ClientID']
-                                    configLines << "client_id = #{target['OAuth2']['ClientID']}\n"
+
+                                secretId = target['OAuth2']['SecretId']
+                                secretId = target['SecretId'] unless secretId
+                                clientId = context.secrets.load(secretId, 'OAUTH2_CLIENT_ID')
+                                clientId = target['OAuth2']['ClientID'] unless clientId
+                                clientSecret = context.secrets.load(secretId, 'OAUTH2_CLIENT_SECRET')
+
+                                if clientId
+                                    configLines << "client_id = #{clientId}\n"
                                 end
-                                if ENV['DOVECOT_OAUTH2_SECRET']
-                                    configLines << "client_secret = #{ENV['DOVECOT_OAUTH2_SECRET']}\n"
+                                if clientSecret
+                                    configLines << "client_secret = #{clientSecret}\n"
                                 end
                             end
                         else

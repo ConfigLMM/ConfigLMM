@@ -46,9 +46,13 @@ module ConfigLMM
 
                         if target['Valkey']
                             self.class.exec("sed -i 's|10.0.2.2|#{target['Valkey']['Host']}|'  #{HOME_DIR}/ingress.yaml", ssh) if target['Valkey']['Host']
-                        end
-                        if ENV['VALKEY_PASSWORD']
-                            self.class.exec("sed -i 's|password:|password: #{ENV['VALKEY_PASSWORD']}|'  #{HOME_DIR}/ingress.yaml", ssh)
+
+                            if target['Valkey']['SecretId']
+                                valkeyPassword = context.secrets.load(target['Valkey']['SecretId'], 'VALKEY_PASSWORD')
+                                if valkeyPassword
+                                    self.class.exec("sed -i 's|password:|password: #{valkeyPassword}|'  #{HOME_DIR}/ingress.yaml", ssh)
+                                end
+                            end
                         end
 
                         self.class.exec("chown #{USER}:#{USER} #{path}/OpenVidu.env #{HOME_DIR}/livekit.yaml #{HOME_DIR}/ingress.yaml", ssh)

@@ -24,7 +24,7 @@ module ConfigLMM
                         secretId, secretName = target['DNS']['SecretId'].to_s.split('.')
                         key = nil
                         key = context.secrets.load(secretId, secretName) if secretId && secretName
-                        key = ENV['LETSENCRYPT_DNS_SECRET'] if key.nil?
+                        key = context.secrets.load('LETSENCRYPT', 'DNS_SECRET') if key.nil?
                         raise Framework::PluginProcessError.new('LetsEncrypt missing RFC2136 TSIG key! Specify DNS.SecretId or LETSENCRYPT_DNS_SECRET env variable') unless key
 
                         linuxConnection.fileReplace(CONFIG_DIR + 'rfc2136.ini', '$SECRET', key, options)

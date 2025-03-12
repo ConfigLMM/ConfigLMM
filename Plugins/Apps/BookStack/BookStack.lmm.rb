@@ -30,10 +30,16 @@ module ConfigLMM
                         self.class.exec(" echo 'APP_URL=https://#{target['Domain']}' >> #{path}/BookStack.env", ssh)
 
                         if target['OIDC'] && target['OIDC']['Issuer']
+
+                            secretId = target['OIDC']['SecretId']
+                            secretId = target['SecretId'] unless secretId
+                            clientId = context.secrets.load(secretId, 'OIDC_CLIENT_ID')
+                            clientSecret = context.secrets.load(secretId, 'OIDC_CLIENT_SECRET')
+
                             self.class.exec(" echo 'AUTH_METHOD=oidc' >> #{path}/BookStack.env", ssh)
                             self.class.exec(" echo 'AUTH_AUTO_INITIATE=true' >> #{path}/BookStack.env", ssh)
-                            self.class.exec(" echo 'OIDC_CLIENT_ID=#{ENV['BOOKSTACK_OIDC_CLIENT_ID']}' >> #{path}/BookStack.env", ssh)
-                            self.class.exec(" echo 'OIDC_CLIENT_SECRET=#{ENV['BOOKSTACK_OIDC_CLIENT_SECRET']}' >> #{path}/BookStack.env", ssh)
+                            self.class.exec(" echo 'OIDC_CLIENT_ID=#{clientId}' >> #{path}/BookStack.env", ssh)
+                            self.class.exec(" echo 'OIDC_CLIENT_SECRET=#{clientSecret}' >> #{path}/BookStack.env", ssh)
                             self.class.exec(" echo 'OIDC_ISSUER=#{target['OIDC']['Issuer']}' >> #{path}/BookStack.env", ssh)
                             self.class.exec(" echo 'OIDC_ISSUER_DISCOVER=true' >> #{path}/BookStack.env", ssh)
                             self.class.exec(" echo 'OIDC_USER_TO_GROUPS=true' >> #{path}/BookStack.env", ssh)
@@ -45,7 +51,12 @@ module ConfigLMM
                             self.class.exec(" echo 'MAIL_HOST=#{host}' >> #{path}/BookStack.env", ssh)
                             self.class.exec(" echo 'MAIL_PORT=#{target['SMTP']['Port']}' >> #{path}/BookStack.env", ssh)
                             self.class.exec(" echo 'MAIL_USERNAME=#{target['SMTP']['Username']}' >> #{path}/BookStack.env", ssh)
-                            self.class.exec(" echo 'MAIL_PASSWORD=#{ENV['BOOKSTACK_SMTP_PASSWORD']}' >> #{path}/BookStack.env", ssh)
+
+                            if target['SMTP']['SecretId'] && target['SMTP']['Username']
+                                smtpPassword = context.secrets.load(target['SMTP']['SecretId'], target['SMTP']['Username'].upcase + '_PASSWORD')
+                                self.class.exec(" echo 'MAIL_PASSWORD=#{smtpPassword}' >> #{path}/BookStack.env", ssh)
+                            end
+
                             self.class.exec(" echo 'MAIL_FROM=#{target['SMTP']['From']}' >> #{path}/BookStack.env", ssh)
                         end
 

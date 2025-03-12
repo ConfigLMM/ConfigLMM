@@ -46,7 +46,7 @@ module ConfigLMM
                     end
 
                     creds = parseLocation(target['Location'])
-                    password = ENV['ARUBA_INSTANT_PASSWORD']
+                    password = context.secrets.load(target['SecretId'], 'PASSWORD')
 
                     # Couldn't get it working with net-ssh gem so using `ssh` as workaround
                     # Net::SSH.start(creds[:hostname], creds[:user], password: password, port: creds[:port]) do |ssh|
@@ -128,14 +128,15 @@ module ConfigLMM
             end
 
             def authenticate(actionMethod, target, activeState, context, options)
-                if ENV['ARUBA_INSTANT_PASSWORD'].to_s.empty? || ENV['ARUBA_INSTANT_PASSWORD'].to_s.empty?
-                    prompt.error('Set your Aruba Instant SSH password to ARUBA_INSTANT_PASSWORD as Environment Variable')
-                    raise Framework::PluginPrerequisite.new('Need ARUBA_INSTANT_PASSWORD')
+                authSecret = context.secrets.load(target['SecretId'], 'PASSWORD')
+                if authSecret.to_s.empty?
+                    prompt.error("Set your Aruba Instant SSH password in #{target['SecretId']}_PASSWORD")
+                    raise Framework::PluginPrerequisite.new('Need Aruba Instant password!')
                 else
                     if !target['Location']
                         raise Framework::PluginProcessError.new('Location must be provided!')
                     end
-                    checkSSHAuth!(target['Location'], ENV['ARUBA_INSTANT_PASSWORD'])
+                    checkSSHAuth!(target['Location'], authSecret)
                 end
                 true
             end
