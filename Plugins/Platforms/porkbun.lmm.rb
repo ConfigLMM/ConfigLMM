@@ -112,6 +112,16 @@ module ConfigLMM
             end
 
             def authenticate(actionMethod, target, activeState, context, options)
+                if ENV['PORKBUN_API_KEY'].nil?
+                    apiKey = context.secrets.load(target['SecretId'], 'API_KEY')
+                    apiKey = context.secrets.load('PORKBUN', 'API_KEY') if apiKey.nil?
+                    ENV['PORKBUN_API_KEY'] = apiKey
+                end
+                if ENV['PORKBUN_SECRET_API_KEY'].nil?
+                    secret = context.secrets.load(target['SecretId'], 'API_SECRET')
+                    secret = context.secrets.load('PORKBUN', 'API_SECRET') if secret.nil?
+                    ENV['PORKBUN_SECRET_API_KEY'] = secret
+                end
                 if ENV['PORKBUN_API_KEY'].to_s.empty? || ENV['PORKBUN_SECRET_API_KEY'].to_s.empty?
                     prompt.error('Set your porkbun API key to PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY as Environment Variable')
                     raise Framework::PluginPrerequisite.new('Need PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY')

@@ -40,7 +40,7 @@ RSpec.describe 'Porkbun' do
                                                                                      }])
 
         ENV['PORKBUN_API_KEY'] = 'whatever'
-        ENV['PORKBUN_SECRET_API_KEY'] = 'whatever'
+        ENV['PORKBUN_API_SECRET'] = 'whatever'
         ConfigLMM::Commands::Refresh.new('whatever.yaml', { :level => :info }).processConfig({'Porkbun' => target}, {})
 
         expect(state.item('Porkbun')).to include({
@@ -93,7 +93,7 @@ RSpec.describe 'Porkbun' do
                                                        }).and_return(record)
 
         ENV['PORKBUN_API_KEY'] = 'whatever'
-        ENV['PORKBUN_SECRET_API_KEY'] = 'whatever'
+        ENV['PORKBUN_API_SECRET'] = 'whatever'
         ConfigLMM::Commands::Deploy.new('whatever.yaml', { :level => :info }).processConfig({'Porkbun' => target}, {})
 
         expect(state.item('Porkbun')['DNS']['example.org']).to include({ '@' => {
