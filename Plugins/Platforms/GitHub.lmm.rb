@@ -5,42 +5,64 @@ module ConfigLMM
     module LMM
         class GitHub < Framework::Plugin
 
-            def actionGitHubOrganizationRefresh(id, target, activeState, context, options)
+            def actionGitHubRefresh(id, target, activeState, context, options)
+                if !target['Organizations'].to_h.empty?
+                    activeState['Organizations'] = {}
+                    target['Organizations'].each do |name, organization|
+                        organizationRefresh(name, target, activeState, context, options)
+                    end
+                end
+            end
+
+            def actionGitHubDiff(id, target, activeState, context, options)
+                state = prepareState(target, activeState)
+                shouldMatch(id, state, 'Organizations', target, 'Organizations')
+            end
+
+            def actionGitHubDeploy(id, target, activeState, context, options)
+                actionGitHubDiff(id, target, activeState, context, options)
+                diff.each do |name, states|
+                    # TODO FIXME
+                end
+            end
+
+            def prepareState(target, activeState)
+                state = activeState.dup
+                state['Organizations'] ||= {}
+                state['Organizations'].each do |name, data|
+                    #state['Organizations'][name]['Name'] = state['Organizations'][name].delete('Login')
+                    state['Organizations'][name]['Description'] = state['Organizations'][name].delete('description')
+                end
+                state
+            end
+
+            def organizationRefresh(name, target, activeState, context, options)
                 authToken = context.secrets.load(target['SecretId'], 'TOKEN')
                 authToken = context.secrets.load('GITHUB', 'TOKEN') if authToken.nil?
                 client = Octokit::Client.new(:access_token => authToken)
-                orgs = client.organizations.select { |org| org[:login] == target['Name'] }
-                if orgs.empty?
-                    prompt.say("Didn\'t find organization with name #{target['Name']}")
-                    prompt.say('You need to create it manually - https://github.com/organizations/plan')
-                    raise Framework::PluginPrerequisite.new('Organization must exist!')
-                end
 
-                raise "This shouldn't happen!" if orgs.length != 1
-
-                activeState.clear
-
-                orgs.first.each do |name, value|
-                    activeState[name.to_s] = value
-                end
-            end
-
-            def actionGitHubOrganizationDiff(id, target, activeState, context, options)
-                shouldMatch(id, activeState['Config'], 'login', target, 'Name')
-                shouldMatch(id, activeState['Config'], 'description', target, 'Description')
-            end
-
-            def actionGitHubOrganizationDeploy(id, target, activeState, context, options)
-                actionGitHubOrganizationDiff(id, target, activeState, context, options)
-                diff.each do |name, states|
-                    if name == 'Name'
-                        # TODO
-                    elsif name == 'Description'
-                        # TODO
+                allOrgs = client.organizations
+                if allOrgs.empty?
+                    # Fine-grained access token never returns any orgs
+                    org = client.organization(name)
+                else
+                    orgs = allOrgs.select { |org| org[:login] == name }
+                    if orgs.empty?
+                        prompt.say("Didn\'t find organization with name #{name}")
+                        prompt.say('You need to create it manually - https://github.com/organizations/plan')
+                        raise Framework::PluginPrerequisite.new('Organization must exist!')
                     end
+                    org = orgs.first
                 end
-                # TODO FIXME
-                raise 'Not implemented!'
+
+                activeState['Organizations'][org.login] ||= {}
+
+                org.each do |name, value|
+                    data = value
+                    data = value.to_h if value && value.respond_to?(:to_h)
+                    data = value.to_s if value.is_a?(Time)
+                    activeState['Organizations'][org.login][name.to_s] = data
+                end
             end
 
             def authenticate(actionMethod, target, activeState, context, options)

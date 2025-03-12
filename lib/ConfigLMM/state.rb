@@ -65,7 +65,8 @@ module ConfigLMM
 
         def save
             File.open(@StateFile, 'w') do |file|
-                file.write(YAML.dump(@State))
+                data = YAML.dump(@State)
+                file.write(data)
             end
         end
 
