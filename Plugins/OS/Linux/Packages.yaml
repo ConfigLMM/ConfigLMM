@@ -6,6 +6,7 @@ Arch Linux:
     CyrusSASL: cyrus-sasl
     Dovecot: dovecot
     firewalld: firewalld
+    go: go
     MariaDB: mariadb
     Nextcloud: nextcloud
     nginx: nginx
@@ -13,6 +14,7 @@ Arch Linux:
     otelcol-contrib: AUR|otelcol-contrib
     PHP-FPM: php-fpm
     php-pecl: php-pecl
+    pnpm: pnpm
     Podman: podman
     PostgreSQL: postgresql
     Postfix: postfix
@@ -33,6 +35,7 @@ openSUSE Leap:
     CyrusSASL: cyrus-sasl-plain
     Dovecot: dovecot
     firewalld: firewalld
+    go: go
     MariaDB: mariadb
     Nextcloud: server:php:applications|nextcloud
     nginx: nginx
@@ -47,6 +50,7 @@ openSUSE Leap:
         - php8-pgsql
         - php8-mysql
     php-pecl: php8-pecl
+    pnpm: GitHub|pnpm/pnpm:pnpm-linux-x64
     Podman: podman
     PostgreSQL:
         - postgresql-server
@@ -75,6 +79,7 @@ Debian:
         - dovecot-lmtpd
         - dovecot-submissiond
     firewalld: firewalld
+    go: golang
     MariaDB: mariadb-server
     Nextcloud:
     nginx: nginx
@@ -88,6 +93,7 @@ Debian:
         - php-pgsql
         - php-mysql
     php-pecl:
+    pnpm: GitHub|pnpm/pnpm:pnpm-linux-x64
     Podman: podman
     PostgreSQL: postgresql
     Postfix: postfix-lmdb

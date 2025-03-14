@@ -9,6 +9,38 @@ module ConfigLMM
             GITHUB_REPO_ID = 'apache/answer'
             PORT = 18700
 
+            persistBuildDir
+
+            def actionAnswerBuild(id, target, activeState, context, options)
+                if !target['Plugins'].to_a.empty?
+                    Linux.withConnection(local) do |localLinux|
+                        begin
+                            localLinux.ensurePackages(['go', 'pnpm'], options) unless localLinux.hasBinaries?(['go', 'pnpm'], options)
+                        rescue RuntimeError => error
+                            prompt.say(error, :color => :red)
+                        end
+                        outputFolder = File.expand_path(options['output'] + '/' + id)
+                        if !localLinux.filePresent?(outputFolder + '/answer')
+                            downloadAnswer(localLinux, context, options)
+
+                            local.mkdir(outputFolder, options[:dry])
+                            plugins = target['Plugins'].join(',')
+
+                            localLinux.exec("/tmp/answer/answer build --build-dir #{outputFolder}/build --output #{outputFolder}/answer --with #{plugins}", false, options)
+                            localLinux.exec("rm -rf /tmp/answer /tmp/answer.tar.gz", false, options)
+                        end
+                    end
+                end
+            end
+
+            def downloadAnswer(connection, context, options)
+                releases = GitHub::getReleases(GITHUB_REPO_ID, logger, context, options)
+                asset = GitHub::getReleaseAsset('apache-answer-*-bin-linux-amd64.tar.gz', releases)
+                connection.exec("curl --silent --location --output /tmp/answer.tar.gz #{asset['browser_download_url']}", false, options)
+                connection.exec("mkdir -p /tmp/answer", false, options)
+                connection.exec("tar --extract --strip-components=1 --directory /tmp/answer --file /tmp/answer.tar.gz", false, options)
+            end
+
             def actionAnswerDeploy(id, target, activeState, context, options)
                 self.withConnection(target['Location'], target) do |connection|
                     Linux.withConnection(connection) do |linuxConnection|
@@ -27,12 +59,14 @@ module ConfigLMM
                         linuxConnection.createServiceUser(answerUser, answerHomeDir, 'Apache Answer', options)
 
                         if !linuxConnection.filePresent?(INSTALL_PATH + 'answer')
-                            releases = GitHub::getReleases(GITHUB_REPO_ID, logger, context, options)
-                            asset = GitHub::getReleaseAsset('apache-answer-*-bin-linux-amd64.tar.gz', releases)
-                            linuxConnection.exec("curl --silent --location --output /tmp/answer.tar.gz #{asset['browser_download_url']}", false, options)
-                            linuxConnection.exec("mkdir /tmp/answer", false, options)
-                            linuxConnection.exec("tar --extract --strip-components=1 --directory /tmp/answer --file /tmp/answer.tar.gz", false, options)
-                            linuxConnection.exec("cp /tmp/answer/answer #{INSTALL_PATH}", false, options)
+                            if target['Plugins'].to_a.empty?
+                                downloadAnswer(linuxConnection, context, options)
+                            else
+                                dir = options['output'] + '/' + id + '/'
+                                linuxConnection.exec("mkdir -p /tmp/answer", false, options)
+                                linuxConnection.upload(dir + 'answer', '/tmp/answer/answer', options)
+                            end
+                            linuxConnection.exec("mv /tmp/answer/answer #{INSTALL_PATH}", false, options)
                             linuxConnection.exec("rm -rf /tmp/answer /tmp/answer.tar.gz", false, options)
                         end
 
