@@ -216,6 +216,11 @@ module ConfigLMM
                             installRPM(asset['name'], asset['browser_download_url'], options)
                         elsif asset['name'].end_with?('.deb')
                             installDeb(asset['name'], asset['browser_download_url'], options)
+                        elsif !asset['name'].include?('.')
+                            binaryName = asset['name'].gsub(/\-(linux|amd64|x64|bin)/, '')
+                            connection.exec("curl --silent --location --output /tmp/#{binaryName} #{asset['browser_download_url']}", false, options)
+                            connection.exec("chmod +rx /tmp/#{binaryName}", false, options)
+                            connection.adminExec("mv /tmp/#{binaryName} /usr/local/bin/", false, options)
                         else
                             $stderr.puts(asset)
                             raise 'Not Implemented!'
