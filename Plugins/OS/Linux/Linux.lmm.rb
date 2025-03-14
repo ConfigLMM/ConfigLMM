@@ -555,21 +555,33 @@ module ConfigLMM
             end
 
             def buildAutoInstall(id, target, options)
-                if target['Flavour'] == PROXMOXVE_NAME
+                config = prepareAutoInstallConfig(target)
+                if config['Flavour'] == PROXMOXVE_NAME
                     outputFolder = options['output'] + '/' + id + '/'
                     template = ERB.new(File.read(__dir__ + '/Proxmox/answer.toml.erb'))
-                    renderTemplate(template, target, outputFolder + 'answer.toml', options)
+                    renderTemplate(template, config, outputFolder + 'answer.toml', options)
                     File.write("#{outputFolder}/auto-installer-mode.toml", 'mode = "iso"')
-                elsif target['Distro'] == SUSE_NAME
+                elsif config['Distro'] == SUSE_NAME
                     outputFolder = options['output'] + '/' + id + '/'
                     template = ERB.new(File.read(__dir__ + '/openSUSE/autoinst.xml.erb'))
-                    renderTemplate(template, target, outputFolder + 'autoinst.xml', options)
-                elsif target['Distro'] == DEBIAN_NAME
-                    variables = prepareDebianStorage(target, options)
+                    renderTemplate(template, config, outputFolder + 'autoinst.xml', options)
+                elsif config['Distro'] == DEBIAN_NAME
+                    variables = prepareDebianStorage(config, options)
                     outputFolder = options['output'] + '/' + id + '/'
                     template = ERB.new(File.read(__dir__ + '/Debian/preseed.cfg.erb'))
                     renderTemplate(template, variables, outputFolder + 'preseed.cfg', options)
                 end
+            end
+
+            def prepareAutoInstallConfig(target)
+                config = target.dup
+                if config['Apps'].to_a.include?('sshd')
+                    config['Services'] << :sshd
+                    config['Services'].uniq!
+                end
+                config['Apps'] = Framework::LinuxApp.mapPackages(config['Apps'], config['Distro']) if config['Distro']
+                config['Apps'].delete_if { |app| app.include?('|') }
+                config
             end
 
             def prepareDebianStorage(target, options)
@@ -819,11 +831,6 @@ module ConfigLMM
                 newApps = []
                 target['Services'] ||= []
                 target['Packages'] = target['Apps'].dup
-                if target['Apps'].to_a.include?('sshd')
-                    target['Services'] << :sshd
-                    target['Services'].uniq!
-                end
-                target['Apps'] = Framework::LinuxApp.mapPackages(target['Apps'], target['Distro']) if target['Distro']
                 prepareDefaultNetwork(target)
             end
 
