@@ -21,6 +21,7 @@ module ConfigLMM
             FIREWALL_PACKAGE = 'firewalld'
             FIREWALL_SERVICE = 'firewalld'
 
+            ARCH_NAME = 'Arch Linux'
             SUSE_NAME = 'openSUSE Leap'
             PROXMOXVE_NAME = 'Proxmox VE'
             DEBIAN_NAME = 'Debian'
