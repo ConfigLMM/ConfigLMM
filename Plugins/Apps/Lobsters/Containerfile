@@ -1,0 +1,81 @@
+# Use an official Ruby image as a base
+ARG RUBY_VERSION
+FROM ruby:${RUBY_VERSION} AS base
+
+# Install base packages
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y curl libjemalloc2 libvips sqlite3 mariadb-client sendmail vim && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Latest releases available at https://github.com/aptible/supercronic/releases
+ENV SUPERCRONIC_URL=https://github.com/aptible/supercronic/releases/download/v0.2.33/supercronic-linux-amd64 \
+    SUPERCRONIC_SHA1SUM=71b0d58cc53f6bd72cf2f293e09e294b79c666d8 \
+    SUPERCRONIC=supercronic-linux-amd64
+
+RUN curl -fsSLO "$SUPERCRONIC_URL" \
+ && echo "${SUPERCRONIC_SHA1SUM}  ${SUPERCRONIC}" | sha1sum -c - \
+ && chmod +x "$SUPERCRONIC" \
+ && mv "$SUPERCRONIC" "/usr/local/bin/${SUPERCRONIC}" \
+ && ln -s "/usr/local/bin/${SUPERCRONIC}" /usr/local/bin/supercronic
+
+ENV BUNDLE_DEPLOYMENT="1" BUNDLE_PATH="/usr/local/bundle" BUNDLE_WITHOUT="development"
+
+# Throw-away build stage to reduce size of final image
+FROM base AS build
+
+# Install packages needed to build gems
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y build-essential git libyaml-dev pkg-config && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Set working directory
+WORKDIR /lobsters
+
+COPY . .
+
+# Install application gems
+RUN bundle install && \
+    rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git
+
+RUN mkdir -p /srv/lobste.rs/log && \
+    ln -sf /lobsters /srv/lobste.rs/http
+
+# Temporary generate secrets
+RUN RAILS_ENV=production ./bin/rails credentials:edit
+
+# Precompiling assets for production without requiring secret RAILS_MASTER_KEY
+RUN SECRET_KEY_BASE_DUMMY=1 RAILS_ENV=production ./bin/rails assets:precompile
+
+# Remove secrets
+RUN rm -rf ./config/credentials.yml.enc ./config/master.key ./config/database.yml ./tmp/* /srv/lobste.rs/log/*
+
+# Final stage for app image
+FROM base
+
+WORKDIR /lobsters
+
+# Copy built artifacts: gems, application
+COPY --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
+COPY --from=build /lobsters /lobsters
+COPY --from=build /srv/lobste.rs /srv/lobste.rs
+
+COPY crontab /etc/
+
+RUN ln -sf /config/master.key /lobsters/config/master.key && \
+    ln -sf /config/credentials.yml.enc /lobsters/config/credentials.yml.enc && \
+    ln -sf /config/database.yml /lobsters/config/database.yml
+
+RUN mv /lobsters/public /lobsters/public_source && ln -sf /srv/lobsters/public /lobsters/public
+
+# Run and own only the runtime files as a non-root user for security
+RUN groupadd --system --gid 1000 lobsters && \
+    useradd lobsters --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
+    chown -R lobsters:lobsters /lobsters/tmp /srv/lobste.rs/log
+
+ENV LD_PRELOAD="/usr/lib/x86_64-linux-gnu/libjemalloc.so.2"
+
+# Expose port for Rails server
+EXPOSE 9292
+
+ENTRYPOINT ["/lobsters/entrypoint.sh"]
+CMD ["server"]

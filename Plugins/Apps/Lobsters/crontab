@@ -1,0 +1,3 @@
+*/5 * * * * /srv/lobste.rs/http/script/lobsters-cron.sh
+0 0 * * * /srv/lobste.rs/http/script/lobsters-daily.sh
+* * * * * /srv/lobste.rs/http/script/expire_page_cache

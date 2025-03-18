@@ -1,0 +1,99 @@
+
+upstream lobsters {
+    <% if config['Server'] %>
+        server <%= config['Server'] %>;
+    <% else %>
+        server 127.0.0.1:19292;
+    <% end %>
+}
+
+server {
+
+    <% if config['NginxVersion'] >= 1.25 %>
+        <% if !config['TLS'] %>
+            listen       <%= config['Port'] %>;
+            listen  [::]:<%= config['Port'] %>;
+        <% else %>
+            listen       <%= config['Port'] %> ssl;
+            listen  [::]:<%= config['Port'] %> ssl;
+
+            include config-lmm/ssl.conf;
+        <% end %>
+        http2 on;
+        http3 on;
+        quic_retry on;
+        add_header Alt-Svc 'h3=":443"; ma=86400';
+    <% else %>
+        <% if !config['TLS'] %>
+            listen       <%= config['Port'] %>;
+            listen  [::]:<%= config['Port'] %>;
+        <% else %>
+            listen       <%= config['Port'] %> ssl http2;
+            listen  [::]:<%= config['Port'] %> ssl http2;
+
+            include config-lmm/ssl.conf;
+        <% end %>
+    <% end %>
+
+    server_name <%= config['Domain'] %>;
+
+    root /srv/lobsters/public;
+
+    include config-lmm/errors.conf;
+
+    # max upload size for avatars (the only upload the site takes now)
+    client_max_body_size 2M;
+
+    location @lobsters {
+        proxy_pass  http://lobsters;
+
+        include config-lmm/proxy.conf;
+    }
+
+    location ~ ^/assets/ {
+        gzip_static on;
+        expires     max;
+        add_header  Cache-Control public;
+        break;
+    }
+
+    location ~ ^/avatars/ {
+        expires     max;
+        add_header  Cache-Control public;
+        try_files $uri @lobsters;
+        break;
+    }
+
+    # file-based full-page caching, bypass if user has cookies
+    set $use_file_cache "";
+
+    if ($cookie_lobster_trap = "") {
+        set $use_file_cache "${use_file_cache}S";       # S = no session cookie
+    }
+    if ($cookie_tag_filters = "") {
+        set $use_file_cache "${use_file_cache}F";       # F = no filter cookie
+    }
+    if (-f $document_root/cache$uri/index.html) {
+        set $use_file_cache "${use_file_cache}I";       # I = index file cached
+    }
+    if ($use_file_cache = "SFI") {
+        rewrite (.*) /cache/$1/index.html break;
+    }
+    if (-f $document_root/cache$uri.html) {
+        set $use_file_cache "${use_file_cache}H";       # H = HTML file cached
+    }
+    if ($use_file_cache = "SFH") {
+        rewrite (.*) /cache/$1.html break;
+    }
+    if (-f $document_root/cache$uri) {
+        set $use_file_cache "${use_file_cache}O";       # O = other non-extentioned file cached
+    }
+    if ($use_file_cache = "SFO") {
+        rewrite (.*) /cache/$1 break;
+    }
+
+    location / {
+        try_files $uri @lobsters;
+    }
+
+}

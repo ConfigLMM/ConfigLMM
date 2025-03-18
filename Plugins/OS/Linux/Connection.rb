@@ -91,6 +91,10 @@ module ConfigLMM
                 !connection.exec("grep #{content.shellescape} #{escapePath(file)}", true, options).strip.empty?
             end
 
+            def fileRead(file, options = {})
+                connection.exec("cat #{escapePath(file)}", false, options)
+            end
+
             def fileWrite(target, data, options = {})
                 hide = ''
                 hide = ' ' if options[:hide]

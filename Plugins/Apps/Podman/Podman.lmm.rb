@@ -28,6 +28,10 @@ module ConfigLMM
                 yield(PodmanConnection.new(connection, container))
             end
 
+            def self.run(imageId, name, cmd, linuxConnection, options)
+                linuxConnection.exec("podman run --name #{name} --replace --rm -it #{imageId} #{cmd}")
+            end
+
             def self.createUser(user, homedir, userComment, linuxConnection, options)
                 linuxConnection.createServiceUser(user, homedir, userComment, options)
                 linuxConnection.createSubuids(user, options)
@@ -42,6 +46,11 @@ module ConfigLMM
 
             def self.loadImage(userShell, imageFile, options = {})
                 cmd = "podman image load --input '#{imageFile.shellescape}'"
+                userShell.exec(cmd, false, options)
+            end
+
+            def self.removeImage(userShell, imageFile, options = {})
+                cmd = "podman image rm --ignore '#{imageFile.shellescape}'"
                 userShell.exec(cmd, false, options)
             end
 
