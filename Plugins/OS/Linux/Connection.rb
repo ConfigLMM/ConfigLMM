@@ -77,28 +77,34 @@ module ConfigLMM
                 connection.uploadFolder(folder, target, options)
             end
 
+            def escapePath(path)
+                escaped = path.shellescape
+                escaped = escaped[1..] if escaped.start_with?('\~')
+                escaped
+            end
+
             def ensureFile(file, options = {})
-                connection.exec("touch #{file.shellescape}", false, options)
+                connection.exec("touch #{escapePath(file)}", false, options)
             end
 
             def fileContains?(file, content, options = {})
-                !connection.exec("grep #{content.shellescape} #{file}", true, options).strip.empty?
+                !connection.exec("grep #{content.shellescape} #{escapePath(file)}", true, options).strip.empty?
             end
 
             def fileWrite(target, data, options = {})
                 hide = ''
                 hide = ' ' if options[:hide]
-                connection.exec("#{hide}echo #{data.shellescape} > #{target}", false, options)
+                connection.exec("#{hide}echo #{data.shellescape} > #{escapePath(target)}", false, options)
             end
 
             def fileAppend(target, data, options = {})
                 hide = ''
                 hide = ' ' if options[:hide]
-                connection.exec("#{hide}echo #{data.shellescape} >> #{target}", false, options)
+                connection.exec("#{hide}echo #{data.shellescape} >> #{escapePath(target)}", false, options)
             end
 
             def fileMerge(target, file, options = {})
-                connection.exec("cat #{file.shellescape} >> #{target}", false, options)
+                connection.exec("cat #{escapePath(file)} >> #{escapePath(target)}", false, options)
             end
 
             def fileReplace(target, placeholder, result, options = {})
@@ -106,26 +112,27 @@ module ConfigLMM
                 hide = ' ' if options[:hide]
                 result = result.to_s.gsub('\\', '\\\\\\') if options[:escape] != false
                 pattern = "s|#{placeholder}|#{result.to_s.gsub('&', '\\\\&').gsub('|', '\\\\|')}|"
-                connection.exec("#{hide}sed -i #{pattern.shellescape} #{target}", false, options)
+                connection.exec("#{hide}sed -i #{pattern.shellescape} #{escapePath(target)}", false, options)
             end
 
             def setUserGroup(path, user, group = nil, options = {})
                 if group
-                    connection.exec("chown -R #{user}:#{group} #{path.shellescape}", false, options)
+                    connection.exec("chown -R #{user}:#{group} #{escapePath(path)}", false, options)
                 else
-                    connection.exec("chown -R #{user} #{path.shellescape}", false, options)
+                    connection.exec("chown -R #{user} #{escapePath(path)}", false, options)
                 end
             end
 
             def setPrivate(path, options = {})
-                connection.exec("chmod 600 #{path.shellescape}", false, options)
+                connection.exec("chmod 600 #{escapePath(path)}", false, options)
             end
 
             def makeAccessible(path, options = {})
-                connection.exec("chmod og+rX #{path.shellescape}", false, options)
+                connection.exec("chmod og+rX #{escapePath(path)}", false, options)
             end
 
             def createDirs(options, *paths)
+                paths = paths.map { |path| escapePath(path) }
                 connection.exec("mkdir -p #{paths.join(' ')}", false, options)
             end
 
