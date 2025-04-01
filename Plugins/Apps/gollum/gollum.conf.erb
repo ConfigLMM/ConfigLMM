@@ -37,7 +37,7 @@ server {
         include config-lmm/private.conf;
     <% end %>
 
-    include config-lmm/errors.conf;
+    include config-lmm/gateway-errors.conf;
 
     <% if config['CertName'] %>
         ssl_certificate "/etc/letsencrypt/live/<%= config['CertName'] %>/fullchain.pem";
