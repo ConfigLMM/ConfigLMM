@@ -5,7 +5,7 @@ After=local-fs.target
 
 [Container]
 ContainerName=Authentik-ProxyOutpost
-Image=ghcr.io/goauthentik/proxy:latest
+Image=ghcr.io/goauthentik/proxy:2025.2
 EnvironmentFile=/var/lib/authentik/.config/containers/systemd/ProxyOutpost.env
 Network=slirp4netns:allow_host_loopback=true
 PublishPort=127.0.0.1:19010:9000

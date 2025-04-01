@@ -5,7 +5,7 @@ After=local-fs.target
 
 [Container]
 ContainerName=Authentik-Server
-Image=ghcr.io/goauthentik/server:latest
+Image=ghcr.io/goauthentik/server:2025.2
 Exec=server
 EnvironmentFile=/var/lib/authentik/.config/containers/systemd/Authentik.env
 Network=slirp4netns:allow_host_loopback=true
