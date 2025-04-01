@@ -62,6 +62,10 @@ module ConfigLMM
                 end
             end
 
+            def self.updateHost(host)
+                host = HOST_IP if host.to_s.empty? || ['localhost', '127.0.0.1', '::1'].include?(host)
+                host
+            end
         end
     end
 end

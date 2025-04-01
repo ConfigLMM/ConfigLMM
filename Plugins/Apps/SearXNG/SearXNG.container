@@ -1,0 +1,22 @@
+
+[Unit]
+Description=SearXNG container
+After=local-fs.target
+
+[Container]
+ContainerName=SearXNG
+Image=docker.io/searxng/searxng:latest
+EnvironmentFile=/var/lib/searxng/.config/containers/systemd/SearXNG.env
+Network=slirp4netns:allow_host_loopback=true
+PublishPort=127.0.0.1:18800:8080
+UserNS=keep-id:uid=1000,gid=1000
+Volume=/var/lib/searxng/config:/etc/searxng
+LogDriver=journald
+AutoUpdate=registry
+
+[Service]
+TimeoutStartSec=6min
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target

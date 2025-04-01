@@ -1,3 +1,4 @@
+require 'uri'
 
 module ConfigLMM
     module LMM
@@ -73,6 +74,26 @@ module ConfigLMM
                 end
             end
 
+            def self.connectionURL(params)
+                args = { scheme: 'redis', host: params[:host].to_s, path: '/' }
+                args[:scheme] += 's' if params[:ssl]
+                args[:path] += params[:db] if params[:db]
+
+                if args[:host].include?(':')
+                    args[:host], args[:port] = args[:host].split(':')
+                end
+
+                userinfo = ''
+                if params[:username]
+                    userinfo = URI.encode_uri_component(params[:username])
+                end
+                if params.key?(:password) && !params[:password].nil?
+                    userinfo += ':' + URI.encode_uri_component(params[:password])
+                end
+                args[:userinfo] = userinfo unless userinfo.empty?
+
+                URI::Generic.build(args).to_s
+            end
         end
 
     end
