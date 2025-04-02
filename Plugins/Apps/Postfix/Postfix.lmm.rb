@@ -7,6 +7,7 @@ module ConfigLMM
             MASTER_FILE = 'master.cf'
             MAIN_FILE = 'main.cf'
             TRANSPORT_FILE = 'transport'
+            PASSWORD_FILE = 'sasl_passwd'
 
             def actionPostfixDeploy(id, target, activeState, context, options)
                 self.withConnection(target['Location'], target) do |connection|
@@ -14,7 +15,7 @@ module ConfigLMM
                         linuxConnection.ensurePackages([PACKAGE_NAME, 'CyrusSASL'], options)
                         linuxConnection.ensureServiceAutoStart(SERVICE_NAME, options)
 
-                        deploySettings(target, linuxConnection, options)
+                        deploySettings(target, linuxConnection, context, options)
                         deployAccounts(target, linuxConnection, context, options)
 
                         linuxConnection.restartService(SERVICE_NAME, options)
@@ -22,7 +23,7 @@ module ConfigLMM
                 end
             end
 
-            def deploySettings(target, linuxConnection, options)
+            def deploySettings(target, linuxConnection, context, options)
                 postfixDirName = 'postfix'
                 postfixDirName = 'postfix-' + target['Instance'] if target['Instance']
                 postfixDir = '/etc/' + postfixDirName + '/'
@@ -101,13 +102,16 @@ module ConfigLMM
                 linuxConnection.exec("postmap lmdb:#{postfixDir}access", false, options)
                 linuxConnection.ensureFile("#{postfixDir}sender_login", options)
                 linuxConnection.exec("postmap lmdb:#{postfixDir}sender_login", false, options)
+                linuxConnection.ensureFile("/etc/postfix/#{PASSWORD_FILE}", options)
 
                 certDir = linuxConnection.createWildecardCertificate(options)
                 target['Settings'] ||= {}
                 target['Settings']['default_database_type'] = 'lmdb'
+                target['Settings']['smtp_tls_security_level'] = 'may' unless target['Settings']['smtp_tls_security_level']
+                target['Settings']['smtp_sasl_password_maps'] = 'lmdb:/etc/postfix/' + PASSWORD_FILE
+                target['Settings']['smtp_sasl_security_options'] = 'noanonymous'
                 target['Settings']['smtpd_sender_login_maps'] = "lmdb:#{postfixDir}sender_login" unless target['Settings']['smtpd_sender_login_maps']
                 target['Settings']['smtpd_sender_restrictions'] = "lmdb:#{postfixDir}access" unless target['Settings']['smtpd_sender_restrictions']
-                target['Settings']['smtp_tls_security_level'] = 'may' unless target['Settings']['smtp_tls_security_level']
                 target['Settings']['smtpd_tls_mandatory_protocols'] = '>=TLSv1.2' unless target['Settings']['smtpd_tls_mandatory_protocols']
                 target['Settings']['smtpd_tls_auth_only'] = 'yes' unless target['Settings']['smtpd_tls_auth_only']
                 target['Settings']['smtpd_tls_security_level'] = 'may' unless target['Settings']['smtpd_tls_security_level']
@@ -115,6 +119,25 @@ module ConfigLMM
                 target['Settings']['smtpd_tls_key_file'] = certDir + 'privkey.pem' unless target['Settings']['smtpd_tls_key_file']
                 target['Settings']['tls_preempt_cipherlist'] = 'yes' unless target['Settings']['tls_preempt_cipherlist']
                 target['Settings']['tls_ssl_options'] = 'NO_RENEGOTIATION' unless target['Settings']['tls_ssl_options']
+
+                if target['Relay']
+                    port = target['Relay']['Port'].to_s
+                    port = '587' if port.empty?
+                    target['Settings']['relayhost'] = "#{target['Relay']['Host']}:#{port}" unless target['Settings']['relayhost']
+                    target['Settings']['smtp_sasl_auth_enable'] = 'yes'
+                    if port == '465'
+                        target['Settings']['smtp_tls_security_level'] = 'encrypt'
+                        target['Settings']['smtp_tls_wrappermode'] = 'yes'
+                    end
+                    if target['Relay']['SecretId']
+                        username = target['Relay']['Username'].to_s
+                        password = context.secrets.load(target['Relay']['SecretId'], username.upcase + '_PASSWORD')
+                        linuxConnection.updateFile('/etc/postfix/' + PASSWORD_FILE, options) do |fileLines|
+                            fileLines << "#{target['Settings']['relayhost']}   #{username}:#{password}\n"
+                        end
+                    end
+                end
+                linuxConnection.exec("postmap lmdb:/etc/postfix/#{PASSWORD_FILE}", false, options)
 
                 target['Settings'].each do |name, value|
                     linuxConnection.fileReplace(postfixDir + MAIN_FILE, "^#{name}[[:blank:]]*=[[:blank:]]*", "##{name} = ", options)
