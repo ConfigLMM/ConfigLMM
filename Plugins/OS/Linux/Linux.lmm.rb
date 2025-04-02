@@ -74,11 +74,11 @@ module ConfigLMM
                         envVars = Hash[envs.map { |vars| vars.split('=', 2) }]
                         if envVars['SSH_CONNECTION']
                             ipAddr = envVars['SSH_CONNECTION'].split[-2]
-                            hostsLines << ipAddr.ljust(16) + Addressable::IDNA.to_ascii(target['Domain']) + ' ' + target['Name'] + "\n"
+                            hostsLines << getHostsLine(ipAddr, [Addressable::IDNA.to_ascii(target['Domain']), target['Name']]) + "\n"
                         end
                     end
                     target['Hosts'].to_a.each do |ip, entries|
-                        hostsLines << ip.ljust(16) + entries.map { |entry| Addressable::IDNA.to_ascii(entry) }.join(' ') + "\n"
+                        hostsLines << getHostsLine(ip, entries) + "\n"
                     end
                     connection.updateFile(HOSTS_FILE, options, false) do |fileLines|
                         fileLines + hostsLines
@@ -523,7 +523,7 @@ module ConfigLMM
                     hosts += "::1             localhost\n\n"
                     hosts += IO::Local::CONFIGLMM_SECTION_BEGIN
                     target['Hosts'].each do |ip, entries|
-                        hosts += ip.ljust(16) + entries.join(' ') + "\n"
+                        hosts += getHostsLine(ip, entries) + "\n"
                     end
                     hosts += IO::Local::CONFIGLMM_SECTION_END
 
@@ -607,11 +607,19 @@ module ConfigLMM
                 variables
             end
 
+            def getHostsLine(ip, entries)
+                entries = entries.map { |entry| Addressable::IDNA.to_ascii(entry) }
+                # Hostnames should be case-insensitive but some implementations like in Alpine aren't
+                # so in case someone specified UpperCase hostname we also add lowercase one so that both would resolve
+                entries = (entries + entries.map(&:downcase)).uniq
+                ip.ljust(16) + entries.join(' ')
+            end
+
             def deployLocalHostsFile(target, options)
                 if target['Hosts']
                     updateLocalFile(HOSTS_FILE, options) do |hostsLines|
                         target['Hosts'].each do |ip, entries|
-                            hostsLines << ip.ljust(16) + entries.join(' ') + "\n"
+                            hostsLines << getHostsLine(ip, entries) + "\n"
                         end
                         hostsLines
                     end
