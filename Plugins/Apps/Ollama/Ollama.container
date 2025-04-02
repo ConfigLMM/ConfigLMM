@@ -1,0 +1,26 @@
+
+[Unit]
+Description=Ollama container
+After=local-fs.target
+
+[Container]
+ContainerName=Ollama
+Image=docker.io/ollama/ollama:latest
+EnvironmentFile=/var/lib/ollama/.config/containers/systemd/Ollama.env
+PublishPort=127.0.0.1:11434:11434
+UserNS=keep-id:uid=1000,gid=1000
+# Need newer Podman to use this
+#GroupAdd=keep-groups
+PodmanArgs=--group-add keep-groups
+#PodmanArgs=--passwd-entry 'ollama:x:1000:1000:Ollama:/home/ollama:/bin/bash'
+Volume=/var/lib/ollama/data:/.ollama
+$DEVICES
+LogDriver=journald
+AutoUpdate=registry
+
+[Service]
+TimeoutStartSec=12min
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target

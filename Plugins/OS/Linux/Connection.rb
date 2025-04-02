@@ -337,6 +337,15 @@ module ConfigLMM
                 execDistroCommand(name, 'DeleteGroup', true, options)
             end
 
+            def userAddGroups(name, groups, options = {})
+                return if groups.empty?
+                groups = [groups] unless groups.is_a?(Array)
+                groups = groups.map { |group| group.shellescape }
+
+                command = distroInfo['ModifyUser']
+                connection.exec("#{command} --append --groups #{groups.join(' ')} #{name.shellescape}", false, options)
+            end
+
             def firewallAddPort(portName, options = {})
                 command = 'firewall-cmd --quiet --permanent --add-port ' + portName.shellescape
                 connection.exec(command, true, options)
@@ -399,6 +408,29 @@ module ConfigLMM
                     name = serviceName || name.to_s
                 end
                 name
+            end
+
+            def getGPUDevices(options = {})
+                devices = []
+                ['/dev/kfd', '/dev/dri'].each do |device|
+                    devices << device if self.filePresent?(device, { **options, 'dry': false })
+                end
+
+                # TODO
+                #if isNVIDIA
+                #    devices << 'nvidia.com/gpu=all'
+                #end
+
+                devices
+            end
+
+            def getGPUGroups(devices, options = {})
+                groups = []
+                devices.each do |device|
+                    group = self.exec("stat --format='%G' #{device}", false, options).strip
+                    groups << group unless group == 'root'
+                end
+                groups.uniq
             end
 
             def createWildecardCertificate(options = {})
