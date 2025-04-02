@@ -112,7 +112,7 @@ module ConfigLMM
                 hide = ' ' if options[:hide]
                 result = result.to_s.gsub('\\', '\\\\\\') if options[:escape] != false
                 pattern = "s|#{placeholder}|#{result.to_s.gsub('&', '\\\\&').gsub('|', '\\\\|')}|"
-                connection.exec("#{hide}sed -i #{pattern.shellescape} #{escapePath(target)}", false, options)
+                connection.exec("#{hide}sed -Ei #{pattern.shellescape} #{escapePath(target)}", false, options)
             end
 
             def setUserGroup(path, user, group = nil, options = {})

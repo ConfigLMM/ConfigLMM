@@ -91,16 +91,18 @@ module ConfigLMM
                 end
                 linuxConnection.firewallAddService('smtps', options)
 
+                linuxConnection.createDirs(options, '/etc/sasl2')
                 linuxConnection.upload(__dir__ + '/smtpd.conf', '/etc/sasl2/smtpd.conf', options)
                 linuxConnection.ensureFile('/etc/sasldb2', options)
                 linuxConnection.setUserGroup('/etc/sasldb2', 'postfix', 'postfix', options)
                 linuxConnection.ensureFile("#{postfixDir}access", options)
-                linuxConnection.exec("postmap #{postfixDir}access", false, options)
+                linuxConnection.exec("postmap lmdb:#{postfixDir}access", false, options)
                 linuxConnection.ensureFile("#{postfixDir}sender_login", options)
-                linuxConnection.exec("postmap #{postfixDir}sender_login", false, options)
+                linuxConnection.exec("postmap lmdb:#{postfixDir}sender_login", false, options)
 
                 certDir = linuxConnection.createWildecardCertificate(options)
-                target['Settings'] ||= []
+                target['Settings'] ||= {}
+                target['Settings']['default_database_type'] = 'lmdb'
                 target['Settings']['smtpd_sender_login_maps'] = "lmdb:#{postfixDir}sender_login" unless target['Settings']['smtpd_sender_login_maps']
                 target['Settings']['smtpd_sender_restrictions'] = "reject_sender_login_mismatch, lmdb:#{postfixDir}access" unless target['Settings']['smtpd_sender_restrictions']
                 target['Settings']['smtp_tls_security_level'] = 'may' unless target['Settings']['smtp_tls_security_level']
@@ -113,7 +115,7 @@ module ConfigLMM
                 target['Settings']['tls_ssl_options'] = 'NO_RENEGOTIATION' unless target['Settings']['tls_ssl_options']
 
                 target['Settings'].each do |name, value|
-                    linuxConnection.fileReplace(postfixDir + MAIN_FILE, "^#{name} =.*", "##{name} = #{value}", options)
+                    linuxConnection.fileReplace(postfixDir + MAIN_FILE, "^#{name}[[:blank:]]*=[[:blank:]]*", "##{name} = ", options)
                 end
                 linuxConnection.updateFile(postfixDir + MAIN_FILE, options) do |fileLines|
                     target['Settings'].each do |name, value|
@@ -138,7 +140,7 @@ module ConfigLMM
                         line += ':' + port if port
                         fileLines << line + "\n"
                     end
-                    linuxConnection.exec("postmap #{postfixDir + TRANSPORT_FILE}", false, options)
+                    linuxConnection.exec("postmap lmdb:#{postfixDir + TRANSPORT_FILE}", false, options)
                 end
 
                 if target['Instance']
@@ -194,7 +196,7 @@ module ConfigLMM
                         accountData << "\n"
                         File.write(senderLoginFile, accountData)
                         linuxConnection.upload(senderLoginFile, "#{postfixDir}sender_login", options)
-                        linuxConnection.exec("postmap #{postfixDir}sender_login", false, options)
+                        linuxConnection.exec("postmap lmdb:#{postfixDir}sender_login", false, options)
                     end
                 end
             end
