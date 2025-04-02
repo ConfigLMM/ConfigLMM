@@ -51,6 +51,8 @@ module ConfigLMM
                             fileLines << "    -o smtpd_tls_wrappermode=yes\n"
                             fileLines << "    -o smtpd_tls_security_level=encrypt\n"
                             fileLines << "    -o smtpd_sasl_auth_enable=yes\n"
+                            fileLines << "    -o smtpd_client_restrictions=permit_sasl_authenticated,reject\n"
+                            fileLines << "    -o smtpd_sender_restrictions=reject_sender_login_mismatch,lmdb:#{postfixDir}access\n"
                             fileLines << "    -o cleanup_service_name=header_cleanup\n"
                             fileLines << "header_cleanup unix n   -       -       -       0       cleanup\n"
                             fileLines << "    -o header_checks=regexp:/etc/postfix/header_cleanup\n"
@@ -104,7 +106,7 @@ module ConfigLMM
                 target['Settings'] ||= {}
                 target['Settings']['default_database_type'] = 'lmdb'
                 target['Settings']['smtpd_sender_login_maps'] = "lmdb:#{postfixDir}sender_login" unless target['Settings']['smtpd_sender_login_maps']
-                target['Settings']['smtpd_sender_restrictions'] = "reject_sender_login_mismatch, lmdb:#{postfixDir}access" unless target['Settings']['smtpd_sender_restrictions']
+                target['Settings']['smtpd_sender_restrictions'] = "lmdb:#{postfixDir}access" unless target['Settings']['smtpd_sender_restrictions']
                 target['Settings']['smtp_tls_security_level'] = 'may' unless target['Settings']['smtp_tls_security_level']
                 target['Settings']['smtpd_tls_mandatory_protocols'] = '>=TLSv1.2' unless target['Settings']['smtpd_tls_mandatory_protocols']
                 target['Settings']['smtpd_tls_auth_only'] = 'yes' unless target['Settings']['smtpd_tls_auth_only']
