@@ -45,25 +45,25 @@ module ConfigLMM
                         fileLines << "#{target['AlternativePort']}      inet  n       -       n       -       -       smtpd\n"
                         fileLines << "tlsmgr    unix  -       -       n       1000?   1       tlsmgr\n"
                     else
-                        if !target.key?('Submission') || (target.key?('Submission') && target['Submission'])
-                            fileLines << "submissions     inet  n       -       n       -       -       smtpd\n"
-                            fileLines << "    -o syslog_name=postfix/submissions\n"
-                            fileLines << "    -o smtpd_tls_wrappermode=yes\n"
-                            fileLines << "    -o smtpd_tls_security_level=encrypt\n"
-                            fileLines << "    -o smtpd_sasl_auth_enable=yes\n"
-                            fileLines << "    -o smtpd_client_restrictions=permit_sasl_authenticated,reject\n"
-                            fileLines << "    -o smtpd_sender_restrictions=reject_sender_login_mismatch,lmdb:#{postfixDir}access\n"
-                            fileLines << "    -o cleanup_service_name=header_cleanup\n"
-                            fileLines << "header_cleanup unix n   -       -       -       0       cleanup\n"
-                            fileLines << "    -o header_checks=regexp:/etc/postfix/header_cleanup\n"
-
-                             linuxConnection.fileWrite("/etc/postfix/header_cleanup", '/^Received:/ IGNORE', options)
-                             linuxConnection.fileAppend("/etc/postfix/header_cleanup", '/^User-Agent:/ IGNORE', options)
-                        end
                         fileLines << "tlsmgr    unix  -       -       n       1000?   1       tlsmgr\n"
                         if target['SMTP'] == 'unix'
                             fileLines << "smtp      unix  -       -       n       -       -       smtp\n"
                         end
+                    end
+                    if target['Submission']
+                        fileLines << "submissions     inet  n       -       n       -       -       smtpd\n"
+                        fileLines << "    -o syslog_name=postfix/submissions\n"
+                        fileLines << "    -o smtpd_tls_wrappermode=yes\n"
+                        fileLines << "    -o smtpd_tls_security_level=encrypt\n"
+                        fileLines << "    -o smtpd_sasl_auth_enable=yes\n"
+                        fileLines << "    -o smtpd_client_restrictions=permit_sasl_authenticated,reject\n"
+                        fileLines << "    -o smtpd_sender_restrictions=reject_sender_login_mismatch,lmdb:#{postfixDir}access\n"
+                        fileLines << "    -o cleanup_service_name=header_cleanup\n"
+                        fileLines << "header_cleanup unix n   -       -       -       0       cleanup\n"
+                        fileLines << "    -o header_checks=regexp:/etc/postfix/header_cleanup\n"
+
+                        linuxConnection.fileWrite("/etc/postfix/header_cleanup", '/^Received:/ IGNORE', options)
+                        linuxConnection.fileAppend("/etc/postfix/header_cleanup", '/^User-Agent:/ IGNORE', options)
                     end
                     fileLines
                 end
