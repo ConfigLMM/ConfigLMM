@@ -15,7 +15,9 @@ Arch Linux:
     PHP-FPM: php-fpm
     php-pecl: php-pecl
     pnpm: pnpm
-    Podman: podman
+    Podman:
+        - podman
+        - fuse-overlayfs
     PostgreSQL: postgresql
     Postfix: postfix
     PowerDNS: powerdns
