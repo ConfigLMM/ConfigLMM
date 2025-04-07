@@ -167,7 +167,7 @@ module ConfigLMM
                 activeState['Config'] = self.class.sanitizeConfig(singleTarget)
                 activeState['Config'].delete(:Parent)
                 activeState['Config'].delete('Resources')
-                activeState['Status'] = State::STATUS_DEPLOYED unless activeState['Status']
+                activeState['Status'] = State::STATUS_DEPLOYED if !activeState['Status'] || [State::STATUS_DELETED, State::STATUS_DESTROYED].include?(activeState['Status'])
                 state.save
             end
 
