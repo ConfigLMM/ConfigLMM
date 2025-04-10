@@ -1,0 +1,26 @@
+[GENERAL]
+SIMILARITY_MEASURE = "cosine" # "cosine" or "dot"
+KEEP_ALIVE = "5m" # How long to keep Ollama models loaded into memory. (Instead of using -1 use "-1m")
+
+[MODELS.OPENAI]
+API_KEY = "$OPENAI_KEY"
+
+[MODELS.GROQ]
+API_KEY = "$GROQ_KEY"
+
+[MODELS.ANTHROPIC]
+API_KEY = "$ANTHROPIC_KEY"
+
+[MODELS.GEMINI]
+API_KEY = "$GEMINI_KEY"
+
+[MODELS.CUSTOM_OPENAI]
+API_KEY = "$OPENAI_KEY"
+API_URL = "$OPENAI_URL"
+MODEL_NAME = "$OPENAI_MODEL"
+
+[MODELS.OLLAMA]
+API_URL = "$OLLAMA_URL" # Ollama API URL
+
+[MODELS.DEEPSEEK]
+API_KEY = "$DEEPSEEK_KEY"

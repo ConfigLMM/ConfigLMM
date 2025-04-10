@@ -1,0 +1,25 @@
+
+[Unit]
+Description=Perplexica container
+After=local-fs.target
+
+[Container]
+ContainerName=Perplexica
+Image=docker.io/itzcrazykns1337/perplexica:main
+EnvironmentFile=/var/lib/perplexica/.config/containers/systemd/Perplexica.env
+Network=slirp4netns:allow_host_loopback=true
+PublishPort=127.0.0.1:13500:3000
+UserNS=keep-id:uid=1000,gid=1000
+Volume=/var/lib/perplexica/data:/home/perplexica/data
+Volume=/var/lib/perplexica/uploads:/home/perplexica/uploads
+Volume=/var/lib/perplexica/config.toml:/home/perplexica/config.toml
+
+LogDriver=journald
+AutoUpdate=registry
+
+[Service]
+TimeoutStartSec=6min
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target

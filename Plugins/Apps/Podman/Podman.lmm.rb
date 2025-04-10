@@ -1,5 +1,6 @@
-
 require_relative 'Connection'
+
+require 'uri'
 
 module ConfigLMM
     module LMM
@@ -65,6 +66,14 @@ module ConfigLMM
             def self.updateHost(host)
                 host = HOST_IP if host.to_s.empty? || ['localhost', '127.0.0.1', '::1'].include?(host)
                 host
+            end
+
+            def self.updateURL(url, defaultPort = nil)
+                uri = URI.parse(url.to_s)
+                uri.scheme = 'http' unless uri.scheme
+                uri.port = defaultPort if !uri.port && defaultPort
+                uri.host = self.updateHost(uri.host)
+                uri.to_s
             end
         end
     end
