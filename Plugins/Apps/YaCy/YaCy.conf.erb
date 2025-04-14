@@ -1,0 +1,93 @@
+
+upstream yacy {
+    <% if config['Server'] %>
+        server <%= config['Server'] %>;
+    <% else %>
+        server 127.0.0.1:8090;
+    <% end %>
+}
+
+server {
+
+    <% if config['NginxVersion'] >= 1.25 %>
+        <% if !config['TLS'] %>
+            listen       <%= config['Port'] %>;
+            listen  [::]:<%= config['Port'] %>;
+        <% else %>
+            listen       <%= config['Port'] %> ssl;
+            listen  [::]:<%= config['Port'] %> ssl;
+
+            include config-lmm/ssl.conf;
+        <% end %>
+        http2 on;
+        http3 on;
+        quic_retry on;
+        add_header Alt-Svc 'h3=":443"; ma=86400';
+    <% else %>
+        <% if !config['TLS'] %>
+            listen       <%= config['Port'] %>;
+            listen  [::]:<%= config['Port'] %>;
+        <% else %>
+            listen       <%= config['Port'] %> ssl http2;
+            listen  [::]:<%= config['Port'] %> ssl http2;
+
+            include config-lmm/ssl.conf;
+        <% end %>
+    <% end %>
+
+    server_name <%= config['Domain'] %>;
+
+    <% if config['CertName'] %>
+        ssl_certificate "/etc/letsencrypt/live/<%= config['CertName'] %>/fullchain.pem";
+        ssl_certificate_key "/etc/letsencrypt/live/<%= config['CertName'] %>/privkey.pem";
+        ssl_trusted_certificate "/etc/letsencrypt/live/<%= config['CertName'] %>/chain.pem";
+    <% end %>
+
+    <% if config['Private'] && config['Private'] != 'partial' %>
+        include config-lmm/private.conf;
+    <% end %>
+
+    include config-lmm/errors.conf;
+
+    <% if config['Private'] == 'partial' %>
+        # YaCy exposes a lot of functionality and hence big attack surface
+        # it can be useful to limit it
+
+        location = / {
+           return 403;
+        }
+
+        location / {
+            include config-lmm/private.conf;
+
+            proxy_pass http://yacy;
+            include config-lmm/proxy.conf;
+        }
+
+        location = /seed.txt {
+            proxy_pass http://yacy/seed.txt;
+            include config-lmm/proxy.conf;
+        }
+
+        location /yacy {
+            proxy_pass http://yacy;
+            include config-lmm/proxy.conf;
+        }
+
+        location /solr {
+            proxy_pass http://yacy;
+            include config-lmm/proxy.conf;
+        }
+
+        location /p2p {
+            proxy_pass http://yacy;
+            include config-lmm/proxy.conf;
+        }
+    <% else %>
+        location / {
+            proxy_pass http://yacy;
+            include config-lmm/proxy.conf;
+        }
+    <% end %>
+
+}

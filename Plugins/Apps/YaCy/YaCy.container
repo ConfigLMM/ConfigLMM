@@ -1,0 +1,21 @@
+
+[Unit]
+Description=YaCy container
+After=local-fs.target
+
+[Container]
+ContainerName=YaCy
+Image=docker.io/yacy/yacy_search_server:latest
+EnvironmentFile=/var/lib/yacy/.config/containers/systemd/YaCy.env
+PublishPort=127.0.0.1:8090:8090
+UserNS=keep-id:uid=107,gid=113
+Volume=/var/lib/yacy/DATA:/opt/yacy_search_server/DATA
+LogDriver=journald
+AutoUpdate=registry
+
+[Service]
+TimeoutStartSec=6min
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
