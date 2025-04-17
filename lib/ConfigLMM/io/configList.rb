@@ -59,7 +59,7 @@ module ConfigLMM
                     raise ConfigError.new("Missing 'Type' field: #{id}!")
                 end
                 data['Name'] = id unless data.has_key?('Name')
-                data['Type'] = data['Type'].to_sym
+                data['Type'] = data['Type'].to_s.gsub('.', '').to_sym
                 data[:Parent] = parent
                 data
             end

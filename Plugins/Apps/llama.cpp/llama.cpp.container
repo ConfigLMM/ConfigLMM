@@ -1,0 +1,28 @@
+
+[Unit]
+Description=llama.cpp container
+After=local-fs.target
+
+[Container]
+ContainerName=llama.cpp
+Image=ghcr.io/ggml-org/llama.cpp:full
+Exec=--server --host 0.0.0.0 $ARGS
+EnvironmentFile=/var/lib/llama.cpp/.config/containers/systemd/llama.cpp.env
+PublishPort=127.0.0.1:18900:8080
+UserNS=keep-id:uid=1000,gid=1000
+# Need newer Podman to use this
+#GroupAdd=keep-groups
+PodmanArgs=--group-add keep-groups
+#PodmanArgs=--passwd-entry 'llama.cpp:x:1000:1000:llama.cpp:/home/llama.cpp:/bin/bash'
+Volume=/var/lib/llama.cpp/.cache:/app/.cache
+Volume=/var/lib/llama.cpp/models:/models
+$DEVICES
+LogDriver=journald
+AutoUpdate=registry
+
+[Service]
+TimeoutStartSec=12min
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
