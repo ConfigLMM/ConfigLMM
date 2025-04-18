@@ -1,0 +1,32 @@
+
+[Unit]
+Description=vLLM container
+After=local-fs.target
+
+[Container]
+ContainerName=vLLM
+Image=$IMAGE
+Entrypoint=["python3", "-m", "vllm.entrypoints.openai.api_server"]
+Exec=$ARGS
+EnvironmentFile=/var/lib/vllm/.config/containers/systemd/vLLM.env
+PublishPort=127.0.0.1:18050:8000
+UserNS=keep-id:uid=1000,gid=1000
+# Need newer Podman to use this
+#GroupAdd=keep-groups
+PodmanArgs=--group-add keep-groups
+#PodmanArgs=--passwd-entry 'vllm:x:1000:1000:vLLM:/home/vllm:/bin/bash'
+Volume=/var/lib/vllm/.cache:/app/.cache
+Volume=/var/lib/vllm/.triton:/app/.triton
+Volume=/var/lib/vllm/.cache:/root/.cache
+Volume=/var/lib/vllm/.cache:/workspace/.cache
+ShmSize=1G
+$DEVICES
+LogDriver=journald
+AutoUpdate=registry
+
+[Service]
+TimeoutStartSec=12min
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
