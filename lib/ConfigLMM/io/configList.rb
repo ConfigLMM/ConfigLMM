@@ -3,6 +3,7 @@
 require_relative 'path'
 require 'find'
 require 'yaml'
+require 'deep_merge'
 
 module ConfigLMM
     module IO
@@ -67,10 +68,11 @@ module ConfigLMM
             def toConfig(context)
                 config = {}
                 @Sources.each do |source|
+                    seenIncludes = Set.new
                     data = YAML.safe_load_file(source.to_s, permitted_classes: [Symbol])
                     next unless data.is_a?(Hash)
+                    data = processIncludes(data, source.to_s, seenIncludes)
                     data.each do |id, data|
-                        normalizedId = self.class.normalizeId(id)
                         if id == '_CONTEXT_'
                             context.add(data)
                             next
@@ -78,9 +80,12 @@ module ConfigLMM
 
                         self.class.processConfig(id, data, source.parent)
 
-                        # TODO FIXME we should deep merge them instead
-                        raise ConfigError.new("Duplicate ID: #{id} (#{normalizedId}) - #{source}") if config.has_key?(normalizedId)
-                        config[normalizedId] = data
+                        normalizedId = self.class.normalizeId(id)
+                        if config.has_key?(normalizedId)
+                            config[normalizedId].deep_merge!(data, :extend_existing_arrays => true)
+                        else
+                            config[normalizedId] = data
+                        end
                     end
                 #rescue YAML::SyntaxError => error
                 #    raise ConfigError.new(error)
@@ -94,6 +99,30 @@ module ConfigLMM
 
             def to_a
                 @Sources
+            end
+
+            private
+
+            def processIncludes(data, source, seenIncludes)
+                seenIncludes << source
+                includes = data['_INCLUDE_']
+                return data if includes.nil?
+                includes = [includes] unless includes.is_a?(Array)
+                includesData = {}
+                includes.each do |file|
+                    file = file.to_s
+                    file += '.yaml' unless file.end_with?('.yaml')
+                    file = File.expand_path(file, File.dirname(source))
+                    next if seenIncludes.include?(file)
+                    raise ConfigError.new("#{file} doesn't exist! - #{source}") unless File.exist?(file)
+                    innerData = YAML.safe_load_file(file, permitted_classes: [Symbol])
+                    next unless innerData.is_a?(Hash)
+                    innerData = processIncludes(innerData, file, seenIncludes.dup)
+                    includesData.deep_merge!(innerData, :extend_existing_arrays => true)
+                end
+                includesData.deep_merge!(data, :extend_existing_arrays => true)
+                includesData.delete('_INCLUDE_')
+                includesData
             end
         end
     end

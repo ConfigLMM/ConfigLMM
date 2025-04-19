@@ -33,6 +33,7 @@ Gem::Specification.new do |spec|
     spec.add_dependency 'addressable'
     spec.add_dependency 'argon2'
     spec.add_dependency 'bcrypt_pbkdf' # for net-ssh ed25519 key support
+    spec.add_dependency 'deep_merge'
     spec.add_dependency 'ed25519'
     spec.add_dependency 'faraday-retry'
     spec.add_dependency 'faraday-multipart'
