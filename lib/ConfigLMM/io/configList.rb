@@ -72,6 +72,7 @@ module ConfigLMM
                     data = YAML.safe_load_file(source.to_s, permitted_classes: [Symbol])
                     next unless data.is_a?(Hash)
                     data = processIncludes(data, source.to_s, seenIncludes)
+                    data = processVariables(data, source.to_s)
                     data.each do |id, data|
                         if id == '_CONTEXT_'
                             context.add(data)
@@ -123,6 +124,52 @@ module ConfigLMM
                 includesData.deep_merge!(data, :extend_existing_arrays => true)
                 includesData.delete('_INCLUDE_')
                 includesData
+            end
+
+            def processVariables(data, source)
+                variables = data['_VARIABLES_']
+                raise ConfigError.new("_VARIABLES_ must be a hash! - #{source}") if !variables.nil? && !variables.is_a?(Hash)
+                variables = variables.to_h.transform_keys { |key| key.to_s.upcase }
+                data.delete('_VARIABLES_')
+                data.each do |id, content|
+                    data[id] = processContent(content, variables, source)
+                end
+                data
+            end
+
+            def processContent(content, variables, source)
+                if content.is_a?(Array)
+                    content.each_with_index do |item, i|
+                        content[i] = processContent(item, variables, source)
+                    end
+                elsif content.is_a?(Hash)
+                    newContent = {}
+                    content.each do |key, item|
+                        key = processContent(key, variables, source) if key.is_a?(String)
+                        newContent[key] = processContent(item, variables, source)
+                    end
+                    content = newContent
+                else
+                    content = fillVariable(content, variables, source)
+                end
+                content
+            end
+
+            def fillVariable(content, variables, source)
+                variableStart = content.to_s.index('${VAR:')
+                if variableStart
+                    variableEnd = content.index('}', variableStart + 6)
+                    raise "Unterminated variable: #{content}" if variableEnd.nil?
+                    name = content[variableStart + 6...variableEnd].to_s
+                    raise ConfigError.new("Empty variable name #{content} - #{source}") if name.empty?
+                    raise ConfigError.new("Undefined variable #{name} - #{source}") unless variables.key?(name.upcase)
+                    if variableStart.zero? && variableEnd == content.length
+                        content = variables[name.upcase]
+                    else
+                        content = content[0...variableStart].to_s + variables[name.upcase].to_s + fillVariable(content[(variableEnd + 1)..-1].to_s, variables, source).to_s
+                    end
+                end
+                content
             end
         end
     end
