@@ -277,6 +277,17 @@ receivers:
     storage: file_storage
     all: true
     operators:
+      # Redact secrets
+      - type: regex_replace
+        regex: "password=[^\\s&?\"{}]+"
+        replace_with: "password=<REDACTED>"
+        field: body.MESSAGE
+      - if: body._CMDLINE != nil
+        type: regex_replace
+        regex: "password=[^\\s&?\"{}]+"
+        replace_with: "password=<REDACTED>"
+        field: body._CMDLINE
+
       # Systemd/Journald
       - type: copy
         from: body.SYSLOG_IDENTIFIER
@@ -649,6 +660,9 @@ processors:
 exporters:
   otlp:
     endpoint: $OTLP_RECEIVER:4317
+    retry_on_failure:
+      max_interval: 10m
+      max_elapsed_time: 3h
     sending_queue:
       storage: file_storage
       queue_size: 10000
