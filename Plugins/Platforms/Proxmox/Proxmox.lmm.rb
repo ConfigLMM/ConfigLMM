@@ -2,6 +2,7 @@
 require_relative 'XTerm'
 require 'fog/proxmox'
 require 'cgi'
+require 'addressable/uri'
 
 module ConfigLMM
     module LMM
@@ -10,6 +11,7 @@ module ConfigLMM
             def self.buildURI(uri)
                 uri = uri.dup
                 uri.scheme = 'https'
+                uri.host = Addressable::IDNA.to_ascii(uri.host)
                 uri.port = 8006 if uri.port.nil?
                 uri.path = '/api2/json' if uri.path.to_s.empty? || uri.path == '/'
                 uri.query = nil
