@@ -50,8 +50,8 @@ module ConfigLMM
                         linuxConnection.upload(__dir__ + '/config.json', HOME_DIR + '/', options)
                         linuxConnection.setUserGroup("#{HOME_DIR}/data", USER, USER, options)
 
-                        linuxConnection.fileReplace("#{HOME_DIR}/config.json", '$SYNAPSE_DOMAIN', target['SynapseDomain'], options)
-                        linuxConnection.fileReplace("#{HOME_DIR}/config.json", '$SERVER_NAME', target['ServerName'], options)
+                        linuxConnection.fileReplace("#{HOME_DIR}/config.json", '\$SYNAPSE_DOMAIN', target['SynapseDomain'], options)
+                        linuxConnection.fileReplace("#{HOME_DIR}/config.json", '\$SERVER_NAME', target['ServerName'], options)
 
                         linuxConnection.upload(__dir__ + '/Synapse.container', path, options)
                         linuxConnection.upload(__dir__ + '/Element.container', path, options)

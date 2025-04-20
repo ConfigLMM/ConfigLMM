@@ -110,7 +110,7 @@ module ConfigLMM
 
                         linuxConnection.upload(__dir__ + '/nextcloudcron.service', '/etc/systemd/system/', options)
                         linuxConnection.upload(__dir__ + '/nextcloudcron.timer', '/etc/systemd/system/', options)
-                        linuxConnection.fileReplace('/etc/systemd/system/nextcloudcron.service', '$WEBAPPS/', webappsDir, options)
+                        linuxConnection.fileReplace('/etc/systemd/system/nextcloudcron.service', '\$WEBAPPS/', webappsDir, options)
 
                         linuxConnection.reloadServiceManager(options)
                         linuxConnection.startService(PHP_FPM::PHPFPM_SERVICE, options)

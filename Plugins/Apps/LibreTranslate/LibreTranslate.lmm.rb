@@ -18,7 +18,7 @@ module ConfigLMM
                         linuxConnection.upload(__dir__ + '/LibreTranslate.container', path, options)
 
                         args = ['--metrics']
-                        linuxConnection.fileReplace("#{path}/LibreTranslate.container", '$ARGS', args.join(' '), options)
+                        linuxConnection.fileReplace("#{path}/LibreTranslate.container", '\$ARGS', args.join(' '), options)
                         if target['Listen']
                             linuxConnection.fileReplace("#{path}/LibreTranslate.container", '127.0.0.1', target['Listen'], options)
                         end
