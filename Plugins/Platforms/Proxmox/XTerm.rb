@@ -57,18 +57,25 @@ module ConfigLMM
                         return
                     end
                     checksum = self.exec("md5sum #{source}").split(' ').first.strip
-                    @State[:mutex].synchronize {
-                        @State[:stage] = :raw
-                        ProxmoxXTerm.sendMessage($WS, "stty raw && cat #{source}\n")
-                        @State[:condition].wait(@State[:mutex])
-                    }
-                    compare = Digest::MD5.hexdigest(@State[:data])
-                    if checksum != compare
-                        raise "Failed to download #{source} file"
+                    begin
+                        @State[:mutex].synchronize {
+                            @State[:stage] = :raw
+                            ProxmoxXTerm.sendMessage($WS, "stty raw -onlcr -echo -echonl\n")
+                            @State[:condition].wait(@State[:mutex])
+                        }
+                        @State[:mutex].synchronize {
+                            @State[:stage] = :raw
+                            ProxmoxXTerm.sendMessage($WS, "cat #{source}\n")
+                            @State[:condition].wait(@State[:mutex])
+                        }
+                        compare = Digest::MD5.hexdigest(@State[:data])
+                        if checksum != compare
+                            raise "Failed to download #{source} file"
+                        end
+                        File.write(target, @State[:data])
+                    ensure
+                        self.exec("stty -raw onlcr echo echonl")
                     end
-                    File.write(target, @State[:data])
-                ensure
-                    self.exec("stty -raw")
                 end
 
                 def upload(source, target, dry = false)
@@ -79,26 +86,28 @@ module ConfigLMM
                     end
                     data = File.read(source)
                     checksum = Digest::MD5.hexdigest(data)
-                    @State[:mutex].synchronize {
-                        @State[:stage] = :ignore
-                        ProxmoxXTerm.sendMessage($WS, "stty raw isig && cat > #{target}\n")
-                        @State[:condition].wait(@State[:mutex])
-                    }
-                    @State[:mutex].synchronize {
-                        ProxmoxXTerm.sendMessage($WS, data)
-                        @State[:condition].wait(@State[:mutex])
-                    }
-                    @State[:mutex].synchronize {
-                        @State[:stage] = :shell
-                        ProxmoxXTerm.sendMessage($WS, "\u0003")
-                        @State[:condition].wait(@State[:mutex])
-                    }
-                    compare = self.exec("md5sum #{target}").split(' ').first.strip
-                    if checksum != compare
-                        raise "Failed to upload #{source} file"
+                    begin
+                        @State[:mutex].synchronize {
+                            @State[:stage] = :ignore
+                            ProxmoxXTerm.sendMessage($WS, "stty raw isig -onlcr && cat > #{target}\n")
+                            @State[:condition].wait(@State[:mutex])
+                        }
+                        @State[:mutex].synchronize {
+                            ProxmoxXTerm.sendMessage($WS, data)
+                            @State[:condition].wait(@State[:mutex])
+                        }
+                        @State[:mutex].synchronize {
+                            @State[:stage] = :shell
+                            ProxmoxXTerm.sendMessage($WS, "\u0003")
+                            @State[:condition].wait(@State[:mutex])
+                        }
+                        compare = self.exec("md5sum #{target}").split(' ').first.strip
+                        if checksum != compare
+                            raise "Failed to upload #{source} file"
+                        end
+                    ensure
+                        self.exec("stty -raw onlcr")
                     end
-                ensure
-                    self.exec("stty -raw")
                 end
 
                 def updateFile(file, options, atTop = false, comment = '#', &block)
@@ -159,6 +168,11 @@ module ConfigLMM
                     self.sendMessage($WS, "exit\n")
                     state[:condition].wait(state[:mutex])
                 }
+                state[:mutex].synchronize {
+                    state[:stage] = :exit
+                    self.sendMessage($WS, "exit\n")
+                    state[:condition].wait(state[:mutex])
+                }
                 EM.stop_event_loop
                 thread.join
             end
@@ -208,9 +222,8 @@ module ConfigLMM
                     end
                     raise 'Unexpected Console state!' unless data.lines.last.strip.end_with?('#')
                     state[:stage] = :shell
-                    state[:mutex].synchronize {
-                        state[:condition].signal()
-                    }
+                    # Couldn't get Fish shell to work properly so force using `sh`
+                    self.sendMessage(ws, "sh\n")
                 when :shell
                     raise 'Unexpected Console state!' unless data.lines.last.strip.end_with?('#')
                     state[:mutex].synchronize {
@@ -220,7 +233,7 @@ module ConfigLMM
                     lastNewline = state[:data].rindex("\n")
                     if state[:data][lastNewline..-1].strip.end_with?('#')
                         firstNewline = state[:data].index("\n")
-                        state[:data] = state[:data][(firstNewline + 1)..(lastNewline - 1)]
+                        state[:data] = firstNewline.nil? ? '' : state[:data][(firstNewline + 1)..(lastNewline - 1)]
                         state[:stage] = :shell
                         state[:mutex].synchronize {
                             state[:condition].signal()
@@ -230,9 +243,8 @@ module ConfigLMM
                     end
                 when :raw
                     lastNewline = state[:data].rindex("\n")
-                    if self.cleanupMessage(state[:data][lastNewline..-1]).strip.end_with?('#')
-                        firstNewline = state[:data].index("\n")
-                        state[:data] = state[:data][(firstNewline + 1)..(lastNewline)]
+                    if !lastNewline.nil? && self.cleanupMessage(state[:data][lastNewline..-1]).strip.end_with?('#')
+                        state[:data] = state[:data][0..lastNewline]
                                            .gsub("\r\n", "\n")
                                            .gsub("\e[30m\e[m\u000F\e[?2004l", '') # Fish shell...
                                            .gsub(/\e\[2m\^J\e\[m\u000F\s+\r\^J  \r\e\[/, '')
