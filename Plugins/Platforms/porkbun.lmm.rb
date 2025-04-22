@@ -50,7 +50,7 @@ module ConfigLMM
                 target['DNS'].each do |domain, info|
                     presentRecords = ::Porkbun::DNS.retrieve(domain)
                     if presentRecords.instance_of?(::Porkbun::Error)
-                        raise Framework::PluginProcessError.new("#{id}: #{domain} - #{result.message}")
+                        raise Framework::PluginProcessError.new("#{id}: #{domain} - #{presentRecords.message}")
                     end
                     activeState['DNS'] ||= {}
                     activeState['DNS'][domain] ||= {}
