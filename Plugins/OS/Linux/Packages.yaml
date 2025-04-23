@@ -26,6 +26,7 @@ Arch Linux:
     sshd: openssh
     Valkey: redis
     WireGuard: wireguard-tools
+    xorriso: libisoburn
     Yarn: yarn
 
 openSUSE Leap:
@@ -68,6 +69,7 @@ openSUSE Leap:
     sshd: openssh
     Valkey: redis
     WireGuard: wireguard-tools
+    xorriso: xorriso
     Yarn: yarn
 
 Debian:
@@ -109,4 +111,5 @@ Debian:
     sshd: openssh-server
     Valkey: redis
     WireGuard: wireguard
+    xorriso: xorriso
     Yarn: yarnpkg
