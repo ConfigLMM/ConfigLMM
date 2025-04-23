@@ -50,9 +50,11 @@ module ConfigLMM
 
                             linuxConnection.fileWrite("#{path}/Authentik.env", "AUTHENTIK_SECRET_KEY=#{secretKey}", options)
                             linuxConnection.fileAppend("#{path}/Authentik.env", "AUTHENTIK_REDIS__HOST=#{Podman::HOST_IP}", options)
-                            valkeyPassword = context.secrets.load(target['ValkeySecretId'], 'VALKEY_PASSWORD')
-                            if !valkeyPassword.nil?
-                                linuxConnection.fileAppend("#{path}/Authentik.env", "AUTHENTIK_REDIS__PASSWORD=#{valkeyPassword}", { **options, hide: true })
+                            if target['ValkeySecretId']
+                                valkeyPassword = context.secrets.load(target['ValkeySecretId'], 'VALKEY_PASSWORD')
+                                if !valkeyPassword.nil?
+                                    linuxConnection.fileAppend("#{path}/Authentik.env", "AUTHENTIK_REDIS__PASSWORD=#{valkeyPassword}", { **options, hide: true })
+                                end
                             end
                             linuxConnection.fileAppend("#{path}/Authentik.env", "AUTHENTIK_POSTGRESQL__HOST=#{Podman::HOST_IP}", options)
                             linuxConnection.fileAppend("#{path}/Authentik.env", "AUTHENTIK_POSTGRESQL__PASSWORD=#{dbPassword}", { **options, hide: true })
@@ -199,9 +201,11 @@ module ConfigLMM
                 linuxConnection.fileAppend("#{path}/ProxyOutpost.env", 'AUTHENTIK_INSECURE=false', options)
                 linuxConnection.fileAppend("#{path}/ProxyOutpost.env", "AUTHENTIK_TOKEN=#{proxyOutpostToken}", { **options, hide: true })
                 linuxConnection.fileAppend("#{path}/ProxyOutpost.env", "AUTHENTIK_REDIS__HOST=#{Podman::HOST_IP}", options)
-                valkeyPassword = context.secrets.load(target['ValkeySecretId'], 'VALKEY_PASSWORD')
-                if !valkeyPassword.nil?
-                    linuxConnection.fileAppend("#{path}/ProxyOutpost.env", "AUTHENTIK_REDIS__PASSWORD=#{valkeyPassword}", { **options, hide: true })
+                if target['ValkeySecretId']
+                    valkeyPassword = context.secrets.load(target['ValkeySecretId'], 'VALKEY_PASSWORD')
+                    if !valkeyPassword.nil?
+                        linuxConnection.fileAppend("#{path}/ProxyOutpost.env", "AUTHENTIK_REDIS__PASSWORD=#{valkeyPassword}", { **options, hide: true })
+                    end
                 end
 
                 linuxConnection.setUserGroup("#{path}/ProxyOutpost.env", USER, USER, options)
