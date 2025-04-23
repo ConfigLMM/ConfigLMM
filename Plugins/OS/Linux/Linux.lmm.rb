@@ -819,10 +819,10 @@ module ConfigLMM
                 target['Users'] ||= {}
                 target['HostName'] = target['Name'] unless target['HostName']
 
-                if context.secrets.load(target['SecretId'], 'ROOT_PASSWORD_HASH')
+                if target['SecretId'] && context.secrets.load(target['SecretId'], 'ROOT_PASSWORD_HASH')
                     target['Users']['root'] ||= {}
                     target['Users']['root']['PasswordHash'] = context.secrets.load(target['SecretId'], 'ROOT_PASSWORD_HASH')
-                elsif context.secrets.load(target['SecretId'], 'ROOT_PASSWORD')
+                elsif target['SecretId'] && context.secrets.load(target['SecretId'], 'ROOT_PASSWORD')
                     target['Users']['root'] ||= {}
                     target['Users']['root']['Password'] = context.secrets.load(target['SecretId'], 'ROOT_PASSWORD')
                     target['Users']['root']['PasswordHash'] = self.class.linuxPasswordHash(target['Users']['root']['Password'])
@@ -830,7 +830,7 @@ module ConfigLMM
                     if !target['Users']['root'].key?('Password') &&
                        !target['Users']['root'].key?('PasswordHash')
                         password = SecureRandom.urlsafe_base64(20)
-                        context.secrets.store(target['SecretId'], 'ROOT_PASSWORD', password)
+                        context.secrets.store(target['SecretId'], 'ROOT_PASSWORD', password) if target['SecretId']
                         target['Users']['root']['Password'] = password
                         target['Users']['root']['PasswordHash'] = self.class.linuxPasswordHash(password)
                     elsif target['Users']['root']['Password'] == false
