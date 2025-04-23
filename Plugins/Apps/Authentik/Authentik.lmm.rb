@@ -56,7 +56,8 @@ module ConfigLMM
                                     linuxConnection.fileAppend("#{path}/Authentik.env", "AUTHENTIK_REDIS__PASSWORD=#{valkeyPassword}", { **options, hide: true })
                                 end
                             end
-                            linuxConnection.fileAppend("#{path}/Authentik.env", "AUTHENTIK_POSTGRESQL__HOST=#{Podman::HOST_IP}", options)
+                            postgresHost = Podman.updateHost(target['Database'].to_h['HostName'])
+                            linuxConnection.fileAppend("#{path}/Authentik.env", "AUTHENTIK_POSTGRESQL__HOST=#{postgresHost}", options)
                             linuxConnection.fileAppend("#{path}/Authentik.env", "AUTHENTIK_POSTGRESQL__PASSWORD=#{dbPassword}", { **options, hide: true })
 
                             if !target['SMTP'].to_h.empty?
