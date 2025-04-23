@@ -31,9 +31,35 @@
     <dns t="map">
       <hostname><%= config['HostName'] %></hostname>
       <% if config['Domain'] %>
-        <domain><%= config['Domain'] %></domain>
+        <domain><%= Addressable::IDNA.to_ascii(config['Domain']) %></domain>
+      <% end %>
+      <% if config['DefaultNetwork']['DNS'] %>
+        <nameservers config:type="list">
+          <nameserver><%= config['DefaultNetwork']['DNS'] %></nameserver>
+        </nameservers>
       <% end %>
     </dns>
+    <% if config['DefaultNetwork']['IP'] %>
+      <interfaces config:type="list">
+        <interface>
+          <bootproto><%= config['DefaultNetwork']['IP'] == 'dhcp' ? 'dhcp' : 'static' %></bootproto>
+          <name>eth0</name>
+          <% if config['DefaultNetwork']['IP'] != 'dhcp' %><ipaddr><%= config['DefaultNetwork']['IP'] %></ipaddr><% end %>
+          <startmode>auto</startmode>
+        </interface>
+      </interfaces>
+    <% end %>
+    <% if config['DefaultNetwork']['Gateway'] %>
+      <routing>
+        <routes config:type="list">
+          <route>
+            <destination>default</destination>
+            <device>eth0</device>
+            <gateway><%= config['DefaultNetwork']['Gateway'] %></gateway>
+          </route>
+        </routes>
+      </routing>
+    <% end %>
   </networking>
   <software t="map">
     <% if !config['Apps'].to_a.empty? %>
