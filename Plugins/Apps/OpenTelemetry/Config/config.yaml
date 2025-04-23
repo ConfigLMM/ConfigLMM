@@ -278,7 +278,8 @@ receivers:
     all: true
     operators:
       # Redact secrets
-      - type: regex_replace
+      - if: type(body.MESSAGE) == "string"
+        type: regex_replace
         regex: "password=[^\\s&?\"{}]+"
         replace_with: "password=<REDACTED>"
         field: body.MESSAGE
@@ -349,7 +350,7 @@ receivers:
         type: copy
         from: body.CODE_LINE
         to: resource['code.lineno']
-      - if: body.MESSAGE[0:1] == '{'
+      - if: type(body.MESSAGE) == "string" && body.MESSAGE[0:1] == '{'
         type: json_parser
         parse_from: body.MESSAGE
         parse_to: body.info
@@ -367,7 +368,7 @@ receivers:
           debug: 7
 
       # Nginx error log
-      - if: 'body.MESSAGE matches "^[\\d+/ :]+ \\[\\w+\\] \\d+#\\d+: "'
+      - if: 'type(body.MESSAGE) == "string" && body.MESSAGE matches "^[\\d+/ :]+ \\[\\w+\\] \\d+#\\d+: "'
         type: regex_parser
         parse_from: body.MESSAGE
         parse_to: body.info
@@ -527,7 +528,7 @@ receivers:
         value: info2
 
       # SigNoz
-      - if: 'body.MESSAGE matches "^ts=[\\dT:\\.Z\\-]+ caller="'
+      - if: 'type(body.MESSAGE) == "string" && body.MESSAGE matches "^ts=[\\dT:\\.Z\\-]+ caller="'
         type: regex_parser
         parse_from: body.MESSAGE
         parse_to: body.info
