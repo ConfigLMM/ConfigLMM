@@ -118,6 +118,7 @@ module ConfigLMM
                     ostype: 'l26',
                     scsi0: "#{isoStorageName}:iso/#{filename},media=cdrom",
                     scsihw: 'virtio-scsi-pci',
+                    serial0: 'socket',
                     vga: 'qxl'
                 }
 
