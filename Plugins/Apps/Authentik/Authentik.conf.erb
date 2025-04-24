@@ -1,7 +1,7 @@
 
 # Upstream where your authentik server is hosted.
-upstream authentik {
-    server 127.0.0.1:19000;
+upstream <%= config['Name'] %> {
+    server <%= config['Server'] %>:19000;
 
     # Improve performance by keeping some connections alive.
     keepalive 10;
@@ -26,14 +26,20 @@ server {
 
     server_name <%= config['Domain'] %>;
 
+    <% if config['CertName'] %>
+        ssl_certificate "/etc/letsencrypt/live/<%= config['CertName'] %>/fullchain.pem";
+        ssl_certificate_key "/etc/letsencrypt/live/<%= config['CertName'] %>/privkey.pem";
+        ssl_trusted_certificate "/etc/letsencrypt/live/<%= config['CertName'] %>/chain.pem";
+    <% end %>
+
     location / {
-        proxy_pass http://authentik;
+        proxy_pass http://<%= config['Name'] %>;
         include config-lmm/proxy.conf;
     }
 
     <% if config['Outposts'].to_a.include?('Proxy') %>
         location /outpost.goauthentik.io {
-            proxy_pass http://127.0.0.1:19010/outpost.goauthentik.io;
+            proxy_pass http://<%= config['Server'] %>:19010/outpost.goauthentik.io;
             set $ProxyForwardedHost $http_x_authentik_host;
             include config-lmm/proxy.conf;
         }
