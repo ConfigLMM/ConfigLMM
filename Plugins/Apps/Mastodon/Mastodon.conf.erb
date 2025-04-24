@@ -1,6 +1,6 @@
 
 upstream mastodon {
-    server unix:///run/mastodon.sock fail_timeout=0;
+    server <%= config['Server'] %>:13600 fail_timeout=0;
 }
 
 upstream mastodon-streaming {
@@ -8,67 +8,59 @@ upstream mastodon-streaming {
     # to ensure load is distributed evenly.
     least_conn;
 
-    server 127.0.0.1:4000 fail_timeout=0;
+    server <%= config['Server'] %>:14000 fail_timeout=0;
     # Uncomment these lines for load-balancing multiple instances of streaming for scaling,
-    # this assumes your running the streaming server on ports 4000, 4001, and 4002:
-    # server 127.0.0.1:4001 fail_timeout=0;
-    # server 127.0.0.1:4002 fail_timeout=0;
+    # this assumes your running the streaming server on ports 14000, 14001, and 14002:
+    # server <%= config['Server'] %>:14001 fail_timeout=0;
+    # server <%= config['Server'] %>:14002 fail_timeout=0;
 }
 
-# proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=CACHE:10m inactive=7d max_size=1g;
-
 server {
-    <% if !config['TLS'] %>
-        listen       <%= config['Port'] %>;
-        listen  [::]:<%= config['Port'] %>;
-    <% else %>
-        listen       <%= config['Port'] %> ssl;
-        listen  [::]:<%= config['Port'] %> ssl;
+
+    <% if config['NginxVersion'] >= 1.25 %>
+        <% if !config['TLS'] %>
+            listen       <%= config['Port'] %>;
+            listen  [::]:<%= config['Port'] %>;
+        <% else %>
+            listen       <%= config['Port'] %> ssl;
+            listen  [::]:<%= config['Port'] %> ssl;
+
+            include config-lmm/ssl.conf;
+        <% end %>
         http2 on;
-        include config-lmm/ssl.conf;
+        http3 on;
+        quic_retry on;
+        add_header Alt-Svc 'h3=":443"; ma=86400';
+    <% else %>
+        <% if !config['TLS'] %>
+            listen       <%= config['Port'] %>;
+            listen  [::]:<%= config['Port'] %>;
+        <% else %>
+            listen       <%= config['Port'] %> ssl http2;
+            listen  [::]:<%= config['Port'] %> ssl http2;
+
+            include config-lmm/ssl.conf;
+        <% end %>
     <% end %>
 
     server_name <%= config['Domain'] %>;
+
+    <% if config['CertName'] %>
+        ssl_certificate "/etc/letsencrypt/live/<%= config['CertName'] %>/fullchain.pem";
+        ssl_certificate_key "/etc/letsencrypt/live/<%= config['CertName'] %>/privkey.pem";
+        ssl_trusted_certificate "/etc/letsencrypt/live/<%= config['CertName'] %>/chain.pem";
+    <% end %>
 
     client_max_body_size 99M;
 
     include config-lmm/errors.conf;
 
-    # proxy_redirect off;
-    # proxy_cache CACHE;
-    # proxy_cache_valid 200 7d;
-    # proxy_cache_valid 410 24h;
-    # proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
-    # add_header X-Cached $upstream_cache_status;
-
-    root /var/lib/mastodon/public;
-
     location / {
-        try_files $uri @mastodon;
-    }
-
-    location @mastodon {
         proxy_pass http://mastodon;
         include config-lmm/proxy.conf;
     }
 
-    location ~ ^/assets|avatars|emoji|headers|packs|shortcuts|sounds/ {
-
-        add_header Cache-Control "public, max-age=2419200, must-revalidate";
-        add_header Strict-Transport-Security "max-age=63072000; includeSubDomains";
-        try_files $uri =404;
-    }
-
-    location ~ ^/system/ {
-        add_header Cache-Control "public, max-age=2419200, immutable";
-        add_header Strict-Transport-Security "max-age=63072000; includeSubDomains";
-        #add_header X-Content-Type-Options nosniff;
-        add_header Content-Security-Policy "default-src 'none'; form-action 'none'";
-        try_files $uri =404;
-    }
-
     location ^~ /api/v1/streaming {
-
         proxy_buffering off;
         proxy_cache off;
         proxy_pass http://mastodon-streaming;

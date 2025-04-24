@@ -1,0 +1,28 @@
+
+[Unit]
+Description=Mastodon container
+After=local-fs.target
+
+[Container]
+ContainerName=Mastodon
+Image=ghcr.io/mastodon/mastodon:latest
+# Need newer Podman
+# Entrypoint=/entrypoint.sh
+PodmanArgs=--entrypoint /entrypoint.sh
+Exec=server
+EnvironmentFile=/var/lib/mastodon/.config/containers/systemd/Mastodon.env
+Network=slirp4netns:allow_host_loopback=true
+PublishPort=127.0.0.1:13600:3000
+UserNS=keep-id:uid=991,gid=991
+Volume=/var/lib/mastodon/system:/mastodon/public/system
+Volume=/var/lib/mastodon/.configlmm/entrypoint.sh:/entrypoint.sh
+Volume=/var/lib/mastodon/.configlmm/configlmm.rake:/mastodon/lib/tasks/configlmm.rake
+LogDriver=journald
+AutoUpdate=registry
+
+[Service]
+TimeoutStartSec=6min
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target

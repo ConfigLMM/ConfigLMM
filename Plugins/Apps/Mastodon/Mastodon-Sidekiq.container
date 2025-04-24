@@ -1,0 +1,22 @@
+
+[Unit]
+Description=Mastodon Sidekiq container
+After=local-fs.target
+
+[Container]
+ContainerName=Mastodon-Sidekiq
+Image=ghcr.io/mastodon/mastodon:latest
+Exec=bundle exec sidekiq
+EnvironmentFile=/var/lib/mastodon/.config/containers/systemd/Mastodon.env
+Network=slirp4netns:allow_host_loopback=true
+UserNS=keep-id:uid=991,gid=991
+Volume=/var/lib/mastodon/system:/mastodon/public/system
+LogDriver=journald
+AutoUpdate=registry
+
+[Service]
+TimeoutStartSec=6min
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target

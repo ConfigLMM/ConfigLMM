@@ -172,6 +172,18 @@ Jellyfin:
 Mastodon:
     Type: Mastodon
     Domain: mastodon.example.org
+    Valkey:
+        SecretId: valkey
+        Host: valkey
+    SMTP:
+        SecretId: Secret
+        Host: mail@example.org
+        Port: 465
+        Username: mastodon
+        From: Mastodon <mastodon@example.org>
+    Admin:
+        Username: admin
+        EMail: admin@example.org
 
 # https://matrix.org/
 Matrix:

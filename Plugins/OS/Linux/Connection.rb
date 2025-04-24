@@ -135,6 +135,10 @@ module ConfigLMM
                 connection.exec("chmod og+rX #{escapePath(path)}", false, options)
             end
 
+            def makeExecutable(path, options = {})
+                connection.exec("chmod +x #{escapePath(path)}", false, options)
+            end
+
             def createDirs(options, *paths)
                 paths = paths.map { |path| escapePath(path) }
                 connection.exec("mkdir -p #{paths.join(' ')}", false, options)

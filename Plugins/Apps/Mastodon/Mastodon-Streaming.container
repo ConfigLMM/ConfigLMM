@@ -1,0 +1,20 @@
+
+[Unit]
+Description=Mastodon Streaming container
+After=local-fs.target
+
+[Container]
+ContainerName=Mastodon-Streaming
+Image=ghcr.io/mastodon/mastodon-streaming:latest
+EnvironmentFile=/var/lib/mastodon/.config/containers/systemd/Mastodon.env
+Network=slirp4netns:allow_host_loopback=true
+PublishPort=127.0.0.1:14000:4000
+LogDriver=journald
+AutoUpdate=registry
+
+[Service]
+TimeoutStartSec=6min
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target default.target
