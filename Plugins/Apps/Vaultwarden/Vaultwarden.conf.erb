@@ -1,5 +1,5 @@
 
-upstream vaultwarden {
+upstream <%= config['Name'] %> {
     <% if config['Server'] %>
         server <%= config['Server'] %>;
     <% else %>
@@ -47,7 +47,7 @@ server {
     include config-lmm/gateway-errors.conf;
 
     location / {
-        proxy_pass http://vaultwarden;
+        proxy_pass http://<%= config['Name'] %>;
         include config-lmm/proxy.conf;
     }
 

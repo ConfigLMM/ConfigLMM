@@ -90,8 +90,8 @@ module ConfigLMM
                         end
                         if !target.key?('Proxy') || !!target['Proxy']
                             Nginx.withConnection(linuxConnection) do |nginxConnection|
-                                nginxConnection.writeConfig(__dir__, NAME, target, state, context, options)
-                                nginxConnection.deployAllConfigs(target, activeState, context, options)
+                                target['ConfigName'] = target['Name']
+                                nginxConnection.provision(__dir__, NAME, target, activeState, context, options)
                             end
                         end
                     end
