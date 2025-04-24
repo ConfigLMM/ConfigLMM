@@ -30,9 +30,10 @@ module ConfigLMM
                             #    gollumPath = linuxConnection.exec('gem which gollum', true).strip
                             #    target['Root'] = File.dirname(gollumPath) + '/gollum/public'
                             #end
+
                             Nginx.withConnection(linuxConnection) do |nginxConnection|
-                                nginxConnection.writeConfig(__dir__, NAME, target, state, context, options)
-                                nginxConnection.deployAllConfigs(target, activeState, context, options)
+                                target['ConfigName'] = target['Name']
+                                nginxConnection.provision(__dir__, NAME, target, activeState, context, options)
                             end
                         end
                         if !target.key?('Proxy') || target['Proxy'] != 'only'
@@ -74,7 +75,9 @@ module ConfigLMM
                     if !item['Config'].key?('Proxy') || !!item['Config']['Proxy']
                         Linux.withConnection(connection) do |linuxConnection|
                             Nginx.withConnection(linuxConnection) do |nginxConnection|
-                                nginxConnection.cleanupConfig(NAME, context, options)
+                                configName = NAME
+                                configName = item['Config']['ConfigName'] if item['Config']['ConfigName']
+                                nginxConnection.cleanupConfig(configName, context, options)
                                 nginxConnection.reload(options)
                             end
                             state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
