@@ -100,7 +100,6 @@ module ConfigLMM
                         linuxConnection.setUserGroup(configDir, USER, USER, options)
                         linuxConnection.setUserGroup('/var/lib/nextcloud', USER, USER, options)
 
-
                         name = 'nextcloud'
                         PHP_FPM.withConnection(linuxConnection) do |phpConnection|
                             linuxConnection.updateFile(phpConnection.configDir + name + '.conf', options, false, ';') do |configLines|
@@ -118,8 +117,7 @@ module ConfigLMM
                         linuxConnection.startService('nextcloudcron.timer', options)
 
                         Nginx.withConnection(linuxConnection) do |nginxConnection|
-                            nginxConnection.writeConfig(__dir__, 'Nextcloud', target, state, context, options)
-                            nginxConnection.deployAllConfigs(target, activeState, context, options)
+                            nginxConnection.provision(__dir__, 'Nextcloud', target, activeState, context, options)
                         end
                     end
                 end
