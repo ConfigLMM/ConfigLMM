@@ -38,6 +38,12 @@ server {
 
     server_name <%= config['Domain'] %>;
 
+    <% if config['CertName'] %>
+        ssl_certificate "/etc/letsencrypt/live/<%= config['CertName'] %>/fullchain.pem";
+        ssl_certificate_key "/etc/letsencrypt/live/<%= config['CertName'] %>/privkey.pem";
+        ssl_trusted_certificate "/etc/letsencrypt/live/<%= config['CertName'] %>/chain.pem";
+    <% end %>
+
     <% if config['Private'] %>
         include config-lmm/private.conf;
     <% end %>
