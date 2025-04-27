@@ -8,7 +8,7 @@ module ConfigLMM
         class NICLV < Framework::DNS
 
             def actionNICLVDNSDeploy(id, target, activeState, context, options)
-                showManualDNSSteps(target, "and add these records:") do |domain|
+                showManualDNSSteps(target, "and add these records:", context) do |domain|
                     prompt.say("Open https://www.nic.lv/client/topview/edit_domain?dname=#{domain}", :color => :magenta)
                 end
             end

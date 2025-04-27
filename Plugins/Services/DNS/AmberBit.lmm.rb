@@ -4,7 +4,7 @@ module ConfigLMM
         class AmberBit < Framework::DNS
 
             def actionAmberBitDNSDeploy(id, target, activeState, context, options)
-                showManualDNSSteps(target, "Click on Technical information and add these records:") do |domain|
+                showManualDNSSteps(target, "Click on Technical information and add these records:", context) do |domain|
                     prompt.say("Open https://my.amberbit.eu/domain/list/ and under #{domain}", :color => :magenta)
                 end
             end

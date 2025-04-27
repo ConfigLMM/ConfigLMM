@@ -144,7 +144,7 @@ module ConfigLMM
                         next if name == '!'
                         fullName = Addressable::IDNA.to_ascii(name) + '.' + Addressable::IDNA.to_ascii(domain) + '.'
                         fullName = Addressable::IDNA.to_ascii(domain) + '.' if name == '@'
-                        self.processDNS(domain, data).each do |type, records|
+                        self.processDNS(domain, data, context).each do |type, records|
                             #remove += removeConflicting(zone, fullName, type)
                             rrset = {
                                 name: fullName,

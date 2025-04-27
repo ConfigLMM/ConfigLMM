@@ -8,7 +8,7 @@ module ConfigLMM
         class DNS < Framework::Plugin
             DEFAULT_TTL = 600
 
-            def processDNS(domain, items)
+            def processDNS(domain, items, context)
                 records = {}
 
                 if items.is_a?(Hash)
@@ -25,6 +25,7 @@ module ConfigLMM
                     type, content = item.strip.split('=')
                     content = domain if content == '@'
                     content = self.class.externalIp if content == '@me'
+                    content = Variables.stringEval(content, context)
                     records[type] ||= []
                     records[type] << { type: type, content: content, ttl: DEFAULT_TTL }
                 end
@@ -32,13 +33,13 @@ module ConfigLMM
                 records
             end
 
-            def showManualDNSSteps(target, message)
+            def showManualDNSSteps(target, message, context)
                 if !target['DNS'].to_h.empty?
                     target['DNS'].each do |domain, data|
                         yield(domain)
                         prompt.say(message, :color => :magenta) if message
                         data.each do |name, data|
-                            self.processDNS(domain, data).each do |type, records|
+                            self.processDNS(domain, data, context).each do |type, records|
                                 records.each do |record|
                                     prompt.say("  * Type: #{record[:type]}\n    Name: #{name}\n    Content: #{record[:content]}", :color => :bold)
                                 end

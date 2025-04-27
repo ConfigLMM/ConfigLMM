@@ -59,7 +59,7 @@ module ConfigLMM
                     info.each do |name, data|
                         name = '' if name == '@'
 
-                        self.processDNS(domain, data).each do |type, records|
+                        self.processDNS(domain, data, context).each do |type, records|
                             records.each do |record|
                                 found = false
                                 remove = []

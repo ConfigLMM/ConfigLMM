@@ -24,7 +24,7 @@ module ConfigLMM
                 target['DNS'].to_h.each do |domain, data|
                     config = { 'Domain' => domain, 'Records' => '' }
                     data.each do |name, data|
-                        self.processDNS(domain, data).each do |type, records|
+                        self.processDNS(domain, data, context).each do |type, records|
                             records.each do |record|
                                 shortName = Addressable::IDNA.to_ascii(name) + '.' if type == 'CNAME' || type == 'ALIAS'
                                 if record[:type] == 'MX'
@@ -67,7 +67,7 @@ module ConfigLMM
                 if USE_API
                     # TODO
                 else
-                    showManualDNSSteps(target, "Click on DNS tab and either import generated Zone file or add these records:") do |domain|
+                    showManualDNSSteps(target, "Click on DNS tab and either import generated Zone file or add these records:", context) do |domain|
                         prompt.say("Open https://dcc.godaddy.com/control/portfolio/#{domain}/settings", :color => :magenta)
                     end
                 end
