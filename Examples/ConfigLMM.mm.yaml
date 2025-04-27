@@ -1,0 +1,32 @@
+
+ConfigLMMPorkbun:
+    Type: PorkbunDNS
+    DNS:
+        ConfigLM.Moe:
+            '@':
+                - A=185.199.108.153
+                - A=185.199.109.153
+                - A=185.199.110.153
+                - A=185.199.111.153
+                - AAAA=2606:50c0:8000::153
+                - AAAA=2606:50c0:8001::153
+                - AAAA=2606:50c0:8002::153
+                - AAAA=2606:50c0:8003::153
+            www: CNAME=ConfigLM.Moe
+            _github-pages-challenge-ConfigLMM: TXT=${SECRET:ConfigLMMGitHub:ConfigLMM_ConfigLM.Moe}
+
+ConfigLMMGitHub:
+    Type: GitHub
+    Organizations:
+        ConfigLMM:
+            Description: ConfigLMM - Large Configuration Management Manager
+            URL: https://ConfigLM.Moe
+            Domains:
+                - ConfigLM.Moe
+            Repositories:
+                ConfigLMM:
+                    Description: Manage configuration for your applications/systems/services/servers
+                    Website: https://ConfigLM.Moe
+                    Pages:
+                        Branch: master
+                        Domain: ConfigLM.Moe
