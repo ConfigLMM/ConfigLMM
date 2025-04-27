@@ -57,7 +57,7 @@ module ConfigLMM
             @Context['Likes'] ||= []
             @Context['Dislikes'] ||= []
 
-            if secretsProvider
+            if secretsProvider && secretsProvider != 'no'
                 url = Addressable::URI.parse(secretsProvider)
                 if url.scheme.nil?
                     @Secrets = Secrets::FileStore.new(@Logger, @Prompt, url.path)
