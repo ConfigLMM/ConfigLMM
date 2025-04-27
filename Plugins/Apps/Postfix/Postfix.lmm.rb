@@ -1,4 +1,6 @@
 
+require 'addressable/idna'
+
 module ConfigLMM
     module LMM
         class Postfix < Framework::Plugin
@@ -104,8 +106,26 @@ module ConfigLMM
                 linuxConnection.exec("postmap lmdb:#{postfixDir}sender_login", false, options)
                 linuxConnection.ensureFile("/etc/postfix/#{PASSWORD_FILE}", options)
 
+                if !target['Aliases'].to_h.empty?
+                    if !linuxConnection.filePresent?('/etc/aliases', options)
+                        linuxConnection.exec('cp /etc/postfix/aliases /etc/', false, options)
+                        linuxConnection.rm("/etc/postfix/aliases", false, options[:dry])
+                    end
+                    target['Aliases'].each do |name, destination|
+                        linuxConnection.fileReplace('/etc/aliases', '^'+name + ':', '#' + name + ':', options)
+                    end
+                    linuxConnection.updateFile('/etc/aliases', options, true) do |fileLines|
+                        target['Aliases'].each do |name, destination|
+                            fileLines << "#{(name.to_s + ':').ljust(16)}#{self.class.punnycodeEMail(destination)}\n"
+                        end
+                        fileLines
+                    end
+                    linuxConnection.exec('postalias lmdb:/etc/aliases', false, options)
+                end
+
                 certDir = linuxConnection.createWildecardCertificate(options)
                 target['Settings'] ||= {}
+                target['Settings']['alias_maps'] = 'lmdb:/etc/aliases'
                 target['Settings']['default_database_type'] = 'lmdb'
                 target['Settings']['smtp_tls_security_level'] = 'may' unless target['Settings']['smtp_tls_security_level']
                 target['Settings']['smtp_sasl_password_maps'] = 'lmdb:/etc/postfix/' + PASSWORD_FILE
@@ -253,6 +273,15 @@ module ConfigLMM
                     end
                 end
             end
+
+            def self.punnycodeEMail(email)
+                emailLocal, emailDomain = email.to_s.split('@')
+                if emailLocal && emailDomain && emailLocal.ascii_only? && !emailDomain.ascii_only?
+                    email = emailLocal + '@' + Addressable::IDNA.to_ascii(emailDomain)
+                end
+                email
+            end
+
         end
 
     end
