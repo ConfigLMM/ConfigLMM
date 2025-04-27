@@ -1,3 +1,4 @@
+require 'addressable/idna'
 
 module ConfigLMM
     module LMM
@@ -137,6 +138,17 @@ module ConfigLMM
                         linuxConnection.updateFile(DOVECOT_DIR + 'conf.d/10-ssl.conf', options) do |configLines|
                             configLines << "ssl_cert = <#{certDir}fullchain.pem\n"
                             configLines << "ssl_key = <#{certDir}privkey.pem\n"
+                            if !target['Domains'].to_h.empty?
+                                target['Domains'].each do |domain, config|
+                                    if config['CertName']
+                                        configLines << "local_name #{Addressable::IDNA.to_ascii(domain)} {\n"
+                                        configLines << "    ssl_cert = </etc/letsencrypt/live/#{config['CertName']}/fullchain.pem\n"
+                                        configLines << "    ssl_key = </etc/letsencrypt/live/#{config['CertName']}/privkey.pem\n"
+                                        configLines << "}\n"
+                                    end
+                                end
+                            end
+                            configLines
                         end
 
                         linuxConnection.restartService(SERVICE_NAME, options)
