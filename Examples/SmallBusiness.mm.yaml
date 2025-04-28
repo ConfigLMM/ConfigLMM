@@ -1,0 +1,492 @@
+
+_VARIABLES_:
+    ProxmoxDomain: proxmox.example.org
+    ProxmoxIP: 192.168.1.2
+    IngressDomain: ingress.example.org
+    IngressPublicIP: 1.2.3.4
+    IngressIP: 10.0.0.3
+    ServicesHostName: services.example.org
+    ServicesIP: 10.0.0.4
+
+Bootstrap:
+    Type: Linux
+    Location: @me
+    Hosts:
+        "${VAR:ProxmoxIP}":
+            - ${VAR:ProxmoxDomain}
+        "${VAR:IngressIP}":
+            - ${VAR:IngressDomain}
+        "${VAR:ServicesIP}":
+            - ${VAR:ServicesHostName}
+    SSH:
+        Config:
+            proxmox:
+                User: root
+                HostName: ${VAR:ProxmoxDomain}
+            ingress:
+                User: root
+                HostName: ${VAR:IngressDomain}
+            services:
+                User: root
+                HostName: ${VAR:ServicesHostName}
+
+Porkbun:
+    Type: PorkbunDNS
+    DNS:
+        example.org:
+            '@':
+                - ALIAS=${VAR:IngressDomain}
+                - MX=10 mail.example.org
+            ingress:
+                - A=${VAR:IngressPublicIP}
+            mail:
+                - CNAME=${VAR:IngressDomain}
+
+Proxmox:
+    Type: Linux
+    Location: pxe://
+    AlternativeLocation: ssh://proxmox/
+    Distro: Debian
+    Flavour: Proxmox VE
+    Firmware: UEFI
+    Domain: ${VAR:ProxmoxDomain}
+    EMail: proxmox@example.org
+    Users:
+        root:
+            Subuids:
+                - 100000-265536
+            Subgids:
+                - 100000-265536
+            AuthorizedKeys:
+                - ~/.ssh/id_ed25519.pub
+    Sysctl:
+        net.ipv4.ip_forward: 1      # Need to work as router
+        vm.overcommit_memory: 1     # Need for ValKey
+    Network:
+        Interfaces:
+            enp3s0:
+                IP: ${VAR:ProxmoxIP}/24
+                Gateway: 192.168.1.1
+                DNS: 192.168.1.1
+            vmbr0:
+                Ports:
+                    - enp1s0
+                VLANFiltering: yes
+                VLANS: 1-5
+            vmbr0.1:
+                IP: 10.0.0.2/24
+                Gateway: 10.0.0.1
+                DNS: 10.0.0.1
+    Apps:
+        - sshd
+        - vim
+        - smartmontools
+        - htop
+        - iotop
+
+Ingress:
+    Type: Linux
+    Location: proxmox://${VAR:ProxmoxDomain}/?insecure
+    AlternativeLocation: ssh://ingress/
+    Distro: openSUSE Leap
+    Domain: ${VAR:IngressDomain}
+    LXC: no
+    CPU: 12
+    RAM: 64 GiB
+    Swap: 10 GiB
+    Storage: 500 GiB
+    Apps:
+        - sshd
+        - fish
+        - vim
+        - htop
+    Firewall: yes
+    Hosts:
+        "${VAR:ServicesIP}":
+            - ${VAR:ServicesHostName}
+    Users:
+        root:
+            AuthorizedKeys:
+                - ~/.ssh/id_ed25519.pub
+    NIC:
+        - Bridge: vmbr0
+          VLAN: 2
+        - Bridge: vmbr0
+          VLAN: 1
+    Network:
+        IP: ${VAR:IngressPublicIP}/24
+        Gateway: 1.2.3.1
+        DNS: 1.1.1.1
+        Interfaces:
+            eth1:
+                IP: ${VAR:IngressIP}/24
+
+IngressSSH:
+    Type: SSH
+    Location: ssh://ingress/
+    ListenAddress: ${VAR:IngressIP}
+    Settings:
+        PasswordAuthentication: no
+        KbdInteractiveAuthentication: no
+
+IngressDovecot:
+    Type: Dovecot
+    Location: ssh://ingress/
+    Protocols:
+        - imap
+        - lmtp
+    Resources:
+        IngressDovecotDNS:
+            Type: Porkbun
+            DNS:
+                example.org:
+                    IMAP: CNAME=${VAR:IngressDomain}
+
+IngressPostfix:
+    Type: Postfix
+    Location: ssh://ingress/
+    Domain: mail.example.org
+    Submission: yes
+    ForwardDovecot: yes
+    Settings:
+        inet_interfaces: $myhostname, localhost
+        virtual_alias_maps: pcre:/etc/postfix/virtual
+        virtual_mailbox_maps: lmdb:/etc/postfix/mailboxes
+    Aliases:
+        root: Admin@example.org
+        postmaster: postmaster@example.org
+    Accounts:
+        signoz@example.org:
+        nextcloud@example.org:
+        vaultwarden@example.org:
+
+IngressNginx:
+    Type: Nginx
+    Location: ssh://ingress/
+
+IngressLetsEncrypt:
+    Type: LetsEncrypt
+    Location: ssh://ingress/
+    EMail: dns@example.org
+    Domain: '*.example.org'
+    DNS: porkbun
+    Hooks:
+        - nginx
+        - postfix
+        - dovecot
+
+IngressOtelCollector:
+    Type: OtelCollector
+    Location: ssh://ingress/
+    Services:
+        nginx:
+    Exporters:
+        otlp:
+            endpoint: ${VAR:ServicesHostName}:4317
+            tls:
+                insecure: true
+
+
+Services:
+    Type: Linux
+    Location: proxmox://${VAR:ProxmoxDomain}/?insecure
+    AlternativeLocation: proxmox+xterm://${VAR:ProxmoxDomain}/?insecure
+    Distro: openSUSE Leap
+    LXC:
+        - idmap: u 0 100000 165536
+        - idmap: g 0 100000 165536
+        - mount.entry: /dev/net dev/net none bind,create=dir
+    Features:
+        - nesting # For Podman
+        - fuse # Need for Podman performance workaround
+    CPU: 24
+    RAM: 128 GiB
+    Swap: 20 GiB
+    Domain: ${VAR:ServicesHostName}
+    Tmpfs: 2G
+    Hosts:
+        "${VAR:IngressIP}":
+            - ${VAR:IngressDomain}
+    Apps:
+        - sshd
+        - fish
+        - vim
+        - htop
+        - systemd-container
+    Firewall: yes
+    Users:
+        root:
+            Shell: fish
+            AuthorizedKeys:
+                - ~/.ssh/id_ed25519.pub
+    NIC:
+        - Bridge: vmbr0
+          VLAN: 1
+    Network:
+        IP: ${VAR:ServicesIP}/24
+        Gateway: 10.0.0.1
+        DNS: 10.0.0.1
+
+ServicesSystemd:
+    Type: systemd
+    Location: ssh://services/
+    UserCgroups: yes # Need for Podman
+
+ServicesPostgreSQL:
+    Type: PostgreSQL
+    Location: ssh://services/
+    AllowReplication:
+        - 10.0.0.0/24
+    Users:
+        replication:
+            Replication: yes
+            Password: ${GENERATE:ServicesPostgreSQL:REPLICATION_PASSWORD}
+    Settings:
+        wal_level: logical # for Logical Replication
+
+ServicesMariaDB:
+    Type: MariaDB
+    Location: ssh://services/
+
+ServicesValkey:
+    Type: Valkey
+    Location: ssh://services/
+    Password: no
+
+ServicesPHPFPM:
+    Type: PHPFPM
+    Location: ssh://services/
+    Settings:
+        memory_limit: 1G
+        opcache.memory_consumption: 512
+        opcache.interned_strings_buffer: 64
+        opcache.max_accelerated_files: 50000
+        opcache.max_wasted_percentage: 15
+        opcache.validate_timestamps: 0
+
+ServicesAuthentik:
+    Type: Authentik
+    Location: ssh://services/
+    Proxy: no
+    Domain: auth.example.org
+    Outposts:
+        - Proxy
+    Admin:
+        Name: admin
+        EMail: admin@example.org
+    SMTP:
+        SecretId: IngressPostfix
+        Host: mail.example.org
+        Port: 465
+        Username: auth@example.org
+        From: Auth <auth@example.org>
+    Groups:
+        accountants:
+    Resources:
+        ServicesAuthentikDNS:
+            Type: Porkbun
+            DNS:
+                example.org:
+                    auth: CNAME=@
+        ServicesAuthentikProxy:
+            Type: Authentik
+            Location: ssh://ingress/
+            Domain: auth.example.org
+            Server: ${VAR:IngressDomain}
+            Proxy: only
+            Outposts:
+               - Proxy
+
+ServicesSigNoz:
+    Type: SigNoz
+    Location: ssh://services/
+    Admin:
+        EMail: admin@exmaple.org
+        FirstName: admin
+        OrganizationName: example.org
+    SMTP:
+        SecretId: IngressPostfix
+        Host: mail.example.org
+        Port: 465
+        Username: signoz@example.org
+        FromAddress: signoz@example.org
+
+ServicesSigNozCollector:
+    Type: SigNozCollector
+    Location: ssh://services/
+    Listen: 0.0.0.0
+    Environment: production
+
+ServicesVaultwarden:
+    Type: Vaultwarden
+    Location: ssh://services/
+    Proxy: no
+    Domain: vaultwarden.example.org
+    SMTP:
+        SecretId: IngressPostfix
+        Host: mail.example.org
+        Port: 465
+        Username: vaultwarden@example.org
+        FromAddress: vaultwarden@example.org
+    Resources:
+        ServicesVaultwardenDNS:
+            Type: Porkbun
+            DNS:
+                example.org:
+                    vaultwarden: CNAME=@
+        ServicesVaultwardenProxy:
+            Type: Vaultwarden
+            Location: ssh://ingress/
+            Domain: vaultwarden.example.org
+            Server: ${VAR:ServicesHostName}:18000
+            Proxy: only
+
+
+# Needed for Nextcloud
+ServicesNginx:
+    Type: Nginx
+    Location: ssh://services/
+    Mime:
+        mjs: text/javascript
+
+ServicesNextcloud:
+    Type: Nextcloud
+    Location: ssh://services/
+    Domain: nextcloud.example.org
+    TLS: no
+    Admin:
+        Name: admin
+        EMail: admin@example.org
+    Database:
+        Type: pgsql
+    Apps:
+        - Calendar
+        - Contacts
+        - Mail
+        - SSO
+    SMTP:
+        SecretId: IngressPostfix
+        Host: mail.example.org
+        Port: 465
+        Username: nextcloud@example.org
+        FromAddress: nextcloud@example.org
+    Config:
+        trusted_proxies:
+            - ${VAR:IngressIP}
+    Resources:
+        ServicesNextcloudDNS:
+            Type: Porkbun
+            DNS:
+                example.org:
+                    nextcloud: CNAME=@
+        ServicesNextcloudProxy:
+            Type: NginxProxy
+            Location: ssh://ingress/
+            Domain: nextcloud.example.org
+            Proxy: http://${VAR:ServicesHostName}
+            HandleErrors: no
+
+ServicesGitLab:
+    Type: GitLab
+    Location: ssh://services/
+    Proxy: no
+    Domain: git.example.org
+    SMTP:
+        SecretId: IngressPostfix
+        Host: mail.example.org
+        Port: 465
+        Username: gitlab@example.org
+        TLS: yes
+    Resources:
+        ServicesGitLabDNS:
+            Type: Porkbun
+            DNS:
+                example.org:
+                    git: CNAME=@
+        ServicesGitLabProxy:
+            Type: NginxProxy
+            Location: ssh://Ingress/
+            Domain: git.example.org
+            Proxy: http://${VAR:ServicesHostName}:18100
+        ServicesGitLabTunnel:
+            Type: Tunnel
+            Location: ssh://Ingress/
+            Port: 22
+            Remote: ${VAR:ServicesHostName}:22
+
+ServicesERPNext:
+    Type: ERPNext
+    Location: ssh://services/
+    Proxy: no
+    Admin:
+        FullName: admin
+        EMail: admin@example.org
+    Resources:
+        ServicesERPNextDNS:
+            Type: Porkbun
+            DNS:
+                example.org:
+                    erp: CNAME=@
+        ServicesERPNextProxy:
+            Type: NginxProxy
+            Location: ssh://ingress/
+            Domain: erp.example.org
+            Proxy: http://${VAR:ServicesHostName}:18400
+            HandleErrors: no
+        ServicesERPNextAuth:
+            Type: Authentik
+            Location: https://auth.example.org/?SecretId=ServicesAuthentik
+            Deploy: no
+            Providers:
+                ERPNext:
+                    Type: OAuth2
+                    Client: Confidential
+                    Subject: UUID
+            Applications:
+                erpnext:
+                    Name: ERPNext
+                    Provider: ERPNext
+                    Policies:
+                        - accountants:
+                              Type: Group
+
+ServicesOtelCollector:
+    Type: OtelCollector
+    Location: ssh://services/
+    Environment: production
+    Services:
+        nginx:
+        postgresql:
+        php:
+            Users:
+                - nextcloud
+    Receivers:
+        filelog/nextcloud:
+            include: /var/lib/nextcloud/data/nextcloud.log
+            storage: file_storage
+            resource:
+                service.name: nextcloud
+            operators:
+                - type: json_parser
+                  timestamp:
+                      parse_from: attributes.time
+                      layout_type: strptime
+                      layout: "%FT%T%j"
+                - type: copy
+                  from: attributes.message
+                  to: resource['log.message']
+                - type: severity_parser
+                  parse_from: attributes.level
+                  overwrite_text: true
+                  mapping:
+                      info: 0
+                      warn: 1
+                      error: 2
+                      fatal: 3
+    Exporters:
+        otlp:
+            endpoint: 127.0.0.1:4317
+            tls:
+                insecure: true
+            sending_queue:
+                queue_size: 20000
