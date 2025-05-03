@@ -55,6 +55,12 @@ module ConfigLMM
             @State[id]
         end
 
+        def eachItem(filter = [], &block)
+            @State.each do |id, item|
+                yield(id, item) if filter.empty? || filter.include?(id)
+            end
+        end
+
         def selectType(type)
             items = {}
             @State.each do |id, item|
@@ -73,6 +79,7 @@ module ConfigLMM
         private
 
         def findStateFile(configList)
+            return './.lmm.state.yaml' if configList.to_a.empty?
             parent = configList.to_a.first.parent
             sameParent = configList.to_a.all? { |item| item.parent == parent }
             if sameParent

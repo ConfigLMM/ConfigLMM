@@ -14,6 +14,10 @@ module ConfigLMM
     module Commands
         class ConfigsCommand < ConfigLMM::Command
 
+            def configsRequired
+                true
+            end
+
             def initialize(configPaths, options)
                 @ConfigPaths = configPaths
                 @Options = options
@@ -38,7 +42,7 @@ module ConfigLMM
             end
 
             def execute
-                raise ConfigLMM::CLI::MissingArgument.new("ERROR: No configs specified!\n\n") if @ConfigPaths.empty?
+                raise ConfigLMM::CLI::MissingArgument.new("ERROR: No configs specified!\n\n") if configsRequired && @ConfigPaths.empty?
 
                 options = @Options.dup
                 options.delete(:locations)
