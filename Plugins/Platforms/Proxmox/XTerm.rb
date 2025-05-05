@@ -222,6 +222,7 @@ module ConfigLMM
                     end
                     raise 'Unexpected Console state!' unless data.lines.last.strip.end_with?('#')
                     state[:stage] = :shell
+                    state[:delay] = 3
                     # Couldn't get Fish shell to work properly so force using `sh`
                     self.sendMessage(ws, "sh\n")
                 when :shell
@@ -275,9 +276,11 @@ module ConfigLMM
                         raise 'Too many failed login attempts!'
                     end
                     state[:stage] = :password
+                    state[:delay] = 3
                     self.sendMessage(ws, "#{username}\n")
                 elsif data.strip.end_with?('#')
                     state[:stage] = :shell
+                    state[:delay] = 3
                     state[:mutex].synchronize {
                         state[:condition].signal()
                     }
@@ -296,7 +299,7 @@ module ConfigLMM
                 if data.include?('Password:')
                     state[:stage] = :checkPassword
                     raise 'Missing ROOT_PASSWORD!' unless password
-                    state[:delay] = 3
+                    state[:delay] = 5
                     self.sendMessage(ws, password + "\n")
                 else
                     raise 'Unexpected Console state!'
