@@ -2,6 +2,7 @@ require 'faye/websocket'
 require 'eventmachine'
 require 'strings-ansi'
 require 'digest'
+require 'base64'
 
 module ConfigLMM
     module LMM
@@ -57,6 +58,9 @@ module ConfigLMM
                         return
                     end
                     checksum = self.exec("md5sum #{source}").split(' ').first.strip
+                    isBinary = self.exec("file --brief --mime-encoding #{source}").include?('binary')
+                    encode = ''
+                    encode = ' | base64' if isBinary
                     begin
                         @State[:mutex].synchronize {
                             @State[:stage] = :raw
@@ -65,13 +69,15 @@ module ConfigLMM
                         }
                         @State[:mutex].synchronize {
                             @State[:stage] = :raw
-                            ProxmoxXTerm.sendMessage($WS, "cat #{source}\n")
+                            ProxmoxXTerm.sendMessage($WS, "cat #{source}#{encode}\n")
                             @State[:condition].wait(@State[:mutex])
                         }
+                        @State[:data] = Base64.decode64(@State[:data]) if isBinary
                         compare = Digest::MD5.hexdigest(@State[:data])
                         if checksum != compare
                             raise "Failed to download #{source} file"
                         end
+                        target += '/' + File.basename(source) if File.directory?(target)
                         File.write(target, @State[:data])
                     ensure
                         self.exec("stty -raw onlcr echo echonl")
