@@ -212,6 +212,10 @@ module ConfigLMM
             def backupOverConnection(connection, id, activeState, context, options)
                 filename = options['output'] + '/etc.tar.gz'
                 connection.downloadStream('tar --create --acls --xattrs --selinux --format=posix --gzip /etc', filename, options)
+
+                packageFilename = options['output'] + '/packages.txt'
+                packages = connection.execDistroCommand(nil, 'ListPackages', false, options)
+                local.fileWrite(packageFilename, packages, options[:dry])
             end
 
             def convertFlavour(distroInfo, target, connection, options)

@@ -14,6 +14,7 @@ opensuse-leap:
     ModifyUser: usermod
     DeleteUser: userdel --remove --force
     DeleteGroup: groupdel
+    ListPackages: rpm --query --all | sort
 
 arch:
     Name: Arch Linux
@@ -30,6 +31,7 @@ arch:
     ModifyUser: usermod
     DeleteUser: userdel --remove --force
     DeleteGroup: groupdel
+    ListPackages: pacman --query | sort
 
 debian:
     Name: Debian
@@ -46,3 +48,4 @@ debian:
     ModifyUser: usermod
     DeleteUser: userdel --remove --force
     DeleteGroup: groupdel
+    ListPackages: dpkg-query --list --no-pager
