@@ -67,6 +67,41 @@ module ConfigLMM
                 end
             end
 
+            def actionLinuxBackup(id, activeState, context, options)
+                target = activeState['Config'].to_h
+                if target['AlternativeLocation']
+                    self.withConnection(target['AlternativeLocation'], target) do |connection|
+                        self.class.withConnection(connection) do |connection|
+                            backupOverConnection(connection, id, activeState, context, options)
+                        end
+                    end
+                end
+                if target['Location'] && target['Location'] != '@me'
+                    uri = Addressable::URI.parse(target['Location'])
+                    case uri.scheme
+                    when 'qemu'
+                        return if target['AlternativeLocation']
+                        prompt.warn('Backing up on QEMU not implemented!')
+                    when 'proxmox'
+                        backupInProxmox(id, target, activeState, context, options)
+                    when 'pxe', 'pxe+http'
+                        return
+                    when 'ssh'
+                        return if target['AlternativeLocation']
+                        self.withConnection(uri, target) do |connection|
+                            self.class.withConnection(connection) do |connection|
+                                backupOverConnection(connection, id, activeState, context, options)
+                            end
+                        end
+                    else
+                        raise Framework::PluginProcessError.new("#{id}: Unknown protocol: #{uri.scheme}!")
+                    end
+                else
+                    # Local backup not implemented - TODO FIXME
+                    prompt.warn('Local backup not implemented!')
+                end
+            end
+
             def deployOverConnection(connection, id, target, activeState, context, options)
                 if target['Domain'] || target['Hosts']
                     hostsLines = []
@@ -172,6 +207,11 @@ module ConfigLMM
                     connection.startService(service, options)
                 end
                 self.executeCommands(target['Execute'], connection)
+            end
+
+            def backupOverConnection(connection, id, activeState, context, options)
+                filename = options['output'] + '/etc.tar.gz'
+                connection.downloadStream('tar --create --acls --xattrs --selinux --format=posix --gzip /etc', filename, options)
             end
 
             def convertFlavour(distroInfo, target, connection, options)
@@ -468,6 +508,10 @@ module ConfigLMM
                         context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users']['root'].key?('Password')
                     end
                 end
+            end
+
+            def backupInProxmox(id, target, activeState, context, options)
+                # TODO FIXME
             end
 
             def findNetworkIP(ipaddr)
