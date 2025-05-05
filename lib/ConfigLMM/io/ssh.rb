@@ -140,8 +140,8 @@ module ConfigLMM
                 uri = Addressable::URI.parse(uri) if uri.is_a?(String)
                 server, sshParams = self.toParams(uri)
                 cmd = 'ssh '
-                cmd += '-p ' + sshParams[:port] if sshParams[:port]
-                cmd += sshParams[:user] + '@' if sshParams[:port]
+                cmd += '-p ' + sshParams[:port].to_s + ' ' if sshParams[:port]
+                cmd += sshParams[:user].to_s + '@' if sshParams[:user]
                 cmd + server
             end
 
