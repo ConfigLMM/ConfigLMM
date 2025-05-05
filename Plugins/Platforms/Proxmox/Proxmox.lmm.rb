@@ -369,11 +369,12 @@ module ConfigLMM
                 parsedQuery = CGI.parse(targetUri.query)
                 insecure = !!parsedQuery['insecure']
 
+                secretId = parsedQuery['secretId'].to_a.first || target['SecretId']
                 if target['Type'] == :Linux
                     username = 'root'
                     password = target['Users']['root']['Password']
+                    password = context.secrets.load(secretId, 'ROOT_PASSWORD') if password.nil?
                 else
-                    secretId = parsedQuery['secretId'].to_a.first || target['SecretId']
                     username = context.secrets.load(secretId, 'ROOT_USER') || 'root'
                     password = context.secrets.load(secretId, 'ROOT_PASSWORD')
                 end
