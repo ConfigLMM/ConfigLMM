@@ -84,6 +84,14 @@ module ConfigLMM
                     end
                 end
 
+                def downloadStream(command, target, local, options = {})
+                    filename = '/tmp/xterm.stream'
+                    self.exec("umask 077 && #{command} > #{filename}", false, options)
+                    self.download(filename, target, options)
+                ensure
+                    self.exec("rm -rf #{filename}", false, options)
+                end
+
                 def upload(source, target, options = {})
                     if options[:dry]
                         message = "Would upload #{source} to proxmox+xterm:#{target}"

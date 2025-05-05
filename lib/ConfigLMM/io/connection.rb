@@ -76,6 +76,10 @@ module ConfigLMM
                 @tunnel.download(source, target, options)
             end
 
+            def downloadStream(command, target, options = {})
+                @tunnel.downloadStream(command, target, local, options)
+            end
+
             def upload(source, target, options = {})
                 @tunnel.upload(source, target, options)
             end

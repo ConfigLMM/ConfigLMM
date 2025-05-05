@@ -51,6 +51,13 @@ module ConfigLMM
                 end
             end
 
+            def downloadStream(command, target, local, options = {})
+                uri = "ssh://#{ssh.transport.options[:user]}@#{ssh.transport.host}:#{ssh.transport.port}/"
+                cmd = self.class.cmd(uri)
+                command = cmd + ' ' + command.shellescape + ' > ' + target
+                local.exec(command, false, options)
+            end
+
             def upload(source, target, options = {})
                 if options['dry']
                     prompt.say("Would upload scp -P #{ssh.transport.port} #{source} #{ssh.transport.host}:#{target}")

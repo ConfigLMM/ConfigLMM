@@ -127,6 +127,11 @@ module ConfigLMM
                 copy(source, target, options[:dry])
             end
 
+            def downloadStream(command, target, local, options = {})
+                command += ' > ' + target
+                self.exec(command, false, options)
+            end
+
             def upload(source, target, options = {})
                 copy(source, target, options[:dry])
             end

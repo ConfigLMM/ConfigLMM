@@ -68,6 +68,10 @@ module ConfigLMM
                 connection.download(*args)
             end
 
+            def downloadStream(*args)
+                connection.downloadStream(*args)
+            end
+
             def updateFile(*args, &block)
                 connection.updateFile(*args, &block)
             end
