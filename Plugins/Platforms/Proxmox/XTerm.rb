@@ -46,12 +46,12 @@ module ConfigLMM
                     @State[:data]
                 end
 
-                def adminExec(command, allowFailure = false, dry = false)
-                    self.exec(command, allowFailure, dry)
+                def adminExec(command, allowFailure = false, options = {})
+                    self.exec(command, allowFailure, options)
                 end
 
-                def download(source, target, dry = false)
-                    if dry
+                def download(source, target, options = {})
+                    if options[:dry]
                         message = "Would download proxmox+xterm:#{source}"
                         prompt.say(message)
                         return
@@ -78,8 +78,8 @@ module ConfigLMM
                     end
                 end
 
-                def upload(source, target, dry = false)
-                    if dry
+                def upload(source, target, options = {})
+                    if options[:dry]
                         message = "Would upload #{source} to proxmox+xterm:#{target}"
                         prompt.say(message)
                         return
@@ -114,9 +114,9 @@ module ConfigLMM
                     localFile = options['output'] + '/' + SecureRandom.alphanumeric(10)
                     File.write(localFile, '')
                     self.exec("touch #{file}", false, options)
-                    self.download(file, localFile, options['dry'])
+                    self.download(file, localFile, options)
                     IO::Local.new(self.prompt, self.logger).updateFile(localFile, options, atTop, comment, &block)
-                    self.upload(localFile, file, options['dry'])
+                    self.upload(localFile, file, options)
                 end
 
             end
