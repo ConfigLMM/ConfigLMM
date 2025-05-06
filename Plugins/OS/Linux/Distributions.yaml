@@ -15,6 +15,7 @@ opensuse-leap:
     DeleteUser: userdel --remove --force
     DeleteGroup: groupdel
     ListPackages: rpm --query --all | sort
+    UpdatePackages: zypper update --no-confirm
 
 arch:
     Name: Arch Linux
@@ -32,6 +33,7 @@ arch:
     DeleteUser: userdel --remove --force
     DeleteGroup: groupdel
     ListPackages: pacman --query | sort
+    UpdatePackages: pacman --sync --refresh --sysupgrade --noconfirm
 
 debian:
     Name: Debian
@@ -49,3 +51,4 @@ debian:
     DeleteUser: userdel --remove --force
     DeleteGroup: groupdel
     ListPackages: dpkg-query --list --no-pager
+    UpdatePackages: apt-get update --yes && apt-get upgrade --with-new-pkgs --yes

@@ -102,6 +102,33 @@ module ConfigLMM
                 end
             end
 
+            def actionLinuxUpdate(id, activeState, context, options)
+                target = activeState['Config'].to_h
+                if target['AlternativeLocation']
+                    self.withConnection(target['AlternativeLocation'], target) do |connection|
+                        self.class.withConnection(connection) do |connection|
+                            updateOverConnection(connection, id, activeState, context, options)
+                        end
+                    end
+                elsif target['Location'] && target['Location'] != '@me'
+                    uri = Addressable::URI.parse(target['Location'])
+                    case uri.scheme
+                    when 'qemu', 'pxe', 'pxe+http', 'proxmox'
+                        return
+                    when 'ssh'
+                        self.withConnection(uri, target) do |connection|
+                            self.class.withConnection(connection) do |connection|
+                                updateOverConnection(connection, id, activeState, context, options)
+                            end
+                        end
+                    else
+                        raise Framework::PluginProcessError.new("#{id}: Unknown protocol: #{uri.scheme}!")
+                    end
+                else
+                    updateOverConnection(local, id, activeState, context, options)
+                end
+            end
+
             def deployOverConnection(connection, id, target, activeState, context, options)
                 if target['Domain'] || target['Hosts']
                     hostsLines = []
@@ -216,6 +243,21 @@ module ConfigLMM
                 packageFilename = options['output'] + '/packages.txt'
                 packages = connection.execDistroCommand(nil, 'ListPackages', false, options)
                 local.fileWrite(packageFilename, packages, options[:dry])
+            end
+
+            def updateOverConnection(connection, id, activeState, context, options)
+                result = connection.execDistroCommand(nil, 'UpdatePackages', false, options).downcase
+                if result.include?('package updates will not be installed') ||
+                   result.include?('packages have been kept back')
+                    prompt.warn('Manual upgrade required!')
+                end
+
+                if result.include?('reboot required') ||
+                   result.include?('reboot is suggested') ||
+                   result.include?('update-initramfs:') ||
+                   result.include?('updating linux initcpios')
+                    prompt.warn('System reboot required!')
+                end
             end
 
             def convertFlavour(distroInfo, target, connection, options)
