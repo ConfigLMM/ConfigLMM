@@ -24,11 +24,13 @@ module ConfigLMM
             end
 
             def exec(command, allowFailure = false, options = {})
-                cmd = "su --login #{@user.shellescape} --shell /usr/bin/sh --command #{command.shellescape}"
-                if options[:hide]
-                    cmd = ' ' + cmd
-                end
+                cmd = self.class.cmd(@user, command, options)
                 @connection.exec(cmd, allowFailure, options)
+            end
+
+            def downloadStream(command, target, options = {})
+                cmd = self.class.cmd(@user, command, options)
+                @connection.downloadStream(cmd, target, options)
             end
 
             def rm(*args)
@@ -60,6 +62,14 @@ module ConfigLMM
 
             def createDirs(options, *paths)
                 exec("mkdir -p #{paths.join(' ')}", false, options)
+            end
+
+            def self.cmd(user, command, options)
+                cmd = "su --login #{user.shellescape} --shell /usr/bin/sh --command #{command.shellescape}"
+                if options[:hide]
+                    cmd = ' ' + cmd
+                end
+                cmd
             end
 
             def self.escapeSingleQuotes(command)
