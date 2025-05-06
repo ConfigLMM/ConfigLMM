@@ -112,6 +112,22 @@ module ConfigLMM
             handleCommand(:backup, configsLimit, options)
         end
 
+
+        desc 'update [CONFIGS_LIMIT...]', 'Update deployed things'
+        method_option :help,    aliases: '-h', type: :boolean,
+                                desc: 'Display usage information'
+        method_option :secrets, aliases: '-s', type: :string, default: '.secrets',
+                                desc: 'Path to the secrets provider (can be a file)'
+        method_option :state,   aliases: '-l', type: :string,
+                                desc: 'Path to the state file'
+        method_option :output,  aliases: '-o', type: :string,
+                                default: './backup',
+                                desc: 'Backup folder'
+        def update(*configsLimit)
+            handleCommand(:update, configsLimit, options)
+        end
+
+
         desc 'cleanup [CONFIGS...]', 'In deployed infrastructure cleanup/delete unused things (eg. deployment leftover junk) (note this can be risky due to mistakes)'
         method_option :help,    aliases: '-h', type: :boolean,
                                 desc: 'Display usage information'
