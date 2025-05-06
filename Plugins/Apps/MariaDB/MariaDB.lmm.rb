@@ -25,6 +25,20 @@ module ConfigLMM
                 end
             end
 
+            def actionMariaDBBackup(id, activeState, context, options)
+                target = activeState['Config'].to_h
+                withConnection(target['Location'], target) do |connection|
+                    Linux.withConnection(connection) do |linuxConnection|
+                        filename = options['output'] + '/mariadb_all.sql.gz'
+                        result = linuxConnection.downloadStream('mysqldump --all-databases --all-tablespaces --events --routines --flush-privileges | gzip', filename, options)
+                        if result.downcase.include?('error')
+                            prompt.error(result)
+                            raise result
+                        end
+                    end
+                end
+            end
+
             def cleanup(configs, state, context, options)
                 cleanupType(:MariaDB, configs, state, context, options) do |item, id, state, context, options, connection|
                     Linux.withConnection(connection) do |linuxConnection|
