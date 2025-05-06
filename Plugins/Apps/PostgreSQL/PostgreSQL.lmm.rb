@@ -52,6 +52,18 @@ module ConfigLMM
                 end
             end
 
+            def actionPostgreSQLBackup(id, activeState, context, options)
+                target = activeState['Config'].to_h
+                withConnection(target['Location'], target) do |connection|
+                    Linux.withConnection(connection) do |linuxConnection|
+                        linuxConnection.withUserShell(USER_NAME) do |shellConnection|
+                            filename = options['output'] + '/postgres_all.psql.gz'
+                            shellConnection.downloadStream('pg_dumpall | gzip', filename, options)
+                        end
+                    end
+                end
+            end
+
             def cleanup(configs, state, context, options)
                 cleanupType(:PostgreSQL, configs, state, context, options) do |item, id, state, context, options, connection|
                     withConnection(item['Config']['Location'], item['Config']) do |connection|
