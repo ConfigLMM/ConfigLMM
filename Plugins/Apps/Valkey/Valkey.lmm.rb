@@ -6,6 +6,7 @@ module ConfigLMM
             PACKAGE_NAME = 'Valkey'
             CONFIG_FILE = '/etc/redis/redis.conf'
             PID_FILE = '/run/redis/redis.pid'
+            DEFAULT_DIR = '/var/lib/redis/'
 
             def actionValkeyDeploy(id, target, activeState, context, options)
                 self.withConnection(target['Location'], target) do |connection|
@@ -50,6 +51,29 @@ module ConfigLMM
 
                         linuxConnection.ensureServiceAutoStart(serviceName, options)
                         linuxConnection.restartService(serviceName, options)
+                    end
+                end
+            end
+
+            def actionValkeyBackup(id, activeState, context, options)
+                target = activeState['Config'].to_h
+                withConnection(target['Location'], target) do |connection|
+                    Linux.withConnection(connection) do |linuxConnection|
+                        cmd = 'redis-cli SAVE'
+                        hide = false
+                        if target['Settings']['requirepass']
+                            password = context.secrets.load(target['SecretId'], 'VALKEY_PASSWORD')
+                            cmd = 'REDISCLI_AUTH="' + password + '" ' + cmd
+                            hide = true
+                        end
+
+                        result = linuxConnection.exec(cmd, false, { **options, hide: hide })
+                        if result.downcase.include?('error') || !result.include?('OK')
+                            prompt.error(result)
+                            raise result
+                        end
+                        dir = target['Settings']['dir'] ? target['Settings']['dir'] : DEFAULT_DIR
+                        linuxConnection.download(dir + 'dump.rdb', options['output'] + '/dump.rdb', options)
                     end
                 end
             end
