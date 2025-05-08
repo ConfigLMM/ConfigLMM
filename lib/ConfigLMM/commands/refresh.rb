@@ -24,6 +24,8 @@ module ConfigLMM
             end
 
             def processRefresh(id, target, options)
+                return if shouldFilter?(id, target, nil, options)
+
                 errors = 0
                 found = false
                 self.plugins.each do |pluginId, plugin|

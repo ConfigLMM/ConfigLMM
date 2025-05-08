@@ -48,7 +48,7 @@ module ConfigLMM
                 options.delete(:locations)
                 options.delete(:things)
                 options[:locationFilter] = Utils::Filters.parseLocationsOption(@Options[:locations], logger)
-                #options[:thingFilter] = Utils::Filters.parseThingsOption(@Options[:things], logger)
+                options[:thingFilter] = Utils::Filters.parseThingsOption(@Options[:things], logger)
 
                 configList = IO::ConfigList.create(@ConfigPaths, logger)
                 configList.expand!(options[:locationFilter])
@@ -79,6 +79,12 @@ module ConfigLMM
             end
 
             protected
+
+            def shouldFilter?(id, target, state, options)
+                target = state['Config'] if target.nil? && state
+                type = state ? state[:Type] : target['Type']
+                Utils::Filters.shouldFilterThing?(id, type, target, options[:thingFilter])
+            end
 
             def invokeValidateAction(id, plugin, singleTarget, options)
                 actionMethod = plugin.class.actionMethod(singleTarget['Type'], 'Validate')

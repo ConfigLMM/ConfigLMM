@@ -7,6 +7,8 @@ module ConfigLMM
         class List < ConfigsCommand
             def processConfig(config, options)
                 config.each do |id, data|
+                    next if shouldFilter?(id, data, nil, options)
+
                     prompt.say("#{data['Name']}: #{data['Type']}")
                 end
             end

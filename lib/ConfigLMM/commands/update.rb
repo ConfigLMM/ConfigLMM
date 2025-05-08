@@ -17,6 +17,8 @@ module ConfigLMM
                 filter = config.keys
                 state.eachItem(filter) do |id, item|
                     next if [State::STATUS_DELETED, State::STATUS_DESTROYED].include?(item['Status'])
+                    next if shouldFilter?(id, nil, item, options)
+
                     type = item[:Type]
                     self.plugins.each do |pluginId, plugin|
                         if plugin.hasAction?(type, :update)

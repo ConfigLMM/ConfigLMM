@@ -8,6 +8,8 @@ module ConfigLMM
             def processConfig(config, options)
                 configDiffs = {}
                 config.each do |id, data|
+                    next if shouldFilter?(id, data, nil, options)
+
                     found = false
                     plugins.each do |pluginId, plugin|
                         if plugin.hasAction?(data['Type'], :diff)

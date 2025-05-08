@@ -19,6 +19,8 @@ module ConfigLMM
             end
 
             def processDeploy(id, target, options)
+                return if shouldFilter?(id, target, nil, options)
+
                 providers = []
                 self.plugins.each do |pluginId, plugin|
                     if plugin.hasAction?(target['Type'], :deploy)

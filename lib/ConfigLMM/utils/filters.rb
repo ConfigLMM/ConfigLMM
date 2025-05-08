@@ -10,7 +10,83 @@ module ConfigLMM
             end
 
             def self.parseThingsOption(filter, logger)
-                self.parseFilters(filter.split(';'), logger)
+                filters = {
+                    includeIds: Set.new,
+                    excludeIds: Set.new,
+                    includeTypes: Set.new,
+                    excludeTypes: Set.new,
+                    includeLocations: Set.new,
+                    excludeLocations: Set.new
+                }
+                userFilters = filter.split(';')
+                userFilters.each do |filter|
+                    next if filter.empty?
+                    filter = filter.upcase
+                    equal = filter.index('=')
+                    negate = false
+                    if equal.nil?
+                        category = 'ID'
+                        if filter[0] == '!'
+                            negate = true
+                            content = filter[1..]
+                        else
+                            content = filter
+                        end
+                    else
+                        category = filter[0, equal]
+                        if category[-1] == '!'
+                            negate = true
+                            category = category[0...-1]
+                        end
+                        content = filter[equal + 1..]
+                    end
+                    content = content.split(',')
+                    case category
+                    when 'ID'
+                        filters[negate ? :excludeIds : :includeIds] += content
+                    when 'TYPE'
+                        filters[negate ? :excludeTypes : :includeTypes] += content
+                    when 'LOCATION'
+                        filters[negate ? :excludeLocations : :includeLocations] += content
+                    else
+                        raise "Unkown filter - '#{category}'"
+                    end
+                end
+                filters
+            end
+
+            def self.shouldFilterThing?(id, type, target, thingFilters)
+                return false if thingFilters[:includeIds].empty? &&
+                                thingFilters[:excludeIds].empty? &&
+                                thingFilters[:includeTypes].empty? &&
+                                thingFilters[:excludeTypes].empty? &&
+                                thingFilters[:includeLocations].empty? &&
+                                thingFilters[:excludeLocations].empty?
+
+                return true  if thingFilters[:excludeIds].include?(id)
+                return false if thingFilters[:includeIds].include?(id)
+
+                return true  if thingFilters[:excludeTypes].include?(type.to_s.upcase)
+
+                thingFilters[:excludeLocations].each do |excludeLocation|
+                    return true if target['Location'].to_s.upcase.include?(excludeLocation) ||
+                                   target['AlternativeLocation'].to_s.upcase.include?(excludeLocation)
+                end
+
+                return true if !thingFilters[:includeIds].empty? &&
+                                thingFilters[:includeTypes].empty? &&
+                                thingFilters[:includeLocations].empty?
+
+                return true if !thingFilters[:includeTypes].empty? && !thingFilters[:includeTypes].include?(type.to_s.upcase)
+
+                return false if thingFilters[:includeLocations].empty?
+
+                thingFilters[:includeLocations].each do |includeLocation|
+                    return false if target['Location'].to_s.upcase.include?(includeLocation) ||
+                                    target['AlternativeLocation'].to_s.upcase.include?(includeLocation)
+                end
+
+                true
             end
 
             def self.parseFilters(userFilters, logger)
