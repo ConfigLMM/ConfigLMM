@@ -21,7 +21,7 @@ module ConfigLMM
                 types = {}
                 Framework::Store.plugins.each do |plugin|
                     plugin.instance_methods.each do |method|
-                        if match = method.match('^action(\w+)(Validate|Build|Refresh|Diff|Deploy)$')
+                        if match = method.match('^action(\w+)(Validate|Build|Refresh|Diff|Deploy|Backup|Update)$')
                             type = match[1]
                             types[type] ||= []
                             types[type] << match[2]
