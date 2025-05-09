@@ -67,6 +67,16 @@ module ConfigLMM
                 end
             end
 
+            def actionLinuxTest(id, activeState, context, options)
+                target = activeState['Config'].to_h
+                location = target['AlternativeLocation'] ? target['AlternativeLocation'] : target['Location']
+                result = false
+                self.withConnection(location, target) do |connection|
+                    result = true if connection.exec('echo OK', false, options).strip == 'OK'
+                end
+                options[:dry] ? nil : result
+            end
+
             def actionLinuxBackup(id, activeState, context, options)
                 target = activeState['Config'].to_h
                 if target['AlternativeLocation']
