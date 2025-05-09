@@ -94,8 +94,9 @@ module ConfigLMM
                 options[:timeout] = 3 unless options.key?(:timeout)
                 Net::SSH::Transport::Session.new(server, options)
                 true
-            rescue Errno::EHOSTUNREACH, Errno::ECONNREFUSED, Net::SSH::ConnectionTimeout
-                false
+            rescue StandardError => error
+                return false if IO.error?(error)
+                raise error
             end
 
             def self.toParams(locationUri)
