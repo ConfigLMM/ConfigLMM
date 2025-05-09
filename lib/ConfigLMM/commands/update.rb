@@ -22,6 +22,14 @@ module ConfigLMM
                     type = item[:Type]
                     self.plugins.each do |pluginId, plugin|
                         if plugin.hasAction?(type, :update)
+                            healthy = true
+                            if plugin.hasAction?(type, :test)
+                                healthy = invokeTestAction(id, item, plugin, type, options)
+                            end
+                            if !options[:dry] && !healthy
+                                prompt.error("Aborting update because health check failed for #{id}: #{type.to_s}")
+                                raise 'Update aborted because health check failure!'
+                            end
                             if plugin.hasAction?(type, :backup)
                                 invokeBackupAction(id, item, plugin, type, options)
                             else

@@ -186,6 +186,31 @@ module ConfigLMM
                 state.save
             end
 
+            def invokeTestAction(id, item, plugin, type, options)
+                actionMethod = plugin.class.actionMethod(type, 'Test')
+
+                if options[:dry]
+                    prompt.warn("Would check health - #{id}: #{type.to_s}")
+                end
+                begin
+                    result = plugin.send(actionMethod, id, item, context, options)
+                rescue StandardError => error
+                    if IO.error?(error)
+                        result = false
+                    else
+                        raise error
+                    end
+                end
+                if !options[:dry]
+                    if result
+                        prompt.ok("Health check - #{id}: #{type.to_s} - Healthy")
+                    else
+                        prompt.error("Health check - #{id}: #{type.to_s} - FAILURE")
+                    end
+                end
+                result
+            end
+
             def self.sanitizeConfig(config)
                 return config unless config.is_a?(Hash)
                 newConfig = config.dup
