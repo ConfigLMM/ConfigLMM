@@ -18,6 +18,12 @@ module ConfigLMM
                 options['backupFolder']
             end
 
+            def loadOutputFolder(id, options)
+                backupFolder = getBackupFolder(options)
+                options['output'] = backupFolder + '/' + id + '/' + Time.now.to_i.to_s
+                FileUtils.mkdir_p(options['output'])
+            end
+
             def processConfig(config, options)
                 any = false
                 filter = config.keys
@@ -46,10 +52,7 @@ module ConfigLMM
                 prompt.warn("Backing up #{id}: #{type.to_s}")
                 actionMethod = plugin.class.actionMethod(type, 'Backup')
 
-                backupFolder = getBackupFolder(options)
-                options['output'] = backupFolder + '/' + id + '/' + Time.now.to_i.to_s
-                FileUtils.mkdir_p(options['output'])
-
+                loadOutputFolder(id, options)
                 plugin.send(actionMethod, id, item, context, options)
             end
         end

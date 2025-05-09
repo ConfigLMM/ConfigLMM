@@ -25,6 +25,31 @@ module ConfigLMM
                 end
             end
 
+            def self.parseCGroup(cgroup)
+                return nil if cgroup.to_s.empty?
+                info = { uid: nil, service: nil, specialService: nil }
+                match = cgroup.match(/^[0-9]+:[^:]*:\/([^\/]+\.slice\/(.+?\/)?(user@(\d+)\.service\/)?(.+?\/)?)?([^\/]+)\.(service|scope)(\/.+?)?$/)
+                return nil unless match
+                info[:uid] = match[4]
+                info[:service] = match[6] + '.service' if match[7] == 'service'
+                info[:specialService] = 'user@' + info[:uid] + '.service' if match[7] != 'service' && info[:uid]
+                return nil if !info[:service] && !info[:specialService]
+                info
+            end
+
+            def self.removeRedundantServices(services)
+                specialUsers = []
+                services.each do |service|
+                    if service[:specialService]
+                        specialUsers << service[:uid]
+                    end
+                end
+                services.select do |service|
+                    service[:uid].nil? ||
+                    !specialUsers.include?(service[:uid]) ||
+                    service[:specialService]
+                end
+            end
         end
     end
 end

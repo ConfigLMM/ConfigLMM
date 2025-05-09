@@ -24,6 +24,8 @@ module ConfigLMM
                         if plugin.hasAction?(type, :update)
                             if plugin.hasAction?(type, :backup)
                                 invokeBackupAction(id, item, plugin, type, options)
+                            else
+                                loadOutputFolder(id, options)
                             end
                             any = true
                             invokeUpdateAction(id, item, plugin, type, options)

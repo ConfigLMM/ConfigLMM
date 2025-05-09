@@ -245,17 +245,81 @@ module ConfigLMM
                 local.fileWrite(packageFilename, packages, options[:dry])
             end
 
+            MAX_SERVICES_RESTART = 12
+
             def updateOverConnection(connection, id, activeState, context, options)
                 result = connection.execDistroCommand(nil, 'UpdatePackages', false, options).downcase
+                local.fileWrite(options['output'] + '/update.txt', result, options[:dry])
                 if result.include?('package updates will not be installed') ||
                    result.include?('packages have been kept back')
                     prompt.warn('Manual upgrade required!')
                 end
 
+                needReboot = false
+                autoRestart = true
                 if result.include?('reboot required') ||
                    result.include?('reboot is suggested') ||
                    result.include?('update-initramfs:') ||
                    result.include?('updating linux initcpios')
+                    needReboot = true
+                    autoRestart = false
+                end
+
+                connection.ensurePackage('lsof', options) unless connection.hasBinaries?('lsof', options)
+                pids = connection.exec("lsof -anlPX -d DEL 2>/dev/null | grep -E ' /(usr|lib|bin|sbin|opt)' | tr -s ' ' | cut -d ' ' -f 2 | uniq", false, options).strip.split("\n")
+                pids += connection.exec("lsof -anlPX +L1 -d fd,txt 2>/dev/null | grep -E ' /(usr|lib|bin|sbin|opt)' | tr -s ' ' | cut -d ' ' -f 2 | uniq", false, options).strip.split("\n")
+                if !pids.empty?
+                    if autoRestart
+                        services = Set.new
+                        processes = {}
+                        restartSystemd = false
+                        pids.each do |pid|
+                            if pid.to_i == 1
+                                restartSystemd = true
+                                next
+                            end
+                            cgroup = connection.exec("cat /proc/#{pid}/cgroup 2>/dev/null", true, options).strip
+                            info = Systemd.parseCGroup(cgroup)
+                            if info
+                                services << info
+                            else
+                                processes[pid] = connection.exec("stat /proc/#{pid}/exe 2>/dev/null | grep File | cut -d '>' -f 2", true, options).strip.gsub(' (deleted)', '')
+                            end
+                        end
+                        services = Systemd.removeRedundantServices(services)
+                        if services.length <= MAX_SERVICES_RESTART
+                            if restartSystemd
+                                prompt.warn('Reexecuting systemd!')
+                                connection.exec("systemctl daemon-reexec", false, options)
+                            end
+                            services.each do |service|
+                                prompt.warn("Restarting #{service[:service] ? service[:service] : service[:specialService]}")
+                                if service[:service] && !service[:uid]
+                                    connection.exec("systemctl restart #{service[:service]}", false, options)
+                                elsif service[:service] && service[:uid]
+                                    connection.exec("systemctl --user --machine=#{service[:uid]}@ restart #{service[:service]}", false, options)
+                                elsif service[:specialService]
+                                    connection.exec("systemctl restart #{service[:specialService]}", false, options)
+                                else
+                                    raise 'This shouldn\'t happen!'
+                                end
+                            end
+                        else
+                            needReboot = true
+                            prompt.warn('Many services need to be restarted!')
+                        end
+                        if !processes.empty?
+                            prompt.warn('These processes need to be restarted:')
+                            processes.each do |pid, process|
+                                prompt.warn(' * ' + pid.to_s + ' - '+ process)
+                            end
+                        end
+                    else
+                        prompt.warn('Some processes need to be restarted!')
+                    end
+                end
+
+                if needReboot
                     prompt.warn('System reboot required!')
                 end
             end
