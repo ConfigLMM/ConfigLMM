@@ -7,6 +7,7 @@ require_relative 'ssh'
 module ConfigLMM
     module IO
         ConnectionError = Class.new(Framework::PluginProcessError)
+        ConnectError = Class.new(ConnectionError)
 
         class ExecError < ConnectionError
             attr_reader :command, :stdout, :stderr, :status

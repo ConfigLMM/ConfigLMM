@@ -98,6 +98,26 @@ module ConfigLMM
         end
 
 
+        desc 'test [CONFIGS...]', 'Test whether deployed things work as expected'
+        method_option :help,      aliases: '-h', type: :boolean,
+                                  desc: 'Display usage information'
+        method_option :secrets,   aliases: '-s', type: :string, default: '.secrets',
+                                  desc: 'Path to the secrets provider (can be a file)'
+        method_option :state,     aliases: '-l', type: :string,
+                                  desc: 'Path to the state file'
+        #method_option :load,      aliases: '-l', type: :boolean,
+        #                          desc: 'Run performance/load tests (might be dangerous as it can affect live users)'
+        #method_option :chaos,     aliases: '-c', type: :boolean,
+        #                          desc: 'Test whether systems keep working while random things die (might be dangerous as it can affect live users due to injecting real faults)'
+        #method_option :alerts,    aliases: '-a', type: :boolean,
+        #                          desc: 'Test failure conditions and whether alerts work (might be dangerous as it can affect live users due to injecting real faults)'
+        #method_option :tools,     aliases: '-t', type: :string, desc: 'Filter tools to use for testing'
+
+        def test(*configPaths)
+            handleCommand(:test, configPaths, options)
+        end
+
+
         desc 'backup [CONFIGS_LIMIT...]', 'Backup deployed things'
         method_option :help,    aliases: '-h', type: :boolean,
                                 desc: 'Display usage information'
@@ -150,21 +170,6 @@ module ConfigLMM
 
 =begin
         # TODO
-        desc 'test [CONFIGS...]', 'Test whether deployed things work as expected'
-        method_option :help,      aliases: '-h', type: :boolean,
-                                  desc: 'Display usage information'
-        method_option :load,      aliases: '-l', type: :boolean,
-                                  desc: 'Run performance/load tests (might be dangerous as it can affect live users)'
-        method_option :chaos,     aliases: '-c', type: :boolean,
-                                  desc: 'Test whether systems keep working while random things die (might be dangerous as it can affect live users due to injecting real faults)'
-        method_option :alerts,    aliases: '-a', type: :boolean,
-                                  desc: 'Test failure conditions and whether alerts work (might be dangerous as it can affect live users due to injecting real faults)'
-        method_option :tools,     aliases: '-t', type: :string, desc: 'Filter tools to use for testing'
-
-        def test(*configPaths)
-            handleCommand(:test, configPaths, options)
-        end
-
         desc 'compare [CONFIGS...]', 'Show changes between local state and deployed things'
         method_option :help,  aliases: '-h', type: :boolean,
                               desc: 'Display usage information'

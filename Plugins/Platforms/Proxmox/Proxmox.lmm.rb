@@ -356,6 +356,7 @@ module ConfigLMM
                     type = 'qemu'
                 end
                 raise "Couldn't find server with name #{name}" unless server
+                raise IO::ConnectError.new("Server #{name} not running!") if server.status != 'running'
 
                 self.xtermTunnel(targetUri, target, compute, node.node, type, server.vmid, context, prompt, logger, &block)
             ensure

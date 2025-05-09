@@ -2,7 +2,7 @@
 module ConfigLMM
     module IO
         def self.error?(error)
-            [Errno::EHOSTUNREACH, Errno::ECONNREFUSED, Net::SSH::ConnectionTimeout, Excon::Error::Socket].each do |type|
+            [Errno::EHOSTUNREACH, Errno::ECONNREFUSED, Net::SSH::ConnectionTimeout, Excon::Error::Socket, IO::ConnectError].each do |type|
                 return true if error.is_a?(type)
             end
             false
