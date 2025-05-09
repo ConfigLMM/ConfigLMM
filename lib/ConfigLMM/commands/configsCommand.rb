@@ -130,7 +130,11 @@ module ConfigLMM
             end
 
             def invokeDeployAction(id, plugin, singleTarget, options)
-                prompt.warn("Deploying #{singleTarget['ID']}: #{singleTarget['Type'].to_s}")
+                if options[:dry]
+                    prompt.warn("Would deploy #{singleTarget['ID']}: #{singleTarget['Type'].to_s}")
+                else
+                    prompt.warn("Deploying #{singleTarget['ID']}: #{singleTarget['Type'].to_s}")
+                end
                 state.create!
                 activeState = state.item(id)
                 if activeState[:Type].nil?

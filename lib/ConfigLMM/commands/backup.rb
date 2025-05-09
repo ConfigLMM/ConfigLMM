@@ -42,14 +42,18 @@ module ConfigLMM
                 end
 
                 if any
-                    prompt.ok('Backup successful!')
+                    prompt.ok('Backup successful!') unless options[:dry]
                 else
                     prompt.error('Nothing to backup!')
                 end
             end
 
             def invokeBackupAction(id, item, plugin, type, options)
-                prompt.warn("Backing up #{id}: #{type.to_s}")
+                if options[:dry]
+                    prompt.warn("Would back up #{id}: #{type.to_s}")
+                else
+                    prompt.warn("Backing up #{id}: #{type.to_s}")
+                end
                 actionMethod = plugin.class.actionMethod(type, 'Backup')
 
                 loadOutputFolder(id, options)

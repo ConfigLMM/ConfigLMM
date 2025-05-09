@@ -28,6 +28,9 @@ module ConfigLMM
             def invokeTestAction(id, item, plugin, type, options)
                 actionMethod = plugin.class.actionMethod(type, 'Test')
 
+                if options[:dry]
+                    prompt.warn("Would check health - #{id}: #{type.to_s}")
+                end
                 begin
                     result = plugin.send(actionMethod, id, item, context, options)
                 rescue StandardError => error
@@ -37,12 +40,16 @@ module ConfigLMM
                         raise error
                     end
                 end
-                if result
-                    prompt.ok("#{id}: #{type.to_s} - Healthy")
-                else
-                    prompt.error("#{id}: #{type.to_s} - FAILURE")
+                if !options[:dry]
+                    if result
+                        prompt.ok("Health check - #{id}: #{type.to_s} - Healthy")
+                    else
+                        prompt.error("Health check - #{id}: #{type.to_s} - FAILURE")
+                    end
                 end
+                result
             end
+
         end
     end
 end

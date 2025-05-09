@@ -34,14 +34,18 @@ module ConfigLMM
                 end
 
                 if any
-                    prompt.ok('Update successful!')
+                    prompt.ok('Update successful!') unless options[:dry]
                 else
                     prompt.error('Nothing to update!')
                 end
             end
 
             def invokeUpdateAction(id, item, plugin, type, options)
-                prompt.warn("Updating #{id}: #{type.to_s}")
+                if options[:dry]
+                    prompt.warn("Would update #{id}: #{type.to_s}")
+                else
+                    prompt.warn("Updating #{id}: #{type.to_s}")
+                end
                 actionMethod = plugin.class.actionMethod(type, 'Update')
 
                 plugin.send(actionMethod, id, item, context, options)
