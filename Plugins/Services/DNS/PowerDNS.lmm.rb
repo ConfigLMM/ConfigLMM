@@ -404,9 +404,11 @@ module ConfigLMM
             end
 
             def getFreePort
+                port = nil
                 TCPServer.open(0) do |socket|
-                    return socket.addr[1]
+                    port = socket.addr[1]
                 end
+                port
             end
         end
     end
