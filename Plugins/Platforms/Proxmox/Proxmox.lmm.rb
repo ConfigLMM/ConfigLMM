@@ -295,6 +295,12 @@ module ConfigLMM
                     settings[:features] = serverInfo['Features'].map { |feature| "#{feature}=1" }.join(',')
                 end
 
+                if !serverInfo['Options'].to_h.empty?
+                    if serverInfo['Options']['ConsoleMode']
+                        settings[:cmode] = serverInfo['Options']['ConsoleMode']
+                    end
+                end
+
                 container = node.containers.create(settings)
 
                 if serverInfo['LXC'].is_a?(Array)
