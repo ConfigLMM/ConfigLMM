@@ -170,7 +170,6 @@ module ConfigLMM
                         end
 
                         $WS.on :close do |event|
-                            $WS = nil
                             EM.stop_event_loop
                         end
                     end
@@ -187,7 +186,8 @@ module ConfigLMM
                     self.sendMessage($WS, "exit\n")
                     state[:condition].wait(state[:mutex])
                 }
-                EM.stop_event_loop
+                $WS.close
+                $WS = nil
                 thread.join
             end
 
