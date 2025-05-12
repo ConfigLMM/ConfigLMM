@@ -170,6 +170,9 @@ module ConfigLMM
                         end
 
                         $WS.on :close do |event|
+                            state[:mutex].synchronize {
+                                state[:condition].signal()
+                            }
                             EM.stop_event_loop
                         end
                     end
@@ -181,11 +184,13 @@ module ConfigLMM
                     self.sendMessage($WS, "exit\n")
                     state[:condition].wait(state[:mutex])
                 }
-                state[:mutex].synchronize {
-                    state[:stage] = :exit
-                    self.sendMessage($WS, "exit\n")
-                    state[:condition].wait(state[:mutex])
-                }
+                if $WS.ready_state == Faye::WebSocket::OPEN
+                    state[:mutex].synchronize {
+                        state[:stage] = :exit
+                        self.sendMessage($WS, "exit\n")
+                        state[:condition].wait(state[:mutex])
+                    }
+                end
                 $WS.close
                 $WS = nil
                 thread.join
@@ -295,9 +300,8 @@ module ConfigLMM
                 elsif data.strip.end_with?('#')
                     state[:stage] = :shell
                     state[:delay] = 3
-                    state[:mutex].synchronize {
-                        state[:condition].signal()
-                    }
+                    # Couldn't get Fish shell to work properly so force using `sh`
+                    self.sendMessage(ws, "sh\n")
                 elsif data.include?('Password:')
                     state[:delay] = 3
                     self.sendMessage(ws, "\n")
