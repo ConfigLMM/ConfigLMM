@@ -47,7 +47,7 @@ module ConfigLMM
                                 desc: 'Display usage information'
         method_option :secrets, aliases: '-s', type: :string, default: '.secrets',
                                 desc: 'Path to the secrets provider (can be a file)'
-        method_option :state,   aliases: '-s', type: :string,
+        method_option :state,   aliases: '-l', type: :string,
                                 desc: 'Path to the state file'
         method_option :context, aliases: '-c', type: :string,
                                 desc: 'Path to context file'
@@ -59,7 +59,7 @@ module ConfigLMM
         desc 'diff [CONFIGS...]', 'Show changes that will be applied with next deploy'
         method_option :help,    aliases: '-h', type: :boolean,
                                 desc: 'Display usage information'
-        method_option :state,   aliases: '-s', type: :string,
+        method_option :state,   aliases: '-l', type: :string,
                                 desc: 'Path to the state file'
         method_option :context, aliases: '-c', type: :string,
                                 desc: 'Path to context file'
@@ -86,7 +86,7 @@ module ConfigLMM
                                 desc: 'Display usage information'
         method_option :secrets, aliases: '-s', type: :string, default: '.secrets',
                                 desc: 'Path to the secrets provider (can be a file)'
-        method_option :state,   aliases: '-s', type: :string,
+        method_option :state,   aliases: '-l', type: :string,
                                 desc: 'Path to the state file'
         method_option :context, aliases: '-c', type: :string,
                                 desc: 'Path to context file'
@@ -103,7 +103,7 @@ module ConfigLMM
                                 desc: 'Display usage information'
         method_option :secrets, aliases: '-s', type: :string, default: '.secrets',
                                 desc: 'Path to the secrets provider (can be a file)'
-        method_option :state,   aliases: '-s', type: :string,
+        method_option :state,   aliases: '-l', type: :string,
                                 desc: 'Path to the state file'
         method_option :destroy, aliases: '-d', type: :boolean,
                                 desc: 'Destroy all data (eg. even DB)'
