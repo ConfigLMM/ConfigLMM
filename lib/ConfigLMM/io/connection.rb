@@ -143,6 +143,17 @@ module ConfigLMM
                 [uri.scheme, uri]
             end
 
+            def self.cacheKey(uri, target)
+                scheme, uri = self.processURI(uri)
+                if scheme == 'proxmox+xterm'
+                    # Special case for XTerm
+                    name = target['Name']
+                    name = target['Domain'] if target['Domain']
+                    return uri.to_s + ';' + name
+                end
+                uri.to_s
+            end
+
         end
     end
 end

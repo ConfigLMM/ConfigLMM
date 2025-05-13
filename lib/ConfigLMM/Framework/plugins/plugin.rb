@@ -67,6 +67,43 @@ module ConfigLMM
                 self.methods.include?(self.class.actionMethod(type, action))
             end
 
+            def withCache(type, id, item, options, &block)
+                name = type.to_s
+                name[0] = name[0].upcase
+                methodName = ('cache' + name + 'Connection').to_sym
+                if self.methods.include?(methodName)
+                    nestedProcs = lambda { block.call }
+                    target = item['Config'].to_h
+                    connectionInfos = self.send(methodName, id, target, context, options)
+                    if !connectionInfos.empty? && !connectionInfos.last.is_a?(Array)
+                        connectionInfos = [connectionInfos]
+                    end
+                    connectionInfos.each do |connectionInfo|
+                        current = proc do |nestedProcs|
+                            key, connectionLambda, innerLambda = connectionInfo
+                            connectionLambda.call do |connection|
+                                context.withConnectionCache(key, connection) do
+                                    if innerLambda
+                                        innerLambda.call(connection) do |result|
+                                            context.withConnectionCache(connection, result) do
+                                                nestedProcs.call
+                                            end
+                                        end
+                                    else
+                                        nestedProcs.call
+                                    end
+                                end
+                            end
+                        end
+                        previous = nestedProcs
+                        nestedProcs = proc { current.call(previous) }
+                    end
+                    nestedProcs.call
+                else
+                    yield
+                end
+            end
+
             def diff
                 @Diff
             end
@@ -175,7 +212,13 @@ module ConfigLMM
             end
 
             def withConnection(uri, target, &block)
-                IO::Connection.tunnel(uri, target, self.context, self.prompt, self.logger, &block)
+                self.context.useConnectionCache(IO::Connection.cacheKey(uri, target), block) do
+                    IO::Connection.tunnel(uri, target, self.context, self.prompt, self.logger, &block)
+                end
+            end
+
+            def buildConnectionCache(uri, target, &block)
+                [IO::Connection.cacheKey(uri, target), lambda { |&block| self.withConnection(uri, target, &block) }]
             end
 
             def ping(uri, target, &block)

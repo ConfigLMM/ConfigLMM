@@ -39,6 +39,20 @@ module ConfigLMM
             @Secrets
         end
 
+        def withConnectionCache(key, connection, &block)
+            key = 'id_' + key.object_id.to_s unless key.is_a?(String)
+            @Cache[:Connections][key] = connection
+            result = yield
+            @Cache[:Connections].delete(key)
+            result
+        end
+
+        def useConnectionCache(key, parentBlock, &block)
+            key = 'id_' + key.object_id.to_s unless key.is_a?(String)
+            return parentBlock.call(@Cache[:Connections][key]) if @Cache[:Connections][key]
+            yield(parentBlock)
+        end
+
         private
 
         def load!(configHome, contextFile, secretsProvider)
@@ -56,6 +70,7 @@ module ConfigLMM
             end
             @Context['Likes'] ||= []
             @Context['Dislikes'] ||= []
+            @Cache = { Connections: {} }
 
             if secretsProvider && secretsProvider != 'no'
                 url = Addressable::URI.parse(secretsProvider)

@@ -39,21 +39,23 @@ module ConfigLMM
                             end
                         else
                             if plugin.hasAction?(type, :update)
-                                healthy = true
-                                if plugin.hasAction?(type, :test)
-                                    healthy = invokeTestAction(id, item, plugin, type, options)
+                                plugin.withCache(type, id, item, options) do
+                                    healthy = true
+                                    if plugin.hasAction?(type, :test)
+                                        healthy = invokeTestAction(id, item, plugin, type, options)
+                                    end
+                                    if !options[:dry] && !healthy
+                                        prompt.error("Aborting update because health check failed for #{id}: #{type.to_s}")
+                                        raise 'Update aborted because health check failure!'
+                                    end
+                                    if plugin.hasAction?(type, :backup)
+                                        invokeBackupAction(id, item, plugin, type, options)
+                                    else
+                                        loadOutputFolder(id, options)
+                                    end
+                                    any = true
+                                    invokeUpdateAction(id, item, plugin, type, options)
                                 end
-                                if !options[:dry] && !healthy
-                                    prompt.error("Aborting update because health check failed for #{id}: #{type.to_s}")
-                                    raise 'Update aborted because health check failure!'
-                                end
-                                if plugin.hasAction?(type, :backup)
-                                    invokeBackupAction(id, item, plugin, type, options)
-                                else
-                                    loadOutputFolder(id, options)
-                                end
-                                any = true
-                                invokeUpdateAction(id, item, plugin, type, options)
                             end
                         end
                     end

@@ -33,6 +33,33 @@ module ConfigLMM
                 buildAutoInstall(id, target, options)
             end
 
+            def cacheLinuxConnection(id, target, context, options)
+                connectionInfos = []
+                if target['Location'] && target['Location'] != '@me'
+                    uri = Addressable::URI.parse(target['Location'])
+                    case uri.scheme
+                    when 'qemu'
+                        # Not implemented
+                    when 'proxmox'
+                        # Not implemented
+                    when 'pxe', 'pxe+http'
+                        # Not cachable
+                    when 'ssh'
+                        cacheInfo = buildConnectionCache(uri, target)
+                        cacheInfo << lambda { |connection, &block| self.class.withConnection(connection, context, &block) }
+                        connectionInfos << cacheInfo
+                    else
+                        raise Framework::PluginProcessError.new("#{id}: Unknown protocol: #{uri.scheme}!")
+                    end
+                end
+                if target['AlternativeLocation']
+                    cacheInfo = buildConnectionCache(target['AlternativeLocation'], target)
+                    cacheInfo << lambda { |connection, &block| self.class.withConnection(connection, context, &block) }
+                    connectionInfos << cacheInfo
+                end
+                connectionInfos
+            end
+
             def actionLinuxDeploy(id, target, activeState, context, options)
                 prepareConfig(target, context)
                 if target['Location'] && target['Location'] != '@me'
@@ -46,7 +73,7 @@ module ConfigLMM
                         deployOverPXE(uri, id, target, activeState, context, options)
                     when 'ssh'
                         self.withConnection(uri, target) do |connection|
-                            self.class.withConnection(connection) do |connection|
+                            self.class.withConnection(connection, context) do |connection|
                                 deployOverConnection(connection, id, target, activeState, context, options)
                             end
                         end
@@ -60,7 +87,7 @@ module ConfigLMM
                 end
                 if target['AlternativeLocation']
                     self.withConnection(target['AlternativeLocation'], target) do |connection|
-                        self.class.withConnection(connection) do |connection|
+                        self.class.withConnection(connection, context) do |connection|
                             deployOverConnection(connection, id, target, activeState, context, options)
                         end
                     end
@@ -81,7 +108,7 @@ module ConfigLMM
                 target = activeState['Config'].to_h
                 if target['AlternativeLocation']
                     self.withConnection(target['AlternativeLocation'], target) do |connection|
-                        self.class.withConnection(connection) do |connection|
+                        self.class.withConnection(connection, context) do |connection|
                             backupOverConnection(connection, id, activeState, context, options)
                         end
                     end
@@ -99,7 +126,7 @@ module ConfigLMM
                     when 'ssh'
                         return if target['AlternativeLocation']
                         self.withConnection(uri, target) do |connection|
-                            self.class.withConnection(connection) do |connection|
+                            self.class.withConnection(connection, context) do |connection|
                                 backupOverConnection(connection, id, activeState, context, options)
                             end
                         end
@@ -117,7 +144,7 @@ module ConfigLMM
                 target = activeState['Config'].to_h
                 if target['AlternativeLocation']
                     self.withConnection(target['AlternativeLocation'], target) do |connection|
-                        self.class.withConnection(connection) do |connection|
+                        self.class.withConnection(connection, context) do |connection|
                             hasUpdates = hasUpdates?(connection, id, activeState, context, options)
                         end
                     end
@@ -128,7 +155,7 @@ module ConfigLMM
                         return nil
                     when 'ssh'
                         self.withConnection(uri, target) do |connection|
-                            self.class.withConnection(connection) do |connection|
+                            self.class.withConnection(connection, context) do |connection|
                                 hasUpdates = hasUpdates?(connection, id, activeState, context, options)
                             end
                         end
@@ -145,7 +172,7 @@ module ConfigLMM
                 target = activeState['Config'].to_h
                 if target['AlternativeLocation']
                     self.withConnection(target['AlternativeLocation'], target) do |connection|
-                        self.class.withConnection(connection) do |connection|
+                        self.class.withConnection(connection, context) do |connection|
                             updateOverConnection(connection, id, activeState, context, options)
                         end
                     end
@@ -156,7 +183,7 @@ module ConfigLMM
                         return
                     when 'ssh'
                         self.withConnection(uri, target) do |connection|
-                            self.class.withConnection(connection) do |connection|
+                            self.class.withConnection(connection, context) do |connection|
                                 updateOverConnection(connection, id, activeState, context, options)
                             end
                         end
@@ -1014,8 +1041,14 @@ module ConfigLMM
                 patchedIso
             end
 
-            def self.withConnection(connection)
-                yield(LinuxConnection.new(connection))
+            def self.withConnection(connection, context = nil, &block)
+                if context
+                    context.useConnectionCache(connection, block) do
+                        yield(LinuxConnection.new(connection))
+                    end
+                else
+                    yield(LinuxConnection.new(connection))
+                end
             end
 
             def prepareConfig(target, context)
