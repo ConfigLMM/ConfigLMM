@@ -143,6 +143,8 @@ module ConfigLMM
         method_option :output,  aliases: '-o', type: :string,
                                 default: './backup',
                                 desc: 'Backup folder'
+        method_option :check,   type: :boolean,
+                                desc: 'Only check for updates but don\'t actually do update'
         def update(*configsLimit)
             handleCommand(:update, configsLimit, options)
         end

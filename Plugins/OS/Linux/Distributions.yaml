@@ -3,6 +3,9 @@ opensuse-leap:
     Name: openSUSE Leap
     InstallPackage: zypper install --no-confirm
     RemovePackage: zypper remove --no-confirm
+    ListPackages: rpm --query --all | sort
+    UpdatePackages: zypper update --no-confirm
+    ListUpdates: zypper list-updates
     AutoStartService: systemctl enable
     StartService: systemctl start
     RestartService: systemctl restart
@@ -14,13 +17,14 @@ opensuse-leap:
     ModifyUser: usermod
     DeleteUser: userdel --remove --force
     DeleteGroup: groupdel
-    ListPackages: rpm --query --all | sort
-    UpdatePackages: zypper update --no-confirm
 
 arch:
     Name: Arch Linux
     InstallPackage: pacman -S --noconfirm --needed
     RemovePackage: pacman --remove --noconfirm
+    ListPackages: pacman --query | sort
+    UpdatePackages: pacman --sync --refresh --sysupgrade --noconfirm
+    ListUpdates: pacman --query --upgrades
     AutoStartService: systemctl enable
     StartService: systemctl start
     RestartService: systemctl restart
@@ -32,13 +36,14 @@ arch:
     ModifyUser: usermod
     DeleteUser: userdel --remove --force
     DeleteGroup: groupdel
-    ListPackages: pacman --query | sort
-    UpdatePackages: pacman --sync --refresh --sysupgrade --noconfirm
 
 debian:
     Name: Debian
     InstallPackage: DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes
     RemovePackage: apt-get remove --assume-yes
+    ListPackages: dpkg-query --list --no-pager
+    UpdatePackages: apt-get update --yes && apt-get upgrade --with-new-pkgs --yes
+    ListUpdates: apt-get update --yes && apt-get upgrade --with-new-pkgs --just-print
     AutoStartService: systemctl enable
     StartService: systemctl start
     RestartService: systemctl restart
@@ -50,5 +55,3 @@ debian:
     ModifyUser: usermod
     DeleteUser: userdel --remove --force
     DeleteGroup: groupdel
-    ListPackages: dpkg-query --list --no-pager
-    UpdatePackages: apt-get update --yes && apt-get upgrade --with-new-pkgs --yes

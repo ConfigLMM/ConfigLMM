@@ -112,6 +112,35 @@ module ConfigLMM
                 end
             end
 
+            def actionLinuxUpdates?(id, activeState, context, options)
+                hasUpdates = false
+                target = activeState['Config'].to_h
+                if target['AlternativeLocation']
+                    self.withConnection(target['AlternativeLocation'], target) do |connection|
+                        self.class.withConnection(connection) do |connection|
+                            hasUpdates = hasUpdates?(connection, id, activeState, context, options)
+                        end
+                    end
+                elsif target['Location'] && target['Location'] != '@me'
+                    uri = Addressable::URI.parse(target['Location'])
+                    case uri.scheme
+                    when 'qemu', 'pxe', 'pxe+http', 'proxmox'
+                        return nil
+                    when 'ssh'
+                        self.withConnection(uri, target) do |connection|
+                            self.class.withConnection(connection) do |connection|
+                                hasUpdates = hasUpdates?(connection, id, activeState, context, options)
+                            end
+                        end
+                    else
+                        raise Framework::PluginProcessError.new("#{id}: Unknown protocol: #{uri.scheme}!")
+                    end
+                else
+                    hasUpdates = hasUpdates?(local, id, activeState, context, options)
+                end
+                hasUpdates
+            end
+
             def actionLinuxUpdate(id, activeState, context, options)
                 target = activeState['Config'].to_h
                 if target['AlternativeLocation']
@@ -256,6 +285,18 @@ module ConfigLMM
             end
 
             MAX_SERVICES_RESTART = 12
+
+            def hasUpdates?(connection, id, activeState, context, options)
+                result = connection.execDistroCommand(nil, 'ListUpdates', false, options).strip
+                if connection.distroName == ARCH_NAME
+                    return result.lines.length > 0
+                elsif connection.distroName == DEBIAN_NAME
+                    # 0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+                    return result.lines.last.count('0') != 4
+                else
+                    return !result.downcase.include?('no updates')
+                end
+            end
 
             def updateOverConnection(connection, id, activeState, context, options)
                 result = connection.execDistroCommand(nil, 'UpdatePackages', false, options).downcase

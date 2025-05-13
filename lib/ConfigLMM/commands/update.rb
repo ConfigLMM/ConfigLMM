@@ -21,30 +21,56 @@ module ConfigLMM
 
                     type = item[:Type]
                     self.plugins.each do |pluginId, plugin|
-                        if plugin.hasAction?(type, :update)
-                            healthy = true
-                            if plugin.hasAction?(type, :test)
-                                healthy = invokeTestAction(id, item, plugin, type, options)
+                        if options[:check]
+                            if plugin.hasAction?(type, :updates?)
+                                if options[:dry]
+                                    prompt.warn("Would check for updates #{id}: #{type.to_s}")
+                                end
+                                any = true
+                                actionMethod = plugin.class.actionMethod(type, 'Updates?')
+                                hasUpdates = plugin.send(actionMethod, id, item, context, options)
+                                if !options[:dry]
+                                    if hasUpdates == true
+                                        prompt.ok("#{id}: #{type.to_s} - Updates available")
+                                    elsif hasUpdates == false
+                                        prompt.warn("#{id}: #{type.to_s} - No updates")
+                                    end
+                                end
                             end
-                            if !options[:dry] && !healthy
-                                prompt.error("Aborting update because health check failed for #{id}: #{type.to_s}")
-                                raise 'Update aborted because health check failure!'
+                        else
+                            if plugin.hasAction?(type, :update)
+                                healthy = true
+                                if plugin.hasAction?(type, :test)
+                                    healthy = invokeTestAction(id, item, plugin, type, options)
+                                end
+                                if !options[:dry] && !healthy
+                                    prompt.error("Aborting update because health check failed for #{id}: #{type.to_s}")
+                                    raise 'Update aborted because health check failure!'
+                                end
+                                if plugin.hasAction?(type, :backup)
+                                    invokeBackupAction(id, item, plugin, type, options)
+                                else
+                                    loadOutputFolder(id, options)
+                                end
+                                any = true
+                                invokeUpdateAction(id, item, plugin, type, options)
                             end
-                            if plugin.hasAction?(type, :backup)
-                                invokeBackupAction(id, item, plugin, type, options)
-                            else
-                                loadOutputFolder(id, options)
-                            end
-                            any = true
-                            invokeUpdateAction(id, item, plugin, type, options)
                         end
                     end
                 end
 
                 if any
-                    prompt.ok('Update successful!') unless options[:dry]
+                    if options[:check]
+                        prompt.ok('Update check successful!') unless options[:dry]
+                    else
+                        prompt.ok('Update successful!') unless options[:dry]
+                    end
                 else
-                    prompt.error('Nothing to update!')
+                    if options[:check]
+                        prompt.error('Nothing to check!')
+                    else
+                        prompt.error('Nothing to update!')
+                    end
                 end
             end
 
