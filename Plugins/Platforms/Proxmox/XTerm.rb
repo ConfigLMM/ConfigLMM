@@ -162,7 +162,7 @@ module ConfigLMM
                         end
 
                         $WS.on :message do |event|
-                            self.processMessage($WS, event, state, username, password)
+                            self.processMessage($WS, event, state, username, password, url, prompt, logger)
                         end
 
                         $WS.on(:error) do |event|
@@ -196,7 +196,7 @@ module ConfigLMM
                 thread.join
             end
 
-            def self.processMessage(ws, event, state, username, password)
+            def self.processMessage(ws, event, state, username, password, url, prompt, logger)
                 state[:message] += event.data.pack('C*')
                 if !state[:timer].nil?
                     EM.cancel_timer(state[:timer])
@@ -209,11 +209,11 @@ module ConfigLMM
                         state[:condition].signal()
                     }
                 else
-                    state[:timer] = EM.add_timer(state[:delay]) { self.handleData(ws, state, username, password) }
+                    state[:timer] = EM.add_timer(state[:delay]) { self.handleData(ws, state, username, password, url, prompt, logger) }
                 end
             end
 
-            def self.handleData(ws, state, username, password)
+            def self.handleData(ws, state, username, password, url, prompt, logger)
                 state[:delay] = 0.1
                 if state[:stage] == :raw
                     rawData = data = state[:data] = state[:message]
@@ -225,27 +225,27 @@ module ConfigLMM
                 case state[:stage]
                 when :start
                     state[:stage] = :login
-                    raise 'Unexpected response!' unless data.start_with?('OK')
+                    self.raiseError('Unexpected response!', data, url, prompt, logger) unless data.start_with?('OK')
                     state[:delay] = 3
                     self.sendMessage(ws, "\n")
                 when :login
-                    self.doLogin(ws, data, state, username)
+                    self.doLogin(ws, data, state, username, url, prompt, logger)
                 when :password
-                    self.doPassword(ws, data, state, password)
+                    self.doPassword(ws, data, state, password, url, prompt, logger)
                 when :checkPassword
                     if data.lines.last.include?('login:') && data.include?('Login incorrect')
                         state[:invalidLogin] += 1
                         state[:stage] = :login
-                        self.doLogin(ws, data, state, username)
+                        self.doLogin(ws, data, state, username, url, prompt, logger)
                         return
                     end
-                    raise 'Unexpected Console state!' unless data.lines.last.strip.end_with?('#')
+                    self.raiseError('Unexpected Console state!', data, url, prompt, logger) unless data.lines.last.strip.end_with?('#')
                     state[:stage] = :shell
                     state[:delay] = 3
                     # Couldn't get Fish shell to work properly so force using `sh`
                     self.sendMessage(ws, "sh\n")
                 when :shell
-                    raise 'Unexpected Console state!' unless data.lines.last.strip.end_with?('#')
+                    self.raiseError('Unexpected Console state!', data, url, prompt, logger) unless data.lines.last.strip.end_with?('#')
                     state[:mutex].synchronize {
                         state[:condition].signal()
                     }
@@ -289,15 +289,8 @@ module ConfigLMM
                 end
             end
 
-            def self.doLogin(ws, data, state, username)
-                if data.include?('login:')
-                    if state[:invalidLogin] >= 2
-                        raise 'Too many failed login attempts!'
-                    end
-                    state[:stage] = :password
-                    state[:delay] = 3
-                    self.sendMessage(ws, "#{username}\n")
-                elsif data.strip.end_with?('#')
+            def self.doLogin(ws, data, state, username, url, prompt, logger)
+                if data.strip.end_with?('#')
                     state[:stage] = :shell
                     state[:delay] = 3
                     # Couldn't get Fish shell to work properly so force using `sh`
@@ -305,22 +298,29 @@ module ConfigLMM
                 elsif data.include?('Password:')
                     state[:delay] = 3
                     self.sendMessage(ws, "\n")
+                elsif data.include?('login:') && !data.downcase.include?('last login')
+                    if state[:invalidLogin] >= 2
+                        self.raiseError('Too many failed login attempts!', data, url, prompt, logger)
+                    end
+                    state[:stage] = :password
+                    state[:delay] = 3
+                    self.sendMessage(ws, "#{username}\n")
                 elsif data == "\n"
                     state[:delay] = 10
                     self.sendMessage(ws, "\n")
                 else
-                    raise 'Unexpected Console state!'
+                    self.raiseError('Unexpected Console state!', data, url, prompt, logger)
                 end
             end
 
-            def self.doPassword(ws, data, state, password)
+            def self.doPassword(ws, data, state, password, url, prompt, logger)
                 if data.include?('Password:')
                     state[:stage] = :checkPassword
-                    raise 'Missing ROOT_PASSWORD!' unless password
+                    self.raiseError('Missing ROOT_PASSWORD!', nil, url, prompt, logger) unless password
                     state[:delay] = 5
                     self.sendMessage(ws, password + "\n")
                 else
-                    raise 'Unexpected Console state!'
+                    self.raiseError('Unexpected Console state!', data, url, prompt, logger)
                 end
             end
 
@@ -337,6 +337,14 @@ module ConfigLMM
                 data = '0:' + length.to_s + ':' + message
                 ws.send(data)
             end
+
+            def self.raiseError(message, data, url, prompt, logger)
+                url, query = url.split('?')
+                logger.error("Error for #{url}")
+                logger.warn(data.inspect) if data
+                raise message.to_s
+            end
+
         end
     end
 end
