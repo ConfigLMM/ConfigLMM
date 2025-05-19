@@ -107,6 +107,7 @@ module ConfigLMM
                     end
                     data = File.read(source)
                     checksum = Digest::MD5.hexdigest(data)
+                    self.exec("cat #{target} > /tmp/configlmm_fileupload_backup", false, options)
                     begin
                         @State[:mutex].synchronize {
                             @State[:stage] = :ignore
@@ -119,11 +120,13 @@ module ConfigLMM
                         }
                         @State[:mutex].synchronize {
                             @State[:stage] = :shell
-                            ProxmoxXTerm.sendMessage($WS, "\u0003")
+                            ProxmoxXTerm.sendMessage($WS, "\u0003\n") # Ctrl+C + newline
                             @State[:condition].wait(@State[:mutex])
                         }
                         compare = self.exec("md5sum #{target}").split(' ').first.strip
-                        if checksum != compare
+                        if checksum == compare
+                            self.exec("rm -f /tmp/configlmm_fileupload_backup", false, options)
+                        else
                             raise "Failed to upload #{source} file"
                         end
                     ensure
