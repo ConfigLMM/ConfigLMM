@@ -211,7 +211,12 @@ module ConfigLMM
 
                 if !pkgs.empty?
                     command = distroInfo['InstallPackage'] + ' ' + pkgs.map { |pkg| pkg.shellescape }.join(' ')
-                    connection.adminExec(command, false, options)
+                    result = connection.adminExec(command, false, options)
+                    # Handle failure for openSUSE
+                    if result.downcase.include?('no provider of')
+                        logger.error(result)
+                        raise 'Error! Failed to install package(s)!'
+                    end
                 end
 
                 handleGitHubPackages(githubPackages, options) unless githubPackages.empty?
