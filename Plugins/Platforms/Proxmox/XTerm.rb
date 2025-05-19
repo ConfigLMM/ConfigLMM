@@ -57,7 +57,14 @@ module ConfigLMM
                         prompt.say(message)
                         return
                     end
-                    checksum = self.exec("md5sum #{source}").split(' ').first.strip
+                    checksum = self.exec("md5sum #{source}").split(' ').first.strip.downcase
+                    # Special case for empty file
+                    # it's way simpler to do it this way
+                    if checksum == 'd41d8cd98f00b204e9800998ecf8427e'
+                        target += '/' + File.basename(source) if File.directory?(target)
+                        File.write(target, '')
+                        return 0
+                    end
                     isBinary = self.exec("file --brief --mime-encoding #{source}").include?('binary')
                     encode = ''
                     encode = ' | base64' if isBinary
