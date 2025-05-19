@@ -3,6 +3,7 @@ require_relative 'XTerm'
 require 'fog/proxmox'
 require 'cgi'
 require 'addressable/uri'
+require 'ostruct'
 
 module ConfigLMM
     module LMM
@@ -77,15 +78,19 @@ module ConfigLMM
                 OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] &= ~OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
             end
 
-            def createVM(serverName, serverInfo, targetUri, iso, activeState, context)
+            def createVM(serverName, serverInfo, targetUri, iso, activeState, context, options)
                 authParams = self.class.getAuthParams(targetUri, context)
                 node, compute = self.class.getNode(authParams)
                 OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] |= OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
                 server = node.servers.find { |server| server.name == serverName }
                 if server
                     if server.status != 'running'
-                        server.action('start')
-                        server.wait_for { server.ready? }
+                        if options[:dry]
+                            prompt.say("Would start VM with name '#{serverName}'")
+                        else
+                            server.action('start')
+                            server.wait_for { server.ready? }
+                        end
                     end
                     return false
                 end
@@ -149,38 +154,52 @@ module ConfigLMM
                     settings['net0'] = "virtio,bridge=#{serverInfo['NetworkBridge']}"
                 end
 
-                server = node.servers.create(settings)
+                if options[:dry]
+                    prompt.say("Would create VM with name '#{serverName}'")
+                else
+                    server = node.servers.create(settings)
+                end
 
                 imageStorages = node.storages.list_by_content_type('images')
                 imageStorageName = imageStorages.first.storage
                 efidisk = { id: 'efidisk0', storage: imageStorageName, size: '528' }
-                server.attach(efidisk, { efitype: '4m', 'pre-enrolled-keys': 1 })
+                server.attach(efidisk, { efitype: '4m', 'pre-enrolled-keys': 1 }) unless options[:dry]
 
                 if serverInfo['Storage']
                     disk = { id: 'virtio0', storage: imageStorageName, size: Filesize.from(serverInfo['Storage']).to_f('GiB').to_i }
-                    server.attach(disk, { replicate: 0 })
+                    server.attach(disk, { replicate: 0 }) unless options[:dry]
                 end
 
-                if server.status != 'running'
-                    server.action('start')
-                    server.wait_for { server.ready? }
+                if options[:dry]
+                    prompt.say("Would start VM with name '#{serverName}'")
+                else
+                    if server.status != 'running'
+                        server.action('start')
+                        server.wait_for { server.ready? }
+                    end
                 end
+
                 true
             ensure
                 OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] &= ~OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
             end
 
-            def createContainer(serverInfo, targetUri, flavourInfo, activeState, context)
+            def createContainer(serverInfo, targetUri, flavourInfo, activeState, context, options)
                 authParams = self.class.getAuthParams(targetUri, context)
                 node, compute = self.class.getNode(authParams)
                 OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] |= OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
 
                 serverInfo['Domain'] = serverInfo['Name'] unless serverInfo['Domain']
-                container = node.containers.find { |container| container.name == Addressable::IDNA.to_ascii(serverInfo['Domain']) }
+                containerName = Addressable::IDNA.to_ascii(serverInfo['Domain'])
+                container = node.containers.find { |container| container.name == containerName }
                 if container
                     if container.status != 'running'
-                        container.action('start')
-                        container.wait_for { container.ready? }
+                        if options[:dry]
+                            prompt.say("Would start container with name '#{containerName}'")
+                        else
+                            container.action('start')
+                            container.wait_for { container.ready? }
+                        end
                     end
                     return false
                 end
@@ -193,7 +212,11 @@ module ConfigLMM
                 raise "Couldn't find LXC template #{flavourInfo['LXC']}" unless appliance
                 templateStorages = node.storages.list_by_content_type('vztmpl')
                 templateStorageName = templateStorages.first.storage
-                storage.download_appliance({ node: node.node }, { storage: templateStorageName, template: appliance['template'] })
+                if options[:dry]
+                    prompt.say("[#{node.node}] Would download '#{appliance['template']}' template to '#{templateStorageName}' storage")
+                else
+                    storage.download_appliance({ node: node.node }, { storage: templateStorageName, template: appliance['template'] })
+                end
 
                 settings = {
                     vmid: node.servers.next_id,
@@ -301,7 +324,12 @@ module ConfigLMM
                     end
                 end
 
-                container = node.containers.create(settings)
+                if options[:dry]
+                    prompt.say("Would create container with name '#{containerName}'")
+                    container = OpenStruct.new(:vmid => settings[:vmid])
+                else
+                    container = node.containers.create(settings)
+                end
 
                 if serverInfo['LXC'].is_a?(Array)
                     self.addLXCOptions(serverInfo, targetUri, compute, node.node, container.vmid, context)
@@ -312,9 +340,13 @@ module ConfigLMM
                 #    proxmoxServer.exec("chmod +rx #{storagePath}/images/$ID/subvol-$ID-disk-0.subvol")
                 #end
 
-                if container.status != 'running'
-                    container.action('start')
-                    container.wait_for { container.ready? }
+                if options[:dry]
+                    prompt.say("Would start container with name '#{containerName}'")
+                else
+                    if container.status != 'running'
+                        container.action('start')
+                        container.wait_for { container.ready? }
+                    end
                 end
                 true
             ensure

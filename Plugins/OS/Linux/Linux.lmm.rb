@@ -677,7 +677,7 @@ module ConfigLMM
                 location = Libvirt.getLocation(target['Location'])
                 iso = installationISO(target['Distro'], target['Flavour'], location)
                 iso = buildAutoInstallISO(id, iso, target, options)
-                if plugins[:Libvirt].createVM(target['Name'], target, target['Location'], iso, activeState)
+                if plugins[:Libvirt].createVM(target['Name'], target, target['Location'], iso, activeState, context, options)
                     context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users']['root'].key?('Password')
                 end
             end
@@ -685,14 +685,14 @@ module ConfigLMM
             def deployOverProxmox(id, target, activeState, context, options)
                 if target['LXC']
                     info = flavourInfo(target['Distro'], target['Flavour'])
-                    if plugins[:Proxmox].createContainer(target, target['Location'], info, activeState, context)
+                    if plugins[:Proxmox].createContainer(target, target['Location'], info, activeState, context, options)
                         context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users']['root'].key?('Password')
                     end
                 else
                     location = Proxmox.getLocation(target['Location'])
                     iso = installationISO(target['Distro'], target['Flavour'], location)
                     iso = buildAutoInstallISO(id, iso, target, options)
-                    if plugins[:Proxmox].createVM(target['Name'], target, target['Location'], iso, activeState, context)
+                    if plugins[:Proxmox].createVM(target['Name'], target, target['Location'], iso, activeState, context, options)
                         context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users']['root'].key?('Password')
                     end
                 end

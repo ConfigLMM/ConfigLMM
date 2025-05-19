@@ -32,7 +32,7 @@ module ConfigLMM
                 end
             end
 
-            def createVM(serverName, serverInfo, targetUri, iso, activeState)
+            def createVM(serverName, serverInfo, targetUri, iso, activeState, context, options)
                 compute = Fog::Compute.new(provider: :libvirt, libvirt_uri: targetUri)
                 server = compute.servers.all.find { |server| server.name == serverName }
                 if server
