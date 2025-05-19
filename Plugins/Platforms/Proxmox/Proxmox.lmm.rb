@@ -237,8 +237,10 @@ module ConfigLMM
                     settings[:swap] = Filesize.from(serverInfo['Swap'].to_s).to_f('MiB').to_i
                 end
 
+                storageIsSubvolume = false
+                storagePool = serverInfo['StoragePool']
                 if serverInfo['Storage']
-                    storagePool = serverInfo['StoragePool']
+                    storageIsSubvolume = serverInfo['Storage'].to_s == '0'
                     if !storagePool
                         storages = node.storages.list_by_content_type('rootdir')
                         storagePool = storages.first.storage
@@ -331,14 +333,20 @@ module ConfigLMM
                     container = node.containers.create(settings)
                 end
 
-                if serverInfo['LXC'].is_a?(Array)
-                    self.addLXCOptions(serverInfo, targetUri, compute, node.node, container.vmid, context)
-                end
+                if serverInfo['LXC'].is_a?(Array) || storageIsSubvolume
+                    self.withProxmoxConnection(targetUri, serverInfo, compute, node.node, context) do |connection|
+                        if serverInfo['LXC'].is_a?(Array)
+                            self.addLXCOptions(connection, serverInfo, container.vmid, context, options)
+                        end
 
-                # TODO - Need to be readable/executable by everyone. Otherwise some things will break inside container like `su`
-                # if storageIsSubvolume
-                #    proxmoxServer.exec("chmod +rx #{storagePath}/images/$ID/subvol-$ID-disk-0.subvol")
-                #end
+                        if storageIsSubvolume
+                            vmid = container.vmid
+                            storageInfo = storage.list.find { |info| info['storage'] == storagePool }
+                            raise "Didn\'t find storage with name '#{storagePool}'" unless storageInfo
+                            connection.exec("chmod +rx #{storageInfo['path']}/images/#{vmid}/subvol-#{vmid}-disk-0.subvol", false, options)
+                        end
+                    end
+                end
 
                 if options[:dry]
                     prompt.say("Would start container with name '#{containerName}'")
@@ -353,14 +361,16 @@ module ConfigLMM
                 OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] &= ~OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
             end
 
-            def addLXCOptions(serverInfo, uri, compute, node, vmid, context)
-                options = serverInfo['LXC'].map { |option| 'lxc.' + option.map { |name, value| "#{name}: #{value}" }.first }.join("\n")
-
+            def withProxmoxConnection(uri, serverInfo, compute, node, context)
                 uri = Addressable::URI.parse(uri) if uri.is_a?(String)
                 self.class.xtermTunnel(uri, serverInfo, compute, node, nil, nil, context, prompt, logger) do |xterm|
-                    connection = IO::Connection.new(:Proxmox, xterm, prompt, logger)
-                    connection.exec("echo \"#{options}\" >> /etc/pve/lxc/#{vmid}.conf")
+                    yield(IO::Connection.new(:Proxmox, xterm, prompt, logger))
                 end
+            end
+
+            def addLXCOptions(connection, serverInfo, vmid, context, options)
+                configs = serverInfo['LXC'].map { |config| 'lxc.' + config.map { |name, value| "#{name}: #{value}" }.first }.join("\n")
+                connection.exec("echo \"#{configs}\" >> /etc/pve/lxc/#{vmid}.conf", false, options)
             end
 
             def self.withXTerm(targetUri, target, context, prompt, logger, &block)
