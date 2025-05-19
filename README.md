@@ -253,20 +253,29 @@ Then deploy it and let the magic happen!
 ```
 $ configlmm help
 Commands:
-  configlmm build [CONFIGS...]     # Build configuration in deployable form
-  configlmm deploy [CONFIGS...]    # Deploy configuration
-  configlmm diff [CONFIGS...]      # Show changes that will be applied with next deploy
-  configlmm help [COMMAND]         # Describe available commands or one specific command
-  configlmm list [CONFIGS...]      # List things
-  configlmm refresh [CONFIGS...]   # Update local state to match deployed things
-  configlmm validate [CONFIGS...]  # Check whether the configuration is valid
-  configlmm version                # Show program's version
+  configlmm backup [CONFIGS_LIMIT...]  # Backup deployed things
+  configlmm build [CONFIGS...]         # Build configuration in deployable form
+  configlmm cleanup [CONFIGS...]       # In deployed infrastructure cleanup/delete unused things (eg. deployment leftover junk) (note this can be risky due to mistakes)
+  configlmm deploy [CONFIGS...]        # Deploy configuration
+  configlmm diff [CONFIGS...]          # Show changes that will be applied with next deploy
+  configlmm help [COMMAND]             # Describe available commands or one specific command
+  configlmm list [CONFIGS...]          # List things
+  configlmm refresh [CONFIGS...]       # Update local state to match deployed things
+  configlmm test [CONFIGS...]          # Test whether deployed things work as expected
+  configlmm types                      # List available types/plugins
+  configlmm update [CONFIGS_LIMIT...]  # Update deployed things
+  configlmm validate [CONFIGS...]      # Check whether the configuration is valid
+  configlmm version                    # Show program's version
 
 Options:
       [--level=LEVEL]                    # Logging level to use
                                          # Default: info
                                          # Possible values: debug, info, warn, error
   -n, [--dry], [--no-dry], [--skip-dry]  # Only show actions without performing
+
+Configs options:
+  [--locations=LOCATIONS]  # Filter by config file locations
+  [--things=THINGS]        # Filter on which things to work on
 
 $ configlmm deploy config.mm.yaml
 Deploying...
