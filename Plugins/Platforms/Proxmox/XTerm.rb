@@ -42,7 +42,10 @@ module ConfigLMM
                     @State[:mutex].synchronize {
                         @State[:stage] = :command
                         ProxmoxXTerm.sendMessage($WS, command + "\n")
-                        @State[:condition].wait(@State[:mutex])
+                        result = @State[:condition].wait(@State[:mutex], options[:commandTimeout])
+                        if result.nil?
+                            raise "Command timeout! #{command}"
+                        end
                     }
                     @State[:data]
                 end

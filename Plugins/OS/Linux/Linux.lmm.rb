@@ -370,14 +370,15 @@ module ConfigLMM
                                 prompt.warn('Reexecuting systemd!')
                                 connection.exec("systemctl daemon-reexec", false, options)
                             end
+                            timeoutOptions = { **options, commandTimeout: 20*60 } # 20min timeout
                             services.each do |service|
                                 prompt.warn("Restarting #{service[:service] ? service[:service] : service[:specialService]}")
                                 if service[:service] && !service[:uid]
-                                    connection.exec("systemctl restart #{service[:service]}", false, options)
+                                    connection.exec("systemctl restart #{service[:service]}", false, timeoutOptions)
                                 elsif service[:service] && service[:uid]
-                                    connection.exec("systemctl --user --machine=#{service[:uid]}@ restart #{service[:service]}", false, options)
+                                    connection.exec("systemctl --user --machine=#{service[:uid]}@ restart #{service[:service]}", false, timeoutOptions)
                                 elsif service[:specialService]
-                                    connection.exec("systemctl restart #{service[:specialService]}", false, options)
+                                    connection.exec("systemctl restart #{service[:specialService]}", false, timeoutOptions)
                                 else
                                     raise 'This shouldn\'t happen!'
                                 end
