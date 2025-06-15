@@ -814,7 +814,7 @@ module ConfigLMM
                     config['Services'].uniq!
                 end
                 config['Apps'] = Framework::LinuxApp.mapPackages(config['Apps'], config['Distro']) if config['Distro']
-                config['Apps'].delete_if { |app| app.include?('|') }
+                config['Apps'].delete_if { |app| app.include?('|') } if config['Apps']
                 config
             end
 
