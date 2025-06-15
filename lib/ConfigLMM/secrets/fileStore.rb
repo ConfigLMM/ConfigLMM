@@ -22,9 +22,10 @@ module ConfigLMM
             private
 
             def loadSecrets()
-                save unless File.exist?(@File)
-                @Secrets = Hash[(File.read(@File).lines.select { |line| !line.strip.empty? }.map { |line| keyValue(line.strip) })]
-                @Secrets.transform_keys!(&:upcase)
+                if File.exist?(@File)
+                    @Secrets = Hash[(File.read(@File).lines.select { |line| !line.strip.empty? }.map { |line| keyValue(line.strip) })]
+                    @Secrets.transform_keys!(&:upcase)
+                end
             end
 
             def save()
