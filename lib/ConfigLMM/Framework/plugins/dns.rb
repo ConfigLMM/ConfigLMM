@@ -22,7 +22,8 @@ module ConfigLMM
                 end
 
                 items.each do |item|
-                    type, content = item.strip.split('=')
+                    type, *content = item.strip.split('=')
+                    content = content.join('=')
                     content = domain if content == '@'
                     content = self.class.externalIp if content == '@me'
                     content = Variables.stringEval(content, context)
