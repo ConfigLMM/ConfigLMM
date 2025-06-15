@@ -81,7 +81,7 @@ module ConfigLMM
                         raise Framework::PluginProcessError.new("#{id}: Unknown protocol: #{uri.scheme}!")
                     end
                 else
-                    self.class.withConnection(Local.new(prompt, logger)) do |connection|
+                    self.class.withConnection(IO::Local.new(prompt, logger)) do |connection|
                         deployLocal(connection, target, options)
                     end
                 end
@@ -655,7 +655,7 @@ module ConfigLMM
                     connection.ensureServiceAutoStart(FIREWALL_SERVICE, options)
                     connection.startService(FIREWALL_SERVICE, options)
                 end
-                self.executeCommands(target['Execute'])
+                self.executeCommands(target['Execute'], connection)
             end
 
             def executeCommands(commands, connection)

@@ -170,8 +170,8 @@ module ConfigLMM
                 local.chown(user, group, target, dry)
             end
 
-            def updateLocalFile(file, options, atTop = false, comment = '#')
-                local.updateFile(file, options, atTop, comment)
+            def updateLocalFile(file, options, atTop = false, comment = '#', &block)
+                local.updateFile(file, options, atTop, comment, &block)
             end
 
             # DEPRECATED
