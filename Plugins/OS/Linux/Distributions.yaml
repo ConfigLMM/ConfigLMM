@@ -55,3 +55,22 @@ debian:
     ModifyUser: usermod
     DeleteUser: userdel --remove --force
     DeleteGroup: groupdel
+
+almalinux:
+    Name: AlmaLinux
+    InstallPackage: dnf install --assumeyes
+    RemovePackage: dnf remove --assumeyes
+    ListPackages: rpm --query --all | sort
+    UpdatePackages: dnf upgrade --assumeyes
+    ListUpdates: dnf check-update
+    AutoStartService: systemctl enable
+    StartService: systemctl start
+    RestartService: systemctl restart
+    ReloadService: systemctl reload
+    StopService: systemctl stop
+    DisableService: systemctl disable
+    ReloadServiceManager: systemctl daemon-reload
+    CreateServiceUser: useradd --system --shell /usr/sbin/nologin --user-group
+    ModifyUser: usermod
+    DeleteUser: userdel --remove --force
+    DeleteGroup: groupdel

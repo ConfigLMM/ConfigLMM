@@ -15,6 +15,9 @@ Debian:
     LXC: debian-12-standard
     Type: debian
 
+AlmaLinux:
+    ISO: https://repo.almalinux.org/almalinux/10/isos/x86_64/AlmaLinux-10.0-x86_64-boot.iso
+
 Proxmox VE:
     ISO: https://enterprise.proxmox.com/iso/proxmox-ve_8.2-2.iso
     # Just install Debian first

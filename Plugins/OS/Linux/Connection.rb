@@ -296,6 +296,16 @@ module ConfigLMM
                 if distroName == Linux::SUSE_NAME
                     connection.exec("zypper addrepo https://download.opensuse.org/repositories/#{name}/#{distroVersion}/#{name}.repo", true, options)
                     connection.exec("zypper --gpg-auto-import-keys refresh", false, options)
+                elsif distroName == Linux::ALMA_NAME
+                    if name == 'EPEL'
+                        command = distroInfo['InstallPackage'] + ' epel-release'
+                        result = connection.adminExec(command, false, options)
+
+                        # Many EPEL packages require the CodeReady Builder (CRB) repository.
+                        connection.adminExec('crb enable', false, options)
+                    else
+                        raise 'Not Implemented!'
+                    end
                 else
                     raise 'Not Implemented!'
                 end

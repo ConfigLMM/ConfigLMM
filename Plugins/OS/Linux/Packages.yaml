@@ -116,3 +116,46 @@ Debian:
     WireGuard: wireguard
     xorriso: xorriso
     Yarn: yarnpkg
+
+AlmaLinux:
+    Cassandra: https://redhat.cassandra.apache.org/50x/|cassandra
+    CertBotNginx:
+        - EPEL|certbot
+        - EPEL|python3-certbot-dns-rfc2136
+    chsh: util-linux-user
+    CyrusSASL:
+        - cyrus-sasl-lib
+        - cyrus-sasl-plain
+    Dovecot: dovecot
+    firewalld: firewalld
+    fish: EPEL|fish
+    lsof: lsof
+    go: golang
+    htop: EPEL|htop
+    MariaDB: mariadb-server
+    Nextcloud:
+    nginx: nginx
+    nodejs: nodejs
+    otelcol-contrib: GitHub|open-telemetry/opentelemetry-collector-releases:otelcol-contrib_*_linux_amd64.deb
+    PHP-FPM:
+        - php-mbstring
+        - php-fpm
+        - php-pgsql
+        - php-mysqlnd
+    php-pecl:
+    pnpm: GitHub|pnpm/pnpm:pnpm-linux-x64
+    Podman: podman
+    PostgreSQL:
+        - postgresql-server
+        - postgresql-upgrade
+    Postfix: postfix-lmdb
+    PowerDNS:
+        - EPEL|pdns
+        - EPEL|pdns-backend-postgresql
+    Roundcube: EPEL|roundcubemail
+    socat: socat
+    sshd: openssh-server
+    Valkey: redis
+    WireGuard: wireguard-tools
+    xorriso: xorriso
+    Yarn: Corepack|yarn

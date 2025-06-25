@@ -6,3 +6,6 @@ openSUSE Leap:
 
 Debian:
     sshd: ssh
+
+AlmaLinux:
+   sshd: sshd

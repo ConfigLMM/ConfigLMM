@@ -25,6 +25,7 @@ module ConfigLMM
             SUSE_NAME = 'openSUSE Leap'
             PROXMOXVE_NAME = 'Proxmox VE'
             DEBIAN_NAME = 'Debian'
+            ALMA_NAME = 'AlmaLinux'
 
             def actionLinuxBuild(id, target, activeState, context, options)
                 prepareConfig(target, context)
@@ -254,8 +255,9 @@ module ConfigLMM
                         elsif info['Shell']
                             result = connection.exec("which #{info['Shell']}", true, { **options, 'dry' => false }).strip
                             if !result.empty? && !result.include?("no #{info['Shell']}")
+                                connection.ensurePackage('chsh', options) unless connection.hasBinaries?('chsh', options)
                                 shell = "--shell '#{result}'"
-                                connection.exec("chsh #{shell} #{name}")
+                                connection.exec("chsh #{shell} #{name}", false, options)
                             else
                                 prompt.say("Shell '#{info['Shell']}' not found! Skipping setting!", :color => :red)
                             end
