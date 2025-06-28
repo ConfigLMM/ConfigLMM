@@ -54,7 +54,8 @@ module ConfigLMM
                         end
                     end
                     if target['Submission']
-                        fileLines << "submissions     inet  n       -       n       -       -       smtpd\n"
+                        # Some distributions like Red Hat/AlmaLinux doesn't know "submissions" port so have to enter it manually
+                        fileLines << "465     inet  n       -       n       -       -       smtpd\n"
                         fileLines << "    -o syslog_name=postfix/submissions\n"
                         fileLines << "    -o smtpd_tls_wrappermode=yes\n"
                         fileLines << "    -o smtpd_tls_security_level=encrypt\n"
