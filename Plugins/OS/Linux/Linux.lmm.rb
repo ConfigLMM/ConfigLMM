@@ -211,9 +211,7 @@ module ConfigLMM
                     target['Hosts'].to_a.each do |ip, entries|
                         hostsLines << getHostsLine(ip, entries) + "\n"
                     end
-                    connection.updateFile(HOSTS_FILE, options, false) do |fileLines|
-                        fileLines + hostsLines
-                    end
+                    connection.updateHosts(hostsLines, context, options)
                 end
                 distroInfo = connection.distroInfo
                 convertFlavour(distroInfo, target, connection, options)

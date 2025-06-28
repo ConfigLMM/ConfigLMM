@@ -448,6 +448,23 @@ module ConfigLMM
                 end
             end
 
+            def updateHosts(hostsLines, context, options)
+                return if hostsLines.empty?
+                connection.updateFile(Linux::HOSTS_FILE, options, false) do |fileLines|
+                    fileLines + hostsLines
+                end
+                # for cloud-init
+                info = connection.exec("grep -E 'manage_etc_hosts|/etc/cloud/templates/hosts\\.' #{Linux::HOSTS_FILE}", false, options).strip
+                if info.include?('manage_etc_hosts')
+                     templateMatch = info.match(/(\/etc\/cloud\/templates\/[^\s]+)/)
+                     if templateMatch
+                        connection.updateFile(templateMatch[0], options, false) do |fileLines|
+                            fileLines + hostsLines
+                        end
+                     end
+                end
+            end
+
             def getGPUDevices(options = {})
                 devices = []
                 ['/dev/kfd', '/dev/dri'].each do |device|
