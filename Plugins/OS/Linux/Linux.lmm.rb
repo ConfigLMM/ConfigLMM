@@ -200,6 +200,7 @@ module ConfigLMM
                 if target['Domain'] || target['Hosts']
                     hostsLines = []
                     if target['Domain']
+                        connection.updateHostname(target['Domain'], context, options)
                         envs = connection.exec("env", false, { **options, 'dry' => false }).split("\n")
                         envVars = Hash[envs.map { |vars| vars.split('=', 2) }]
                         if envVars['SSH_CONNECTION']

@@ -439,6 +439,15 @@ module ConfigLMM
                 name
             end
 
+            def updateHostname(hostname, context, options)
+                asciiHostname = Addressable::IDNA.to_ascii(hostname)
+                currentHostname = connection.exec("hostnamectl --static", false, options).strip.downcase
+                if asciiHostname.downcase != currentHostname
+                    connection.exec("hostnamectl hostname #{asciiHostname.shellescape}", false, options)
+                    connection.exec("hostnamectl hostname --pretty #{hostname.shellescape}", false, options)
+                end
+            end
+
             def getGPUDevices(options = {})
                 devices = []
                 ['/dev/kfd', '/dev/dri'].each do |device|
