@@ -20,6 +20,7 @@ module ConfigLMM
                 @distroID = self.class.distroID(@connection)
                 @distributions = YAML.load_file(__dir__ + '/Distributions.yaml')
                 @allServices = YAML.load_file(__dir__ + '/Services.yaml')
+                @SELinux = nil
             end
 
             def prompt
@@ -40,8 +41,14 @@ module ConfigLMM
             end
 
             def distroVersion
-              @VersionId ||= connection.exec('cat /etc/os-release | grep "^VERSION_ID=" | cut -d "=" -f 2').strip.gsub('"', '')
-              @VersionId
+                @VersionId ||= connection.exec('cat /etc/os-release | grep "^VERSION_ID=" | cut -d "=" -f 2').strip.gsub('"', '')
+                @VersionId
+            end
+
+            def selinux?
+                return @SELinux unless @SELinux.nil?
+                @SELinux ||= connection.exec('sestatus | grep "SELinux status"', true).to_s.include?('enabled')
+                @SELinux
             end
 
             def exec(*args)

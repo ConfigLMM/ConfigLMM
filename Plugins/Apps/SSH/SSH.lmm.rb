@@ -34,6 +34,7 @@ module ConfigLMM
                         end
                         if target['Port']
                             linuxConnection.firewallAddPort(target['Port'].to_s + '/tcp', options)
+                            SELinux.addPort(linuxConnection, 'ssh', 'tcp', target['Port'], context, options)
                         end
                         linuxConnection.reloadService(SSHD_SERVICE, options)
                     end
