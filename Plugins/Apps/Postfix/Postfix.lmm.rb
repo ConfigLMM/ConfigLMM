@@ -101,6 +101,7 @@ module ConfigLMM
                 linuxConnection.upload(__dir__ + '/smtpd.conf', '/etc/sasl2/smtpd.conf', options)
                 linuxConnection.ensureFile('/etc/sasldb2', options)
                 linuxConnection.setUserGroup('/etc/sasldb2', 'postfix', 'postfix', options)
+                linuxConnection.setUserGroup('/etc/sasl2', 'postfix', 'postfix', options)
                 linuxConnection.ensureFile("#{postfixDir}access", options)
                 linuxConnection.exec("postmap lmdb:#{postfixDir}access", false, options)
                 linuxConnection.ensureFile("#{postfixDir}sender_login", options)
@@ -124,6 +125,9 @@ module ConfigLMM
                     linuxConnection.exec('postalias lmdb:/etc/aliases', false, options)
                 end
 
+
+                postfixVersion = linuxConnection.exec('postconf mail_version | cut -d "=" -f 2', false, options).strip.to_f
+
                 certDir = linuxConnection.createWildecardCertificate(options)
                 target['Settings'] ||= {}
                 target['Settings']['alias_maps'] = 'lmdb:/etc/aliases'
@@ -133,7 +137,11 @@ module ConfigLMM
                 target['Settings']['smtp_sasl_security_options'] = 'noanonymous'
                 target['Settings']['smtpd_sender_login_maps'] = "lmdb:#{postfixDir}sender_login" unless target['Settings']['smtpd_sender_login_maps']
                 target['Settings']['smtpd_sender_restrictions'] = "lmdb:#{postfixDir}access" unless target['Settings']['smtpd_sender_restrictions']
-                target['Settings']['smtpd_tls_mandatory_protocols'] = '>=TLSv1.2' unless target['Settings']['smtpd_tls_mandatory_protocols']
+                if postfixVersion >= 3.6
+                    target['Settings']['smtpd_tls_mandatory_protocols'] = '>=TLSv1.2' unless target['Settings']['smtpd_tls_mandatory_protocols']
+                else
+                    target['Settings']['smtpd_tls_mandatory_protocols'] = '!SSLv2, !SSLv3, !TLSv1, !TLSv1.1' unless target['Settings']['smtpd_tls_mandatory_protocols']
+                end
                 target['Settings']['smtpd_tls_auth_only'] = 'yes' unless target['Settings']['smtpd_tls_auth_only']
                 target['Settings']['smtpd_tls_security_level'] = 'may' unless target['Settings']['smtpd_tls_security_level']
                 target['Settings']['smtpd_tls_cert_file'] = certDir + 'fullchain.pem' unless target['Settings']['smtpd_tls_cert_file']
