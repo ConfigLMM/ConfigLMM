@@ -9,6 +9,11 @@ module ConfigLMM
                 @connection = connection
                 @settings = settings
                 @pgsqlDir = nil
+                @version = nil
+            end
+
+            def version
+                @version ||= connection.exec('postmaster --version | cut -d " " -f 3', false).strip.to_f
             end
 
             def exec(sql, db, allowFailure = false, queryOptions = [], options = {})
@@ -45,7 +50,9 @@ module ConfigLMM
 
             def grantReplication(user, options = {})
                  exec("ALTER USER #{user} REPLICATION", nil, false, [], options)
-                 exec("GRANT pg_read_all_data TO #{user}", nil, false, [], options)
+                 if version >= 14.0
+                    exec("GRANT pg_read_all_data TO #{user}", nil, false, [], options)
+                 end
             end
 
             def createExtensions(db, extensions, options)
@@ -83,7 +90,7 @@ module ConfigLMM
             def pgsqlDir
                 return @pgsqlDir if @pgsqlDir
                 distroID = connection.distroID
-                if distroID == 'opensuse-leap'
+                if ['opensuse-leap', 'almalinux'].include?(distroID)
                     @pgsqlDir = '/var/lib/pgsql/'
                 elsif distroID == 'arch'
                     @pgsqlDir = '/var/lib/postgres/'

@@ -29,6 +29,7 @@ module ConfigLMM
                                 linuxConnection.exec("chmod 750 /var/log/postgresql", false, options)
 
                                 replicate(target, linuxConnection, postgres, context, options)
+                                setupData(linuxConnection, postgres, context, options)
                                 linuxConnection.startService(SERVICE_NAME, options)
 
                                 updateSettings(target, linuxConnection, postgres, options)
@@ -101,6 +102,14 @@ module ConfigLMM
                 end
             end
 
+            def setupData(linuxConnection, postgres, context, options)
+                if !linuxConnection.filePresent?(postgres.pgsqlDir + 'data/PG_VERSION')
+                    if linuxConnection.hasBinaries?('postgresql-setup', options)
+                        linuxConnection.exec('postgresql-setup --initdb', false, options)
+                    end
+                end
+            end
+
             def updateSettings(target, linuxConnection, postgres, options)
                 settingLines = []
                 hbaLines = []
@@ -136,14 +145,19 @@ module ConfigLMM
                         hbaLines << "host    replication     all             #{addr}            scram-sha-256\n"
                     end
                 end
-                postgres.connection.exec('sed -i "s|^log_destination|#log_destination|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
+
                 postgres.connection.exec('sed -i "s|^logging_collector|#logging_collector|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
                 postgres.connection.exec('sed -i "s|^log_directory|#log_directory|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
                 postgres.connection.exec('sed -i "s|^log_file_mode|#log_file_mode|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
-                settingLines << "log_destination = 'jsonlog'\n"
+
                 settingLines << "logging_collector = on\n"
                 settingLines << "log_directory = '/var/log/postgresql'\n"
                 settingLines << "log_file_mode = 0640\n"
+
+                if postgres.version >= 15.0
+                    postgres.connection.exec('sed -i "s|^log_destination|#log_destination|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
+                    settingLines << "log_destination = 'jsonlog'\n"
+                end
 
                 #if !target['Publications'].to_h.empty?
                 #    target['Settings'] ||= {}
