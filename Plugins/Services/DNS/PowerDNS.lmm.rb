@@ -284,7 +284,11 @@ module ConfigLMM
                 PostgreSQL.withConnection(dbSettings, linuxConnection) do |postgresConnection|
                     password = SecureRandom.alphanumeric(20)
                     postgresConnection.createUserAndDB(USER, password, options)
-                    postgresConnection.importSQL(USER, USER, '/usr/share/doc/packages/pdns/schema.pgsql.sql', options)
+                    if linuxConnection.filePresent?('/usr/share/doc/pdns/schema.pgsql.sql')
+                        postgresConnection.importSQL(USER, USER, '/usr/share/doc/pdns/schema.pgsql.sql', options)
+                    else
+                        postgresConnection.importSQL(USER, USER, '/usr/share/doc/packages/pdns/schema.pgsql.sql', options)
+                    end
                     postgresConnection.updateOwner(USER, USER, options)
                 end
             end
