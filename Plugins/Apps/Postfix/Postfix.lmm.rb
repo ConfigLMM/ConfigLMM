@@ -1,5 +1,6 @@
 
 require 'addressable/idna'
+require 'public_suffix'
 
 module ConfigLMM
     module LMM
@@ -43,6 +44,9 @@ module ConfigLMM
                     end
                 end
 
+                domain = target['Domain']
+                domain = linuxConnection.exec("hostname --fqdn", false, { **options, 'dry' => false }).strip unless domain
+
                 linuxConnection.updateFile(postfixDir + MASTER_FILE, options, true) do |fileLines|
                     if target['AlternativePort']
                         fileLines << "#{target['AlternativePort']}      inet  n       -       n       -       -       smtpd\n"
@@ -68,12 +72,10 @@ module ConfigLMM
 
                         linuxConnection.fileWrite("/etc/postfix/header_cleanup", '/^Received:/ IGNORE', options)
                         linuxConnection.fileAppend("/etc/postfix/header_cleanup", '/^User-Agent:/ IGNORE', options)
+                        linuxConnection.fileAppend("/etc/postfix/header_cleanup", '/^Message-ID:\s*<(.*)@.*?>\s*$/ REPLACE Message-ID: <$1@' + PublicSuffix.domain(domain) + '>', options)
                     end
                     fileLines
                 end
-
-                domain = target['Domain']
-                domain = linuxConnection.exec("hostname --fqdn", false, { **options, 'dry' => false }).strip unless domain
 
                 linuxConnection.fileReplace(postfixDir + MAIN_FILE, '^myhostname = .*', "myhostname = #{domain}", options)
                 linuxConnection.fileReplace(postfixDir + MAIN_FILE, '^#myhostname = virtual.domain.tld', "myhostname = #{domain}", options)
