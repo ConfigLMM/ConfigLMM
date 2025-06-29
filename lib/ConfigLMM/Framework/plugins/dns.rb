@@ -40,6 +40,8 @@ module ConfigLMM
                         yield(domain)
                         prompt.say(message, :color => :magenta) if message
                         data.each do |name, data|
+                            # We use `__META__` field to describe metadata about domain not a DNS record
+                            next if name == '__META__'
                             self.processDNS(domain, data, context).each do |type, records|
                                 records.each do |record|
                                     prompt.say("  * Type: #{record[:type]}\n    Name: #{name}\n    Content: #{record[:content]}", :color => :bold)
