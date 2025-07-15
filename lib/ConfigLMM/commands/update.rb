@@ -13,6 +13,11 @@ module ConfigLMM
             end
 
             def processConfig(config, options)
+                if !state.present?
+                    prompt.error('Missing state file! Nothing to update!')
+                    raise 'Missing state file! Nothing to update!'
+                end
+
                 any = false
                 filter = config.keys
                 state.eachItem(filter) do |id, item|

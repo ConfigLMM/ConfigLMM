@@ -25,6 +25,11 @@ module ConfigLMM
             end
 
             def processConfig(config, options)
+                if !state.present?
+                    prompt.error('Missing state file! Nothing to backup!')
+                    raise 'Missing state file! Nothing to backup!'
+                end
+
                 any = false
                 filter = config.keys
 

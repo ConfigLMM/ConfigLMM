@@ -37,8 +37,12 @@ module ConfigLMM
             end
         end
 
+        def present?
+            !@State.nil?
+        end
+
         def create!
-            if @State.nil?
+            if !present?
                 result = @Prompt.yes?('Couldn\'t find state file, create it?') do |q|
                     q.default false
                 end
@@ -56,12 +60,14 @@ module ConfigLMM
         end
 
         def eachItem(filter = [], &block)
+            raise 'State file not present!' unless present?
             @State.each do |id, item|
                 yield(id, item) if filter.empty? || filter.include?(id)
             end
         end
 
         def selectType(type)
+            raise 'State file not present!' unless present?
             items = {}
             @State.each do |id, item|
                 items[id] = item if item[:Type] == type.to_s
