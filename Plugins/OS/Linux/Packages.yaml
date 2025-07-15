@@ -22,6 +22,7 @@ Arch Linux:
     PostgreSQL: postgresql
     Postfix: postfix
     PowerDNS: powerdns
+    Rspamd: rspamd
     Roundcube: roundcubemail
     socat: socat
     sshd: openssh
@@ -66,6 +67,7 @@ openSUSE Leap:
         - pdns-backend-geoip
         - pdns-backend-sqlite3
         - pdns-backend-postgresql
+    Rspamd: server:mail|rspamd
     Roundcube: roundcubemail
     socat: socat
     sshd: openssh
@@ -109,6 +111,7 @@ Debian:
         - pdns-backend-geoip
         - pdns-backend-sqlite3
         - pdns-backend-pgsql
+    Rspamd: rspamd
     Roundcube: roundcube-pgsql
     socat: socat
     sshd: openssh-server
@@ -152,6 +155,7 @@ AlmaLinux:
     PowerDNS:
         - EPEL|pdns
         - EPEL|pdns-backend-postgresql
+    Rspamd: https://rspamd.com/rpm-stable/centos-$PLATFORM_VERSION/rspamd.repo|rspamd
     Roundcube: EPEL|roundcubemail
     socat: socat
     sshd: openssh-server
