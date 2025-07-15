@@ -145,6 +145,7 @@ module ConfigLMM
                 else
                     target['Settings']['smtpd_tls_mandatory_protocols'] = '!SSLv2, !SSLv3, !TLSv1, !TLSv1.1' unless target['Settings']['smtpd_tls_mandatory_protocols']
                 end
+                target['Settings']['smtpd_tls_mandatory_ciphers'] = 'high' unless target['Settings']['smtpd_tls_mandatory_ciphers']
                 target['Settings']['smtpd_tls_auth_only'] = 'yes' unless target['Settings']['smtpd_tls_auth_only']
                 target['Settings']['smtpd_tls_security_level'] = 'may' unless target['Settings']['smtpd_tls_security_level']
                 target['Settings']['smtpd_tls_cert_file'] = certDir + 'fullchain.pem' unless target['Settings']['smtpd_tls_cert_file']
