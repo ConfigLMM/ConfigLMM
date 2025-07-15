@@ -45,6 +45,16 @@ module ConfigLMM
                 @VersionId
             end
 
+            def platformId
+                @PlatformId ||= connection.exec('cat /etc/os-release | grep "^PLATFORM_ID=" | cut -d "=" -f 2').strip.gsub('"', '').split(':').last
+                @PlatformId
+            end
+
+            def platformVersion
+                @PlatformVersion ||= platformId.match(/\d+$/)[0].to_i
+                @PlatformVersion
+            end
+
             def selinux?
                 return @SELinux unless @SELinux.nil?
                 @SELinux ||= connection.exec('sestatus | grep "SELinux status"', true).to_s.include?('enabled')
@@ -155,7 +165,7 @@ module ConfigLMM
                 connection.exec("mkdir -p #{paths.join(' ')}", false, options)
             end
 
-            def http(url, options, headers = {}, method = 'GET', data = nil, cookieFile = nil)
+            def http(url, options, headers = {}, method = 'GET', data = nil, cookieFile = nil, responseFile = nil)
                 cmd = "curl --no-progress-meter #{url.shellescape} -X #{method}"
                 if cookieFile
                     cmd += " --cookie #{cookieFile.shellescape} --cookie-jar #{cookieFile.shellescape}"
@@ -165,6 +175,9 @@ module ConfigLMM
                 end
                 if !data.nil?
                     cmd += " --data-raw #{data.shellescape}"
+                end
+                if responseFile
+                    cmd += ' > ' + responseFile.shellescape
                 end
                 connection.exec(cmd, false, options)
             end
@@ -300,6 +313,7 @@ module ConfigLMM
             end
 
             def addRepo(name, options)
+                lowercaseName = name.downcase
                 if distroName == Linux::SUSE_NAME
                     connection.exec("zypper addrepo https://download.opensuse.org/repositories/#{name}/#{distroVersion}/#{name}.repo", true, options)
                     connection.exec("zypper --gpg-auto-import-keys refresh", false, options)
@@ -310,6 +324,20 @@ module ConfigLMM
 
                         # Many EPEL packages require the CodeReady Builder (CRB) repository.
                         connection.adminExec('crb enable', false, options)
+                    elsif lowercaseName.start_with?('http') && lowercaseName.end_with?('.repo')
+                        url = name.dup
+                        if url.include?('$PLATFORM_VERSION')
+                            url = url.gsub('$PLATFORM_VERSION', platformVersion.to_s)
+                        end
+                        repoFile = '/etc/yum.repos.d/' + File.basename(URI.parse(url).path)
+                        tempFile = '/tmp/repo'
+                        errors = http(url, options, {}, 'GET', nil, nil, tempFile)
+                        if !errors.empty?
+                            logger.error(errors)
+                            connection.exec("rm -f #{tempFile.shellescape}", false, options)
+                            raise errors
+                        end
+                        connection.adminExec("mv #{tempFile.shellescape} #{repoFile.shellescape}", false, options)
                     else
                         raise 'Not Implemented!'
                     end
