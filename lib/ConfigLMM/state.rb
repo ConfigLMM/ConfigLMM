@@ -75,6 +75,15 @@ module ConfigLMM
             items
         end
 
+        def getLocationType(location, type)
+            lowercanseLocation = location.downcase
+            @State.each do |id, item|
+                # TODO - we should use smarter location comparison
+                return item if item[:Type] == type.to_s && item['Config']['Location'].to_s.downcase == lowercanseLocation
+            end
+            nil
+        end
+
         def save
             File.open(@StateFile, 'w') do |file|
                 data = YAML.dump(@State)

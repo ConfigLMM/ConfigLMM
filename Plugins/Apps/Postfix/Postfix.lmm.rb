@@ -127,7 +127,6 @@ module ConfigLMM
                     linuxConnection.exec('postalias lmdb:/etc/aliases', false, options)
                 end
 
-
                 postfixVersion = linuxConnection.exec('postconf mail_version | cut -d "=" -f 2', false, options).strip.to_f
 
                 certDir = linuxConnection.createWildecardCertificate(options)
@@ -175,6 +174,8 @@ module ConfigLMM
                     end
                 end
                 linuxConnection.exec("postmap lmdb:/etc/postfix/#{PASSWORD_FILE}", false, options)
+
+                loadIntegrationSettings(target, target['Location'], target['Settings'])
 
                 target['Settings'].each do |name, value|
                     linuxConnection.fileReplace(postfixDir + MAIN_FILE, "^#{name}[[:blank:]]*=[[:blank:]]*", "##{name} = ", options)
@@ -260,6 +261,15 @@ module ConfigLMM
                         linuxConnection.upload(senderLoginFile, "#{postfixDir}sender_login", options)
                         linuxConnection.exec("postmap lmdb:#{postfixDir}sender_login", false, options)
                     end
+                end
+            end
+
+            def loadIntegrationSettings(target, location, settings)
+                rspamdState = state.getLocationType(location, :Rspamd)
+                if target['Rspamd'] || (rspamdState && target['Rspamd'] != false)
+                    settings['smtpd_milters'] = 'inet:127.0.0.1:11332' unless settings['smtpd_milters']
+                    settings['non_smtpd_milters'] = 'inet:127.0.0.1:11332' unless settings['non_smtpd_milters']
+                    settings['milter_mail_macros'] = 'i {mail_addr} {client_addr} {client_name} {auth_authen}' unless settings['milter_mail_macros']
                 end
             end
 
