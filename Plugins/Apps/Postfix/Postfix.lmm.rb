@@ -153,6 +153,10 @@ module ConfigLMM
                 target['Settings']['tls_preempt_cipherlist'] = 'yes' unless target['Settings']['tls_preempt_cipherlist']
                 target['Settings']['tls_ssl_options'] = 'NO_RENEGOTIATION' unless target['Settings']['tls_ssl_options']
 
+                target['Settings']['message_size_limit'] = 100*1024*1024 unless target['Settings']['message_size_limit'] # 100 MiB
+                target['Settings']['mailbox_size_limit'] = 50*1024*1024*1024 unless target['Settings']['mailbox_size_limit'] # 50 GiB
+                raise "mailbox_size_limit (#{target['Settings']['mailbox_size_limit']}) can\'t be smaller than message_size_limit (#{target['Settings']['message_size_limit']})" if target['Settings']['mailbox_size_limit'] < target['Settings']['message_size_limit']
+
                 if target['Relay']
                     port = target['Relay']['Port'].to_s
                     port = '587' if port.empty?
