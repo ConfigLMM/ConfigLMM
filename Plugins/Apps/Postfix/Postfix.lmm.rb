@@ -133,6 +133,7 @@ module ConfigLMM
                 certDir = linuxConnection.createWildecardCertificate(options)
                 target['Settings'] ||= {}
                 target['Settings']['alias_maps'] = 'lmdb:/etc/aliases'
+                target['Settings']['alias_database'] = '$alias_maps'
                 target['Settings']['default_database_type'] = 'lmdb'
                 target['Settings']['smtp_tls_security_level'] = 'may' unless target['Settings']['smtp_tls_security_level']
                 target['Settings']['smtp_sasl_password_maps'] = 'lmdb:/etc/postfix/' + PASSWORD_FILE
