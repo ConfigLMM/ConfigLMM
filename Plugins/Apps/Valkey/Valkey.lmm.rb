@@ -4,25 +4,34 @@ module ConfigLMM
     module LMM
         class Valkey < Framework::LinuxApp
             PACKAGE_NAME = 'Valkey'
-            CONFIG_FILE = '/etc/redis/redis.conf'
-            PID_FILE = '/run/redis/redis.pid'
-            DEFAULT_DIR = '/var/lib/redis/'
+            CONFIG_FILE = '/etc/valkey/valkey.conf'
+            DEFAULT_DIR = '/var/lib/valkey/'
+
+            REDIS_CONFIG_FILE = '/etc/redis/redis.conf'
+            REDIS_PID_FILE = '/run/redis/redis.pid'
+            REDIS_DEFAULT_DIR = '/var/lib/redis/'
 
             def actionValkeyDeploy(id, target, activeState, context, options)
                 self.withConnection(target['Location'], target) do |connection|
                     Linux.withConnection(connection) do |linuxConnection|
                         linuxConnection.ensurePackage(PACKAGE_NAME, options)
 
-                        serviceName = 'redis'
+                        config = {
+                            serviceName: 'redis',
+                            configFile: REDIS_CONFIG_FILE,
+                            userName: 'redis'
+                        }
 
                         target['Settings'] ||= {}
                         target['Settings']['supervised'] = 'systemd'
 
                         if linuxConnection.distroID == SUSE_ID
-                            serviceName = 'redis@redis'
-                            target['Settings']['pidfile'] = PID_FILE
+                            config[:serviceName] = 'redis@redis'
+                            target['Settings']['pidfile'] = REDIS_PID_FILE
                             target['Settings']['dir'] = '/var/lib/redis/default/'
                         end
+
+                        updateConfig(config, linuxConnection, activeState, options)
 
                         password = context.secrets.load(target['SecretId'], 'VALKEY_PASSWORD')
                         if password.nil?
@@ -34,13 +43,13 @@ module ConfigLMM
                             target['Settings']['requirepass'] = password
                         end
 
-                        linuxConnection.exec("touch #{CONFIG_FILE}", false, options)
+                        linuxConnection.exec("touch #{config[:configFile]}", false, options)
                         if target['Settings']
                             target['Settings']['bind'] = '127.0.0.1 -::1' unless target['Settings']['bind']
                             target['Settings'].each do |name, value|
-                                linuxConnection.fileReplace(CONFIG_FILE, "^#{name}[[:blank:]]", "##{name} ", options)
+                                linuxConnection.fileReplace(config[:configFile], "^#{name}[[:blank:]]", "##{name} ", options)
                             end
-                            linuxConnection.updateFile(CONFIG_FILE, options, false) do |configLines|
+                            linuxConnection.updateFile(config[:configFile], options, false) do |configLines|
                                 target['Settings'].each do |name, value|
                                     configLines << "#{name} #{value}\n"
                                 end
@@ -50,20 +59,31 @@ module ConfigLMM
 
                         target['Settings']['requirepass'] = '<REDACTED>' if target['Settings']['requirepass']
 
-                        linuxConnection.setUserGroup(CONFIG_FILE, 'redis', nil, options)
-                        linuxConnection.setPrivate(CONFIG_FILE, options)
+                        linuxConnection.setUserGroup(config[:configFile], config[:userName], nil, options)
+                        linuxConnection.setPrivate(config[:configFile], options)
 
-                        linuxConnection.ensureServiceAutoStart(serviceName, options)
-                        linuxConnection.restartService(serviceName, options)
+                        linuxConnection.ensureServiceAutoStart(config[:serviceName], options)
+                        linuxConnection.restartService(config[:serviceName], options)
                     end
                 end
+            end
+
+            def updateConfig(config, linuxConnection, activeState, options)
+                if linuxConnection.hasBinaries?('valkey-server', options)
+                    config[:serviceName] = 'valkey'
+                    config[:configFile] = CONFIG_FILE
+                    config[:userName] = 'valkey'
+                    activeState[:Valkey] = true
+                end
+                config
             end
 
             def actionValkeyBackup(id, activeState, context, options)
                 target = activeState['Config'].to_h
                 withConnection(target['Location'], target) do |connection|
                     Linux.withConnection(connection) do |linuxConnection|
-                        cmd = 'redis-cli SAVE'
+                        cmd = activeState[:Valkey] ? 'valkey-cli' : 'redis-cli'
+                        cmd += ' SAVE'
                         hide = false
                         if target['Settings']['requirepass']
                             password = context.secrets.load(target['SecretId'], 'VALKEY_PASSWORD')
@@ -76,7 +96,9 @@ module ConfigLMM
                             prompt.error(result)
                             raise result
                         end
-                        dir = target['Settings']['dir'] ? target['Settings']['dir'] : DEFAULT_DIR
+
+                        defaultDir = activeState[:Valkey] ? DEFAULT_DIR : REDIS_DEFAULT_DIR
+                        dir = target['Settings']['dir'] ? target['Settings']['dir'] : defaultDir
                         linuxConnection.download(dir + 'dump.rdb', options['output'] + '/dump.rdb', options)
                     end
                 end
@@ -84,8 +106,9 @@ module ConfigLMM
 
             def cleanup(configs, state, context, options)
                 cleanupType(:Valkey, configs, state, context, options) do |item, id, state, context, options, connection|
+                    isValkey = !!state.item(id)[:Valkey]
                     Linux.withConnection(connection) do |linuxConnection|
-                        serviceName = 'redis'
+                        serviceName = isValkey ? 'valkey' : 'redis'
                         serviceName = 'redis@redis' if linuxConnection.distroID == SUSE_ID
 
                         linuxConnection.stopService(serviceName, options)
@@ -94,7 +117,8 @@ module ConfigLMM
                         state.item(id)['Status'] = State::STATUS_DELETED unless options[:dry]
 
                         if options[:destroy]
-                            linuxConnection.rm('/etc/redis', options[:dry])
+                            configFolder = isValkey ? '/etc/valkey' : '/etc/redis'
+                            linuxConnection.rm(configFolder, options[:dry])
 
                             state.item(id)['Status'] = State::STATUS_DESTROYED unless options[:dry]
                         end
