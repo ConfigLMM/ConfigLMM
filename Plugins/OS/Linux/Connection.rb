@@ -141,10 +141,12 @@ module ConfigLMM
             end
 
             def setUserGroup(path, user, group = nil, options = {})
-                if group
+                if group && user
                     connection.exec("chown -R #{user}:#{group} #{escapePath(path)}", false, options)
-                else
+                elsif user
                     connection.exec("chown -R #{user} #{escapePath(path)}", false, options)
+                elsif group
+                    connection.exec("chgrp -R #{group} #{escapePath(path)}", false, options)
                 end
             end
 
