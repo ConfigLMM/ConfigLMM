@@ -14,9 +14,27 @@ module ConfigLMM
                         linuxConnection.ensurePackage(PACKAGE_NAME, options)
                         linuxConnection.ensureServiceAutoStart(SERVICE_NAME, options)
 
+                        configureValkey(target, linuxConnection, context, options)
                         configureDKIM(target, linuxConnection, context, options)
 
                         linuxConnection.restartService(SERVICE_NAME, options)
+                    end
+                end
+            end
+
+            def configureValkey(target, linuxConnection, context, options)
+                if target.key?('Valkey') && target['Valkey']
+                    valkeyConfig = {}
+                    if target['Valkey'].is_a?(Hash)
+                        valkeyConfig = target['Valkey'].to_h
+                    elsif target['Valkey'].is_a?(String)
+                        valkeyConfig['Host'] = target['Valkey'].to_s
+                    end
+                    valkeyConfig['Host'] = '127.0.0.1' unless valkeyConfig['Host']
+                    valkeyPassword = valkeyConfig['SecretId'] ? context.secrets.load(target['Valkey']['SecretId'], 'VALKEY_PASSWORD') : nil
+                    linuxConnection.updateFile('/etc/rspamd/local.d/redis.conf', options) do |fileLines|
+                        fileLines << "servers = \"#{valkeyConfig['Host']}\"\n"
+                        fileLines << "password = \"#{valkeyPassword}\"\n" if valkeyPassword
                     end
                 end
             end
