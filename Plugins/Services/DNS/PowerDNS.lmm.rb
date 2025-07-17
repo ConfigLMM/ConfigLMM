@@ -156,7 +156,9 @@ module ConfigLMM
                             }
                             records.each do |record|
                                 record[:content] = Addressable::IDNA.to_ascii(record[:content]) + '.' if type == 'CNAME' || type == 'ALIAS' || type == 'NS'
-                                if type == 'MX'
+                                if type == 'TXT' && record[:content][0] != '"'
+                                    record[:content] = '"' + record[:content] + '"'
+                                elsif type == 'MX'
                                     priority, name = record[:content].split(' ')
                                     name = Addressable::IDNA.to_ascii(name) + '.'
                                     record[:content] = [priority, name].join(' ')
