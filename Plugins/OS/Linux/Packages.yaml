@@ -159,7 +159,7 @@ AlmaLinux:
     Roundcube: EPEL|roundcubemail
     socat: socat
     sshd: openssh-server
-    Valkey: redis
+    Valkey: valkey
     WireGuard: wireguard-tools
     xorriso: xorriso
     Yarn: Corepack|yarn
