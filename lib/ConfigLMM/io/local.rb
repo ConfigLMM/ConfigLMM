@@ -96,7 +96,8 @@ module ConfigLMM
                 end
 
                 fileLines = linesBefore
-                fileLines = yield(fileLines)
+                newLines = yield(fileLines)
+                fileLines = newLines unless newLines.nil?
                 fileLines += linesAfter
 
                 fileWrite(file, fileLines.join(), options[:dry])
