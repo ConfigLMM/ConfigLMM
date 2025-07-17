@@ -14,28 +14,32 @@ module ConfigLMM
                         linuxConnection.ensurePackage(PACKAGE_NAME, options)
 
                         serviceName = 'redis'
+
+                        target['Settings'] ||= {}
+                        target['Settings']['supervised'] = 'systemd'
+
                         if linuxConnection.distroID == SUSE_ID
                             serviceName = 'redis@redis'
-                            linuxConnection.exec("touch #{CONFIG_FILE}", false, options)
-
-                            target['Settings'] ||= {}
                             target['Settings']['pidfile'] = PID_FILE
-                            target['Settings']['supervised'] = 'systemd'
                             target['Settings']['dir'] = '/var/lib/redis/default/'
                         end
 
                         password = context.secrets.load(target['SecretId'], 'VALKEY_PASSWORD')
                         if password.nil?
                             password = SecureRandom.urlsafe_base64(20)
-                            context.secrets.store(target['SecretId'], 'VALKEY_PASSWORD', password)
+                            context.secrets.store(target['SecretId'], 'VALKEY_PASSWORD', password) unless options['dry']
                         end
 
                         if !password.empty? && password != 'no' && target['Password'] != false
                             target['Settings']['requirepass'] = password
                         end
 
+                        linuxConnection.exec("touch #{CONFIG_FILE}", false, options)
                         if target['Settings']
-                            target['Settings']['bind'] = '127.0.0.1' unless target['Settings']['bind']
+                            target['Settings']['bind'] = '127.0.0.1 -::1' unless target['Settings']['bind']
+                            target['Settings'].each do |name, value|
+                                linuxConnection.fileReplace(CONFIG_FILE, "^#{name}[[:blank:]]", "##{name} ", options)
+                            end
                             linuxConnection.updateFile(CONFIG_FILE, options, false) do |configLines|
                                 target['Settings'].each do |name, value|
                                     configLines << "#{name} #{value}\n"
