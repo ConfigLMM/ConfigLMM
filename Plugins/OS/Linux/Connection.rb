@@ -152,6 +152,10 @@ module ConfigLMM
                 connection.exec("chmod 600 #{escapePath(path)}", false, options)
             end
 
+            def setPrivateDir(path, options = {})
+                connection.exec("chmod 700 #{escapePath(path)}", false, options)
+            end
+
             def makeAccessible(path, options = {})
                 connection.exec("chmod og+rX #{escapePath(path)}", false, options)
             end
