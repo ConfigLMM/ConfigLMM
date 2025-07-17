@@ -142,6 +142,7 @@ module ConfigLMM
                     remove = []
                     info.each do |name, data|
                         next if name == '!'
+                        name = Framework::Variables.stringEval(name, context)
                         fullName = Addressable::IDNA.to_ascii(name) + '.' + Addressable::IDNA.to_ascii(domain) + '.'
                         fullName = Addressable::IDNA.to_ascii(domain) + '.' if name == '@'
                         self.processDNS(domain, data, context).each do |type, records|
