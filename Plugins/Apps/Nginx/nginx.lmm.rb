@@ -80,10 +80,12 @@ module ConfigLMM
                                         local.exec("cd #{REPOS_CACHE} && git clone --quiet #{ERROR_PAGES_REPO}", false, options)
                                         local.exec("cd #{errorPages} && cp -R dist errors", false, options)
                                     else
-                                        local.exec("cd #{REPOS_CACHE}/HttpErrorPages && git pull", false, options)
+                                        local.exec("cd #{REPOS_CACHE}/HttpErrorPages && git checkout . && git pull", false, options)
                                         local.exec("cd #{errorPages} && cp -R dist errors", false, options)
                                     end
                                     linuxConnection.uploadFolder(errorPages + '/errors', NginxConnection::WWW_DIR, options)
+                                    linuxConnection.exec("restorecon -R #{NginxConnection::WWW_DIR}", true, options)
+
                                 end
 
                                 linuxConnection.createWildecardCertificate(options)
