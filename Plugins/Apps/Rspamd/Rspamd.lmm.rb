@@ -14,10 +14,30 @@ module ConfigLMM
                         linuxConnection.ensurePackage(PACKAGE_NAME, options)
                         linuxConnection.ensureServiceAutoStart(SERVICE_NAME, options)
 
+                        configureSettings(target, linuxConnection, context, options)
                         configureValkey(target, linuxConnection, context, options)
                         configureDKIM(target, linuxConnection, context, options)
 
                         linuxConnection.restartService(SERVICE_NAME, options)
+                    end
+                end
+            end
+
+            def configureSettings(target, linuxConnection, context, options)
+                target['Settings'] ||= {}
+                target['Settings']['milter_headers'] ||= {}
+                target['Settings']['milter_headers']['extended_spam_headers'] = true unless target['Settings']['milter_headers']['extended_spam_headers']
+
+                if !target['Settings'].to_h.empty?
+                    target['Settings'].each do |type, fields|
+                        linuxConnection.updateFile("/etc/rspamd/local.d/#{type.downcase}.conf", options) do |fileLines|
+                            fields.each do |name, value|
+                                value = 'true' if value.is_a?(TrueClass)
+                                value = 'false' if value.is_a?(FalseClass)
+                                fileLines << "#{name} = #{value};\n"
+                            end
+                            fileLines
+                        end
                     end
                 end
             end
