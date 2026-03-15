@@ -11,6 +11,8 @@ module ConfigLMM
             MAIN_FILE = 'main.cf'
             TRANSPORT_FILE = 'transport'
             PASSWORD_FILE = 'sasl_passwd'
+            DEFAULT_MAIL_UID = 1000
+            DEFAULT_MAIL_GID = 1000
 
             def actionPostfixDeploy(id, target, activeState, context, options)
                 self.withConnection(target['Location'], target) do |connection|
@@ -18,15 +20,20 @@ module ConfigLMM
                         linuxConnection.ensurePackages([PACKAGE_NAME, 'CyrusSASL'], options)
                         linuxConnection.ensureServiceAutoStart(SERVICE_NAME, options)
 
-                        deploySettings(target, linuxConnection, context, options)
+                        domain = target['Domain']
+                        domain = linuxConnection.exec("hostname --fqdn", false, { **options, 'dry' => false }).strip unless domain
+                        topdomain = PublicSuffix.domain(domain)
+
+                        deploySettings(target, linuxConnection, domain, topdomain, context, options)
                         deployAccounts(target, linuxConnection, context, options)
+                        deployMailboxes(target, linuxConnection, topdomain, context, options)
 
                         linuxConnection.restartService(SERVICE_NAME, options)
                     end
                 end
             end
 
-            def deploySettings(target, linuxConnection, context, options)
+            def deploySettings(target, linuxConnection, domain, topdomain, context, options)
                 postfixDirName = 'postfix'
                 postfixDirName = 'postfix-' + target['Instance'] if target['Instance']
                 postfixDir = '/etc/' + postfixDirName + '/'
@@ -43,9 +50,6 @@ module ConfigLMM
                         linuxConnection.fileReplace("#{postfixDir + MASTER_FILE}", '^smtp', '#smtp', options)
                     end
                 end
-
-                domain = target['Domain']
-                domain = linuxConnection.exec("hostname --fqdn", false, { **options, 'dry' => false }).strip unless domain
 
                 linuxConnection.updateFile(postfixDir + MASTER_FILE, options, true) do |fileLines|
                     if target['AlternativePort']
@@ -72,7 +76,7 @@ module ConfigLMM
 
                         linuxConnection.fileWrite("/etc/postfix/header_cleanup", '/^Received:/ IGNORE', options)
                         linuxConnection.fileAppend("/etc/postfix/header_cleanup", '/^User-Agent:/ IGNORE', options)
-                        linuxConnection.fileAppend("/etc/postfix/header_cleanup", '/^Message-ID:\s*<(.*)@.*?>\s*$/ REPLACE Message-ID: <$1@' + PublicSuffix.domain(domain) + '>', options)
+                        linuxConnection.fileAppend("/etc/postfix/header_cleanup", '/^Message-ID:\s*<(.*)@.*?>\s*$/ REPLACE Message-ID: <$1@' + topdomain + '>', options)
                     end
                     fileLines
                 end
@@ -99,13 +103,22 @@ module ConfigLMM
                 end
                 linuxConnection.firewallAddService('smtps', options)
 
-                linuxConnection.createDirs(options, '/etc/sasl2')
+                linuxConnection.createDirs(options, '/etc/sasl2', '/var/mail/virtual')
                 linuxConnection.upload(__dir__ + '/smtpd.conf', '/etc/sasl2/smtpd.conf', options)
                 linuxConnection.ensureFile('/etc/sasldb2', options)
                 linuxConnection.setUserGroup('/etc/sasldb2', 'postfix', 'postfix', options)
                 linuxConnection.setUserGroup('/etc/sasl2', 'postfix', 'postfix', options)
+                linuxConnection.setUserGroup('/var/mail/virtual', DEFAULT_MAIL_UID, DEFAULT_MAIL_GID, options)
                 linuxConnection.ensureFile("#{postfixDir}access", options)
                 linuxConnection.exec("postmap lmdb:#{postfixDir}access", false, options)
+                linuxConnection.ensureFile("#{postfixDir}mailboxes", options)
+                linuxConnection.exec("postmap lmdb:#{postfixDir}mailboxes", false, options)
+                linuxConnection.ensureFile("#{postfixDir}virtual_uids", options)
+                linuxConnection.exec("postmap lmdb:#{postfixDir}virtual_uids", false, options)
+                linuxConnection.ensureFile("#{postfixDir}virtual_gids", options)
+                linuxConnection.exec("postmap lmdb:#{postfixDir}virtual_gids", false, options)
+                linuxConnection.ensureFile("#{postfixDir}virtual", options)
+                linuxConnection.exec("postmap lmdb:#{postfixDir}virtual", false, options)
                 linuxConnection.ensureFile("#{postfixDir}sender_login", options)
                 linuxConnection.exec("postmap lmdb:#{postfixDir}sender_login", false, options)
                 linuxConnection.ensureFile("/etc/postfix/#{PASSWORD_FILE}", options)
@@ -134,11 +147,23 @@ module ConfigLMM
                 target['Settings']['alias_maps'] = 'lmdb:/etc/aliases'
                 target['Settings']['alias_database'] = '$alias_maps'
                 target['Settings']['default_database_type'] = 'lmdb'
-                target['Settings']['smtp_tls_security_level'] = 'may' unless target['Settings']['smtp_tls_security_level']
-                target['Settings']['smtp_sasl_password_maps'] = 'lmdb:/etc/postfix/' + PASSWORD_FILE
-                target['Settings']['smtp_sasl_security_options'] = 'noanonymous'
+
+                target['Settings']['myorigin'] = '$mydomain' unless target['Settings']['myorigin']
+                defaultMyDestination =  target.key?('Mailboxes') ? '$myhostname localhost.$mydomain localhost' : '$myhostname localhost.$mydomain localhost $mydomain'
+                target['Settings']['mydestination'] = defaultMyDestination unless target['Settings']['mydestination']
+                target['Settings']['virtual_mailbox_base'] = '/var/mail/virtual' unless target['Settings']['virtual_mailbox_base']
+                target['Settings']['virtual_mailbox_domains'] = '$virtual_mailbox_maps' unless target['Settings']['virtual_mailbox_domains']
+                target['Settings']['virtual_mailbox_maps'] = "lmdb:#{postfixDir}mailboxes" unless target['Settings']['virtual_mailbox_maps']
+                target['Settings']['virtual_uid_maps'] = "lmdb:#{postfixDir}virtual_uids" unless target['Settings']['virtual_uid_maps']
+                target['Settings']['virtual_gid_maps'] = "lmdb:#{postfixDir}virtual_gids" unless target['Settings']['virtual_gid_maps']
+                target['Settings']['virtual_alias_maps'] = "lmdb:#{postfixDir}virtual" unless target['Settings']['virtual_alias_maps']
                 target['Settings']['smtpd_sender_login_maps'] = "lmdb:#{postfixDir}sender_login" unless target['Settings']['smtpd_sender_login_maps']
                 target['Settings']['smtpd_sender_restrictions'] = "lmdb:#{postfixDir}access" unless target['Settings']['smtpd_sender_restrictions']
+
+                target['Settings']['smtp_sasl_password_maps'] = 'lmdb:/etc/postfix/' + PASSWORD_FILE
+                target['Settings']['smtp_sasl_security_options'] = 'noanonymous'
+
+                target['Settings']['smtp_tls_security_level'] = 'may' unless target['Settings']['smtp_tls_security_level']
                 if postfixVersion >= 3.6
                     target['Settings']['smtpd_tls_mandatory_protocols'] = '>=TLSv1.2' unless target['Settings']['smtpd_tls_mandatory_protocols']
                 else
@@ -154,7 +179,16 @@ module ConfigLMM
 
                 target['Settings']['message_size_limit'] = 100*1024*1024 unless target['Settings']['message_size_limit'] # 100 MiB
                 target['Settings']['mailbox_size_limit'] = 50*1024*1024*1024 unless target['Settings']['mailbox_size_limit'] # 50 GiB
+                target['Settings']['virtual_mailbox_limit'] = target['Settings']['mailbox_size_limit'] unless target['Settings']['virtual_mailbox_limit']
                 raise "mailbox_size_limit (#{target['Settings']['mailbox_size_limit']}) can\'t be smaller than message_size_limit (#{target['Settings']['message_size_limit']})" if target['Settings']['mailbox_size_limit'] < target['Settings']['message_size_limit']
+                raise "virtual_mailbox_limit (#{target['Settings']['virtual_mailbox_limit']}) can\'t be smaller than message_size_limit (#{target['Settings']['message_size_limit']})" if target['Settings']['virtual_mailbox_limit'] < target['Settings']['message_size_limit']
+
+                # Prevent user/email enumeration
+                target['Settings']['disable_vrfy_command'] = 'yes' unless target['Settings']['disable_vrfy_command']
+                target['Settings']['show_user_unknown_table_name'] = 'no' unless target['Settings']['show_user_unknown_table_name']
+
+                # Allow only local users listed in aliases (this prevents actual user enumeration)
+                target['Settings']['local_recipient_maps'] = '$alias_maps' unless target['Settings']['local_recipient_maps']
 
                 if target['Relay']
                     port = target['Relay']['Port'].to_s
@@ -216,12 +250,12 @@ module ConfigLMM
                 if target['Accounts']
                     postfixDirName = 'postfix'
                     postfixDirName = 'postfix-' + target['Instance'] if target['Instance']
-                    postfixDir = '/etc/' + postfixDirName + '/'
+                    senderLoginRemotePath = self.class.postfixFile(target, 'sender_login')
 
-                    linuxConnection.ensureFile("#{postfixDir}sender_login", { **options, 'dry' => false })
-                    linuxConnection.download("#{postfixDir}sender_login", options['output'], { **options, 'dry' => false })
-                    senderLoginFile = options['output'] + '/sender_login'
-                    accountData = File.read(senderLoginFile)
+                    linuxConnection.ensureFile(senderLoginRemotePath, { **options, 'dry' => false })
+                    linuxConnection.download(senderLoginRemotePath, options['output'], { **options, 'dry' => false })
+                    senderLoginLocalPath = options['output'] + '/sender_login'
+                    accountData = File.read(senderLoginLocalPath)
                     addAccounts = []
                     accountPasswords = linuxConnection.exec('sasldblistusers2', false, { **options, 'dry' => false })
                     target['Accounts'].each do |account, emails|
@@ -257,11 +291,72 @@ module ConfigLMM
                             accountData << "\n" + accountLine
                         end
                         accountData << "\n"
-                        File.write(senderLoginFile, accountData)
-                        linuxConnection.upload(senderLoginFile, "#{postfixDir}sender_login", options)
-                        linuxConnection.exec("postmap lmdb:#{postfixDir}sender_login", false, options)
+                        File.write(senderLoginLocalPath, accountData)
+                        linuxConnection.upload(senderLoginLocalPath, senderLoginRemotePath, options)
                     end
+                    linuxConnection.exec("postmap lmdb:#{senderLoginRemotePath}", false, options)
                 end
+            end
+
+            def deployMailboxes(target, linuxConnection, topdomain, context, options)
+                mailboxes = []
+                #if target['Accounts']
+                #    mailboxes += target['Accounts'].keys
+                #end
+                if target.key?('Mailboxes')
+                    if target['Mailboxes'].is_a?(Array)
+                        mailboxes += target['Mailboxes']
+                    elsif target['Mailboxes'].is_a?(Hash) && target['Mailboxes']['File']
+                        # TODO
+                    else
+                        mailboxes = nil
+                    end
+                #elsif mailboxes.empty?
+                #    mailboxes << '@' + topdomain
+                end
+                uidsPath = self.class.postfixFile(target, 'virtual_uids')
+                gidsPath = self.class.postfixFile(target, 'virtual_gids')
+                mailboxesPath = self.class.postfixFile(target, 'mailboxes')
+                addresses = mailboxes ? mailboxes.uniq.sort : []
+                domains = addresses.map { |addr| addr.split('@').last }.uniq.sort
+
+                linuxConnection.updateFile(uidsPath, options) do |fileLines|
+                    domains.each do |domain|
+                        fileLines << "@#{domain} #{DEFAULT_MAIL_UID}\n"
+                    end
+                    fileLines
+                end
+
+                linuxConnection.updateFile(gidsPath, options) do |fileLines|
+                    domains.each do |domain|
+                        fileLines << "@#{domain} #{DEFAULT_MAIL_GID}\n"
+                    end
+                    fileLines
+                end
+
+                linuxConnection.updateFile(mailboxesPath, options) do |fileLines|
+                    domains.each do |domain|
+                        fileLines << "#{domain} -\n"
+                    end
+                    addresses.each do |address|
+                        fileLines << "#{address} #{address}\n"
+                    end
+                    fileLines
+                end
+
+                linuxConnection.exec("postmap lmdb:#{uidsPath}", false, options)
+                linuxConnection.exec("postmap lmdb:#{gidsPath}", false, options)
+                linuxConnection.exec("postmap lmdb:#{mailboxesPath}", false, options)
+            end
+
+            def self.postfixDir(target)
+                postfixDirName = 'postfix'
+                postfixDirName = 'postfix-' + target['Instance'] if target['Instance']
+                '/etc/' + postfixDirName + '/'
+            end
+
+            def self.postfixFile(target, filename)
+                self.postfixDir(target) + filename
             end
 
             def loadIntegrationSettings(target, location, settings)
