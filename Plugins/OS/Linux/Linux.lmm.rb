@@ -339,7 +339,8 @@ module ConfigLMM
                 if result.include?('reboot required') ||
                    result.include?('reboot is suggested') ||
                    result.include?('update-initramfs:') ||
-                   result.include?('updating linux initcpios')
+                   result.include?('updating linux initcpios') ||
+                   result.include?(' kernel ') # For AlmaLinux
                     needReboot = true
                     autoRestart = false
                 end
