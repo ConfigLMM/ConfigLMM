@@ -132,6 +132,7 @@ module ConfigLMM
                     options << clientMachineIdOption
                 end
                 if isFullDHCP
+                    options << ::DHCP::RequestedIPAddressOption.new({ payload: networkOptions['ClientIP'].split('.').map(&:to_i) })
                     options << ::DHCP::IPAddressLeaseTimeOption.new()
                     options << ::DHCP::Option.new(type: $DHCP_RENEWTIME, payload: [3600].pack('N').unpack('C*'))
                     options << ::DHCP::Option.new(type: $DHCP_REBINDTIME, payload: [3600].pack('N').unpack('C*'))
