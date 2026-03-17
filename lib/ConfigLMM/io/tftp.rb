@@ -22,18 +22,23 @@ module ConfigLMM
                         sock.send(::TFTP::Packet::ERROR.new(1, 'File not found.').encode, 0)
                         return false
                     end
-                    filename = req.filename
+                    path = req.filename
+                    path = path.gsub('\\', '/')
                     loop do
-                        filename = filename.gsub('//', '/')
-                        break unless filename.include?('//')
+                        path = path.gsub('//', '/')
+                        break unless path.include?('//')
                     end
-                    filename = filename.gsub('../', '')
-                    path = @Dir + filename
-                    if File.file?(path)
+                    path = path.gsub('../', '')
+                    path = path[1..] if path[0] == '/'
+                    fullpath = @Dir + path
+                    if !File.exist?(fullpath)
+                        fullpath = fixInsensitiveCase(fullpath)
+                    end
+                    if File.file?(fullpath)
                         mode = 'r'
                         mode += 'b' if req.mode == :octet
-                        io = File.open(path, mode)
-                        log :debug, "#{tag} Sending #{req.filename} - #{path}"
+                        io = File.open(fullpath, mode)
+                        log :debug, "#{tag} Sending #{req.filename} - #{fullpath}"
                         if req.options.key?('tsize')
                             sendOACK(tag, sock, { 'tsize' => io.stat.size })
                         end
@@ -63,6 +68,19 @@ module ConfigLMM
             def run!(tag, req, sock, src)
                 processRequest(tag, req, sock, src)
                 sock.close
+            end
+
+            def fixInsensitiveCase(path)
+                originalPath = path
+                parts = Pathname(path).each_filename.to_a
+                current = Pathname(path).absolute? ? "/" : "."
+
+                parts.each do |part|
+                    item = Dir.children(current).find { |e| e.casecmp?(part) }
+                    return originalPath unless item
+                    current = File.join(current, item)
+                end
+                current
             end
         end
 
