@@ -83,6 +83,7 @@ module ConfigLMM
                     raise 'Timeout while waiting for valid proxyDHCP Request!' unless proxyRequestMessage
                     dhcp.sendProxyACK(proxyRequestMessage, offerRequest)
                 end
+                logger.info('Sent DHCP ACK response, now waiting for system to boot')
                 server.wait(3 * 60)
                 raise 'Didn\'t receive boot file read!' unless server.hadRead?
                 server.stop()
