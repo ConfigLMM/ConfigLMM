@@ -27,9 +27,9 @@ module ConfigLMM
                         providers << plugin
                     end
                 end
-                message = "Couldn't find action Build for #{target['Type']}"
+                message = "Couldn't find action Deploy for #{target['Type']}"
                 if providers.empty?
-                    logger.debug(message)
+                    logger.warn(message)
                     return
                 end
 
