@@ -39,8 +39,16 @@ module ConfigLMM
                         mode += 'b' if req.mode == :octet
                         io = File.open(fullpath, mode)
                         log :debug, "#{tag} Sending #{req.filename} - #{fullpath}"
+                        options = {}
                         if req.options.key?('tsize')
-                            sendOACK(tag, sock, { 'tsize' => io.stat.size })
+                            options['tsize'] = io.stat.size
+                        end
+                        if req.options.key?('blksize')
+                            @blksize = req.options['blksize'].to_i
+                            options['blksize'] = @blksize
+                        end
+                        if !options.empty?
+                            sendOACK(tag, sock, options)
                         end
                         send(tag, sock, io)
                         io.close
