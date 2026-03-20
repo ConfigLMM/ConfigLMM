@@ -46,6 +46,14 @@ module ConfigLMM
                         if req.options.key?('blksize')
                             @blksize = req.options['blksize'].to_i
                             options['blksize'] = @blksize
+                        else
+                            @blksize = 512
+                        end
+                        if req.options.key?('windowsize')
+                            @windowsize = req.options['windowsize'].to_i
+                            options['windowsize'] = @windowsize
+                        else
+                            @windowsize = 1
                         end
                         if !options.empty?
                             sendOACK(tag, sock, options)
