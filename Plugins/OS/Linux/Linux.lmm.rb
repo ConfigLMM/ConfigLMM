@@ -889,7 +889,7 @@ module ConfigLMM
 
             def installationISO(distro, flavour, location)
                 info = flavourInfo(distro, flavour)
-                downloadImage(info['ISO'])
+                downloadImage(info['ISO'], info['Checksum'], info['Signature'], info['SignatureKey'])
             end
 
             def preparePXE(id, distro, flavour, options)

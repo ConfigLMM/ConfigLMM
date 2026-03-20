@@ -1,3 +1,4 @@
+require 'gpgme'
 
 module ConfigLMM
     module LMM
@@ -5,6 +6,9 @@ module ConfigLMM
             module Common
 
             IMAGE_LOCATION = '~/.cache/configlmm/images/'
+
+            TRUSTED_KEYS = [
+            ]
 
             def prepareConfig(target, context)
                 target['SSH'] ||= {}
@@ -116,8 +120,47 @@ module ConfigLMM
                 flavourInfo
             end
 
-            def downloadImage(url)
-                local.remoteDownload(url, IMAGE_LOCATION)
+            def downloadImage(url, checksumUrl = nil, signatureUrl = nil, signatureKeyUrl = nil)
+                image = local.remoteDownload(url, IMAGE_LOCATION)
+                if checksumUrl
+                    checksumPath = local.remoteDownload(checksumUrl, IMAGE_LOCATION)
+                    checksumContent = File.read(checksumPath)
+                    checksum = checksumContent.split(' ').first
+                    if checksum.length == 256 / 8 * 2 # 256 bits, 2 digits per byte
+                        sha256 = Digest::SHA256.file(image)
+                        if sha256.hexdigest != checksum.downcase
+                            logger.error("Checksum doesn't match for #{File.basename(image)}!")
+                            logger.error("Expected #{checksum.downcase} but")
+                            logger.error("Got      #{sha256.hexdigest}")
+                            raise 'Invalid checksum!'
+                        end
+                    else
+                        raise "Unimplemented checksum format!"
+                    end
+                    if signatureUrl
+                        signaturePath = local.remoteDownload(signatureUrl, IMAGE_LOCATION)
+                        signature = File.read(signaturePath)
+                        crypto = GPGME::Crypto.new
+                        if signatureKeyUrl
+                            signatureKeyPath = local.remoteDownload(signatureKeyUrl, IMAGE_LOCATION)
+                            signatureKey = File.read(signatureKeyPath)
+                            importResult = GPGME::Key.import(signatureKey)
+                            if importResult.imports.empty?
+                                raise "Failed to import key #{File.basename(signatureKeyPath)}"
+                            end
+                            if !TRUSTED_KEYS.include?(importResult.imports.first.fingerprint)
+                                raise "Imported key #{File.basename(signatureKeyPath)} (#{importResult.imports.first.fingerprint}) is untrusted!"
+                            end
+                        end
+                        result = crypto.verify(signature, :signed_text => checksumContent) do |signature|
+                            if !signature.valid?
+                                logger.error("Signature validation failed for #{File.basename(checksumPath)} with #{File.basename(signaturePath)}")
+                                raise signature.to_s
+                            end
+                        end
+                    end
+                end
+                image
             end
 
             end

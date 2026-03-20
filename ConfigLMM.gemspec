@@ -42,6 +42,7 @@ Gem::Specification.new do |spec|
     spec.add_dependency 'fog-libvirt'
     spec.add_dependency 'fog-powerdns'
     spec.add_dependency 'fog-proxmox-configlmm'
+    spec.add_dependency 'gpgme'
     spec.add_dependency 'http'
     spec.add_dependency 'net-dhcp'
     spec.add_dependency 'net-scp'
