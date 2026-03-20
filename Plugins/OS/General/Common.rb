@@ -109,7 +109,7 @@ module ConfigLMM
             def flavourInfo(distro, flavour)
                 url = nil
                 flavour = distro unless flavour
-                flavourInfo = YAML.load_file(__dir__ + '/Flavours.yaml')[flavour]
+                flavourInfo = YAML.load_file(__dir__ + '/../Linux/Flavours.yaml')[flavour]
                 if flavourInfo.nil?
                     raise Framework::PluginProcessError.new("#{id}: Unknown Linux Distro: #{flavour}!")
                 end
