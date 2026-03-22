@@ -115,9 +115,16 @@ module ConfigLMM
             def downloadImage(url, checksumUrl = nil, signatureUrl = nil, signatureKeyUrl = nil)
                 image = local.remoteDownload(url, IMAGE_LOCATION)
                 if checksumUrl
-                    checksumPath = local.remoteDownload(checksumUrl, IMAGE_LOCATION)
-                    checksumContent = File.read(checksumPath)
-                    checksum = checksumContent.split(' ').first
+                    if checksumUrl.start_with?('https://')
+                        checksumPath = local.remoteDownload(checksumUrl, IMAGE_LOCATION)
+                        checksumContent = File.read(checksumPath)
+                        checksum = checksumContent.split(' ').first
+                    else
+                        checksumContent = checksumUrl
+                        checksumUrl = nil
+                        checksumPath = nil
+                        checksum = checksumContent
+                    end
                     if checksum.length == 256 / 8 * 2 # 256 bits, 2 digits per byte
                         sha256 = Digest::SHA256.file(image)
                         if sha256.hexdigest != checksum.downcase
@@ -146,7 +153,7 @@ module ConfigLMM
                         end
                         result = crypto.verify(signature, :signed_text => checksumContent) do |signature|
                             if !signature.valid?
-                                logger.error("Signature validation failed for #{File.basename(checksumPath)} with #{File.basename(signaturePath)}")
+                                logger.error("Signature validation failed for #{checksumPath ? File.basename(checksumPath) : ''} with #{File.basename(signaturePath)}")
                                 raise signature.to_s
                             end
                         end
