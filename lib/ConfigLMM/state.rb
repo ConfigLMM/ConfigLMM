@@ -11,7 +11,8 @@ module ConfigLMM
         STATUS_DELETED = 'DELETED'
         STATUS_DESTROYED = 'DESTROYED'
 
-        def initialize(logger, prompt)
+        def initialize(options, logger, prompt)
+            @Options = options
             @Logger = logger
             @Prompt = prompt
             @State = nil
@@ -44,13 +45,17 @@ module ConfigLMM
 
         def create!
             if !present?
-                result = @Prompt.yes?('Couldn\'t find state file, create it?') do |q|
-                    q.default false
-                end
-                if result
-                    @State = {}
+                if !@Options['dry']
+                    result = @Prompt.yes?('Couldn\'t find state file, create it?') do |q|
+                        q.default false
+                    end
+                    if result
+                        @State = {}
+                    else
+                        raise 'Aborting!'
+                    end
                 else
-                    raise 'Aborting!'
+                    @State = {}
                 end
             end
         end
@@ -86,6 +91,7 @@ module ConfigLMM
         end
 
         def save
+            return if @Options['dry']
             File.open(@StateFile, 'w') do |file|
                 data = YAML.dump(@State)
                 file.write(data)

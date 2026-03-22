@@ -28,7 +28,7 @@ module ConfigLMM
                 end
 
                 @Context = Context.new(logger, prompt, ::XDG.new, @Options)
-                @State = State.new(logger, prompt)
+                @State = State.new(options, logger, prompt)
                 @Diff = {}
 
                 # Load all Plugin files
