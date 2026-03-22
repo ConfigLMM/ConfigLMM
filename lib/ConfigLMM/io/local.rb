@@ -112,6 +112,16 @@ module ConfigLMM
                 !result.start_with?('stat: cannot')
             end
 
+            def fileReplace(target, placeholder, result, options = {})
+                if options['dry']
+                    prompt.say("Would replace /#{placeholder}/ with '#{result}' in #{target}")
+                else
+                    content = File.read(target).to_s
+                    content.gsub!(Regexp.new(placeholder), result)
+                    File.write(target, content)
+                end
+            end
+
             def adminExec(command, allowFailure = false, options = {})
                 if `echo $EUID`.strip == '0'
                     self.exec(command, allowFailure, options)
