@@ -56,7 +56,7 @@ module ConfigLMM
                             @windowsize = 1
                         end
                         if !options.empty?
-                            sendOACK(tag, sock, options)
+                            send_oack(tag, sock, options)
                         end
                         send(tag, sock, io)
                         io.close
