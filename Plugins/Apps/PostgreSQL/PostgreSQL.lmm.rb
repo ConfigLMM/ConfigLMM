@@ -259,7 +259,7 @@ module ConfigLMM
                         yield(PostgreSQLConnection.new(shellConnection, settings))
                     end
                 else
-                    IO::Connection.tunnel("ssh://#{settings['HostName']}/", {}, {}, linuxConnection.prompt, linuxConnection.logger) do |connection|
+                    IO::Connection.tunnel("ssh://#{settings['HostName']}/", {}, {}, {}, linuxConnection.prompt, linuxConnection.logger) do |connection|
                         Linux.withConnection(connection) do |linuxConnection|
                             linuxConnection.withUserShell(USER_NAME) do |shellConnection|
                                 yield(PostgreSQLConnection.new(shellConnection, settings))

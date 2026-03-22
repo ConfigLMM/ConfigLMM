@@ -3,6 +3,7 @@
 require 'addressable/uri'
 require_relative 'local'
 require_relative 'ssh'
+require_relative 'icmp'
 
 module ConfigLMM
     module IO
@@ -107,13 +108,13 @@ module ConfigLMM
 
             # `connect': No route to host - connect(2) for 192.168.1.3:22 (Errno::EHOSTUNREACH)
             # `connect': Connection refused - connect(2) for 192.168.1.3:22 (Errno::ECONNREFUSED)
-            def self.tunnel(uri, target, context, prompt, logger, &block)
+            def self.tunnel(uri, target, context, options, prompt, logger, &block)
                 scheme, uri = self.processURI(uri)
                 case scheme
                 when 'local'
                     yield(Connection.new(:Local, Local.new(prompt, logger), prompt, logger))
                 when 'ssh'
-                    SSH.tunnel(uri) do |ssh|
+                    SSH.tunnel(uri, options) do |ssh|
                         yield(Connection.new(:SSH, SSH.new(prompt, logger, ssh), prompt, logger))
                     end
                 when 'proxmox+xterm'
@@ -125,13 +126,17 @@ module ConfigLMM
                 end
             end
 
-            def self.ping(uri, target, context, prompt, logger)
+            def self.ping(uri, target, options, context, prompt, logger)
                 scheme, uri = self.processURI(uri)
                 case scheme
                 when 'local'
                     return true
                 when 'ssh'
-                    SSH.ping(uri, prompt, logger)
+                    if options['fast']
+                        ICMP.ping(uri, options, prompt, logger)
+                    else
+                        SSH.ping(uri, options, prompt, logger)
+                    end
                 else
                     raise ConnectionError.new("Unimplemented protocol: #{scheme}!")
                 end

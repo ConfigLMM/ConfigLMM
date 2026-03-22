@@ -85,7 +85,7 @@ module ConfigLMM
                     settings['HostName'] = 'localhost'
                     yield(MariaDBConnection.new(linuxConnection, settings))
                 else
-                    IO::Connection.tunnel("ssh://#{settings['HostName']}/", {}, {}, linuxConnection.prompt, linuxConnection.logger) do |connection|
+                    IO::Connection.tunnel("ssh://#{settings['HostName']}/", {}, {}, {}, linuxConnection.prompt, linuxConnection.logger) do |connection|
                         yield(MariaDBConnection.new(connection, settings))
                     end
                 end

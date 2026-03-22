@@ -68,6 +68,52 @@ module ConfigLMM
 
             def actionLinuxDeploy(id, target, activeState, context, options)
                 prepareConfig(target, context)
+                if target['ProvisionLocation'] && (!activeState['Status'] ||
+                                                   [State::STATUS_CREATED, State::STATUS_DELETED, State::STATUS_DESTROYED].include?(activeState['Status']))
+                    provision = true
+                    # Safety check so that we don't accidently destroy existing system by trying to provision it again
+                    if target['Location']
+                        if self.ping(target['Location'], target, { **options, 'fast' => true })
+                            logger.error("#{target['ID']}: #{target['Type'].to_s} at #{target['Location']} seems to be running, skipping provisioning!")
+                            provision = false
+                        end
+                    end
+                    if provision
+                        deployLinux(target['ProvisionLocation'], id, target, activeState, context, options)
+                        if target['Location']
+                            logger.info("#{target['ID']}: #{target['Type'].to_s} - #{options['dry'] ? 'would be ': ''}waiting for host to respond...")
+                            if options['dry'] || try(5 * 60, options) { self.ping(target['Location'], target, { **options, 'fast' => true }) }
+                                activeState['Config'] ||= {}
+                                activeState['Config']['ProvisionLocation'] = target['ProvisionLocation']
+                                activeState['Config']['Domain'] = target['Domain'] if target.key?('Domain')
+                                activeState['Config']['Distro'] = target['Distro'] if target.key?('Distro')
+                                activeState['Config']['Network'] = target['Network'] if target.key?('Network')
+                                activeState['Status'] = State::STATUS_PROVISIONING
+                                state.save
+                                logger.info("#{target['ID']}: #{target['Type'].to_s} - #{options['dry'] ? 'would be ': ''}waiting for provisioning to complete...")
+                                if options['dry'] || try(20 * 60, options) {
+                                        result = false
+                                        sshOptions = { :non_interactive => true, :verify_host_key => :never }
+                                        begin
+                                            self.withConnection(target['Location'], target, { **options, 'disableCache' => true, 'ssh' => sshOptions }) do |connection|
+                                                result = true if connection.exec('echo OK', false, options).strip == 'OK'
+                                            end
+                                        rescue StandardError => error
+                                            raise error unless IO.error?(error) || error.is_a?(Net::SSH::Exception)
+                                            # ignore
+                                        end
+                                        result
+                                    }
+                                    logger.info("#{target['ID']}: #{target['Type'].to_s} provisioning #{options['dry'] ? 'would be ': ''}complete!")
+                                    activeState['Status'] = State::STATUS_PROVISIONED
+                                    state.save
+                                end
+                            else
+                                logger.error("#{target['ID']}: #{target['Type'].to_s} - host not responding, provisioning might have failed!")
+                            end
+                        end
+                    end
+                end
                 deployLinux(target['Location'], id, target, activeState, context, options)
                 if target['AlternativeLocation']
                     self.withConnection(target['AlternativeLocation'], target) do |connection|
@@ -565,9 +611,6 @@ module ConfigLMM
             end
 
             def deployOverPXE(uri, id, target, activeState, context, options)
-                if target['AlternativeLocation']
-                    return if self.ping(target['AlternativeLocation'], target)
-                end
                 networkOptions = target['DefaultNetwork'].dup
                 networkOptions['ID'] = id
                 clientIp = networkOptions['IP']

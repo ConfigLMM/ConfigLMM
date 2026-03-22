@@ -81,18 +81,20 @@ module ConfigLMM
                 Shell.new(self, user)
             end
 
-            def self.tunnel(uri, &block)
+            def self.tunnel(uri, options, &block)
                 uri = Addressable::URI.parse(uri) if uri.is_a?(String)
                 server, params = self.toParams(uri)
+                params.merge!(options['ssh'].to_h)
                 Net::SSH.start(server, nil, params, &block)
             end
 
-            def self.ping(uri, prompt, logger)
+            def self.ping(uri, options, prompt, logger)
                 server, params = self.toParams(uri)
-                options = Net::SSH.configuration_for(server, true).merge(params)
-                server = options[:host_name] || server
-                options[:timeout] = 3 unless options.key?(:timeout)
-                Net::SSH::Transport::Session.new(server, options)
+                params = Net::SSH.configuration_for(server, true).merge(params)
+                params.merge!(options['ssh'].to_h)
+                server = params[:host_name] if params[:host_name]
+                params[:timeout] = 3 unless params.key?(:timeout)
+                Net::SSH::Transport::Session.new(server, params)
                 true
             rescue StandardError => error
                 return false if IO.error?(error)

@@ -70,7 +70,8 @@ module ConfigLMM
 
                 thingFilters[:excludeLocations].each do |excludeLocation|
                     return true if target['Location'].to_s.upcase.include?(excludeLocation) ||
-                                   target['AlternativeLocation'].to_s.upcase.include?(excludeLocation)
+                                   target['AlternativeLocation'].to_s.upcase.include?(excludeLocation) ||
+                                   target['ProvisionLocation'].to_s.upcase.include?(excludeLocation)
                 end
 
                 return true if !thingFilters[:includeIds].empty? &&
@@ -83,7 +84,8 @@ module ConfigLMM
 
                 thingFilters[:includeLocations].each do |includeLocation|
                     return false if target['Location'].to_s.upcase.include?(includeLocation) ||
-                                    target['AlternativeLocation'].to_s.upcase.include?(includeLocation)
+                                    target['AlternativeLocation'].to_s.upcase.include?(includeLocation) ||
+                                    target['ProvisionLocation'].to_s.upcase.include?(includeLocation)
                 end
 
                 true

@@ -211,9 +211,13 @@ module ConfigLMM
                 end
             end
 
-            def withConnection(uri, target, &block)
-                self.context.useConnectionCache(IO::Connection.cacheKey(uri, target), block) do
-                    IO::Connection.tunnel(uri, target, self.context, self.prompt, self.logger, &block)
+            def withConnection(uri, target, options = {}, &block)
+                if options['disableCache']
+                    IO::Connection.tunnel(uri, target, self.context, options, self.prompt, self.logger, &block)
+                else
+                    self.context.useConnectionCache(IO::Connection.cacheKey(uri, target), block) do
+                        IO::Connection.tunnel(uri, target, self.context, options, self.prompt, self.logger, &block)
+                    end
                 end
             end
 
@@ -221,8 +225,20 @@ module ConfigLMM
                 [IO::Connection.cacheKey(uri, target), lambda { |&block| self.withConnection(uri, target, &block) }]
             end
 
-            def ping(uri, target, &block)
-                IO::Connection.ping(uri, target, self.context, self.prompt, self.logger, &block)
+            def ping(uri, target, options, &block)
+                IO::Connection.ping(uri, target, options, self.context, self.prompt, self.logger, &block)
+            end
+
+            def try(timeout, options, &block)
+                return yield if options['dry']
+                wait = options['wait'] || 10
+                endTime = Time.now + timeout
+                loop do
+                    result = yield
+                    return result if result
+                    return false if Time.now >= endTime
+                    sleep(wait)
+                end
             end
 
             # DEPRECATED

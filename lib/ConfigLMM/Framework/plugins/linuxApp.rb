@@ -137,7 +137,7 @@ module ConfigLMM
                 elsif locationOrConnection.is_a?(String) || locationOrConnection.is_a?(Addressable::URI)
                     prompt = TTY::Prompt.new
                     logger = TTY::Logger.new
-                    IO::Connection.tunnel(locationOrConnection, {}, {}, prompt, logger, &block)
+                    IO::Connection.tunnel(locationOrConnection, {}, {}, {}, prompt, logger, &block)
                 else
                     if locationOrConnection.is_a?(IO::Connection)
                         result = block.call(locationOrConnection)
