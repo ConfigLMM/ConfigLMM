@@ -12,6 +12,7 @@ opensuse-leap:
     ReloadService: systemctl reload
     StopService: systemctl stop
     DisableService: systemctl disable
+    ServiceEnabled: systemctl is-enabled
     ReloadServiceManager: systemctl daemon-reload
     CreateServiceUser: useradd --system --shell /usr/sbin/nologin --user-group
     ModifyUser: usermod
@@ -31,6 +32,7 @@ arch:
     ReloadService: systemctl reload
     StopService: systemctl stop
     DisableService: systemctl disable
+    ServiceEnabled: systemctl is-enabled
     ReloadServiceManager: systemctl daemon-reload
     CreateServiceUser: useradd --system --shell /usr/sbin/nologin --user-group
     ModifyUser: usermod
@@ -50,6 +52,7 @@ debian:
     ReloadService: systemctl reload
     StopService: systemctl stop
     DisableService: systemctl disable
+    ServiceEnabled: systemctl is-enabled
     ReloadServiceManager: systemctl daemon-reload
     CreateServiceUser: useradd --system --shell /usr/sbin/nologin --user-group
     ModifyUser: usermod
@@ -69,6 +72,7 @@ almalinux:
     ReloadService: systemctl reload
     StopService: systemctl stop
     DisableService: systemctl disable
+    ServiceEnabled: systemctl is-enabled
     ReloadServiceManager: systemctl daemon-reload
     CreateServiceUser: useradd --system --shell /usr/sbin/nologin --user-group
     ModifyUser: usermod

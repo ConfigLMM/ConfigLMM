@@ -392,6 +392,11 @@ module ConfigLMM
                 execDistroCommand(name, 'DisableService', true, options)
             end
 
+            def serviceEnabled?(name, options = {})
+                name = convertServiceName(name)
+                execDistroCommand(name, 'ServiceEnabled', true, options).strip == 'enabled'
+            end
+
             def reloadServiceManager(options = {})
                 execDistroCommand(nil, 'ReloadServiceManager', false, options)
             end
