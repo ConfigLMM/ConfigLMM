@@ -495,7 +495,7 @@ module ConfigLMM
                     fileLines + hostsLines
                 end
                 # for cloud-init
-                info = connection.exec("grep -E 'manage_etc_hosts|/etc/cloud/templates/hosts\\.' #{Linux::HOSTS_FILE}", false, options).strip
+                info = connection.exec("grep -E 'manage_etc_hosts|/etc/cloud/templates/hosts\\.' #{Linux::HOSTS_FILE}", true, options).strip
                 if info.include?('manage_etc_hosts')
                      templateMatch = info.match(/(\/etc\/cloud\/templates\/[^\s]+)/)
                      if templateMatch
