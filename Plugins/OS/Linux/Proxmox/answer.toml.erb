@@ -2,7 +2,7 @@
 keyboard = "en-us"
 country = "us"
 fqdn = "<%= Addressable::IDNA.to_ascii(config['Domain']) %>"
-mailto = "<%= config['EMail'] %>"
+mailto = "<%= config['EMail'] ? config['EMail'] : 'placeholder@localhost' %>"
 timezone = "UTC"
 root_password = "<%= config['Users'].to_h['root'].to_h['Password'] %>"
 <% if !config['Users'].to_h['root'].to_h['AuthorizedKeys'].to_a.empty? %>
@@ -27,4 +27,4 @@ source = "from-dhcp"
 [disk-setup]
 filesystem = "btrfs"
 btrfs.raid = "raid1"
-disk_list = ["vda"]
+disk_list = ["vda", "vdb"]
