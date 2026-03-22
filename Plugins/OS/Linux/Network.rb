@@ -79,8 +79,10 @@ module ConfigLMM
                         linkType = target['Network']
                         target['Network'] = {}
                     end
-                    links.each do |link|
-                        target['Network']['Interfaces'][link] = 'manual' unless target['Network']['Interfaces'].key?(link)
+                    if !target['Network']['Interfaces'].to_h.empty?
+                        links.each do |link|
+                            target['Network']['Interfaces'][link] = 'manual' unless target['Network']['Interfaces'].key?(link)
+                        end
                     end
                     if !target['Network'].key?('Interfaces') ||
                            target['Network']['Interfaces'].to_h.empty? ||
