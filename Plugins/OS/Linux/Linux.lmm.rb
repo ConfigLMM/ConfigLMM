@@ -276,7 +276,7 @@ module ConfigLMM
                             end
                         end
                         homeDir = connection.exec("getent passwd #{name} | cut -d ':' -f 6", false, { **options, 'dry' => false }).strip
-                        hostname = connection.exec("hostname", false, { **options, 'dry' => false }).strip
+                        hostname = connection.exec("hostnamectl hostname", false, { **options, 'dry' => false }).strip
                         keyFile = homeDir + "/.ssh/id_ed25519"
                         if info['SSH'].to_h['Key'] && !connection.filePresent?(keyFile, options)
                             connection.exec("mkdir -p #{homeDir}/.ssh", false, options)
