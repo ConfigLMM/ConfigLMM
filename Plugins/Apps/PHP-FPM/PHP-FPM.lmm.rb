@@ -31,7 +31,7 @@ module ConfigLMM
                     configLines << "listen = /run/php-fpm/#{name}.sock\n"
                     configLines << "listen.owner = #{target['User']}\n"
                     group = 'http'
-                    group = 'nginx' if distroInfo['Name'] == Linux::SUSE_NAME
+                    group = 'nginx' if distroInfo['Id'] == OS::SUSE_LEAP_ID
                     configLines << "listen.group = #{group}\n"
                 end
                 configLines << "pm = dynamic\n"
@@ -55,7 +55,7 @@ module ConfigLMM
 
             # DEPRECATED
             def self.phpConfig(distroInfo)
-                if distroInfo['Name'] == 'openSUSE Leap'
+                if distroInfo['Id'] == OS::SUSE_LEAP_ID
                     '/etc/php8/fpm/php.ini'
                 else
                     '/etc/php/php.ini'
@@ -80,7 +80,7 @@ module ConfigLMM
 
             # DEPRECATED
             def self.configFileDir(distroInfo)
-                if distroInfo['Name'] == 'openSUSE Leap'
+                if distroInfo['Id'] == OS::SUSE_LEAP_ID
                     '/etc/php8/fpm/'
                 else
                     '/etc/php/'
@@ -89,7 +89,7 @@ module ConfigLMM
 
             # DEPRECATED
             def self.configDir(distroInfo)
-                if distroInfo['Name'] == 'openSUSE Leap'
+                if distroInfo['Id'] == OS::SUSE_LEAP_ID
                     '/etc/php8/fpm/php-fpm.d/'
                 else
                     '/etc/php/php-fpm.d/'
@@ -98,7 +98,7 @@ module ConfigLMM
 
             # DEPRECATED
             def self.webappsDir(distroInfo)
-                if distroInfo['Name'] == 'openSUSE Leap'
+                if distroInfo['Id'] == OS::SUSE_LEAP_ID
                     '/srv/www/htdocs/'
                 else
                     '/usr/share/webapps/'

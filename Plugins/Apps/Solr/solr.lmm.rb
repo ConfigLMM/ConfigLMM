@@ -16,7 +16,7 @@ module ConfigLMM
             def actionSolrDeploy(id, target, activeState, context, options)
                 self.withConnection(target['Location'], target) do |connection|
                     Linux.withConnection(connection) do |linuxConnection|
-                        if linuxConnection.distroName == Linux::ARCH_NAME
+                        if linuxConnection.distroID == OS::ARCH_ID
                             linuxConnection.ensurePackage('solr', options)
                         else
                             if !linuxConnection.filePresent?(INSTALL_PATH)

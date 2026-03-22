@@ -25,7 +25,7 @@ module ConfigLMM
                         target['Settings'] ||= {}
                         target['Settings']['supervised'] = 'systemd'
 
-                        if linuxConnection.distroID == SUSE_ID
+                        if linuxConnection.distroID == OS::SUSE_LEAP_ID
                             config[:serviceName] = 'redis@redis'
                             target['Settings']['pidfile'] = REDIS_PID_FILE
                             target['Settings']['dir'] = '/var/lib/redis/default/'
@@ -109,7 +109,7 @@ module ConfigLMM
                     isValkey = !!state.item(id)[:Valkey]
                     Linux.withConnection(connection) do |linuxConnection|
                         serviceName = isValkey ? 'valkey' : 'redis'
-                        serviceName = 'redis@redis' if linuxConnection.distroID == SUSE_ID
+                        serviceName = 'redis@redis' if linuxConnection.distroID == OS::SUSE_LEAP_ID
 
                         linuxConnection.stopService(serviceName, options)
                         linuxConnection.removePackage(PACKAGE_NAME, options)

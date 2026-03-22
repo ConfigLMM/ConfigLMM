@@ -26,12 +26,6 @@ module ConfigLMM
             FIREWALL_PACKAGE = 'firewalld'
             FIREWALL_SERVICE = 'firewalld'
 
-            ARCH_NAME = 'Arch Linux'
-            SUSE_NAME = 'openSUSE Leap'
-            PROXMOXVE_NAME = 'Proxmox VE'
-            DEBIAN_NAME = 'Debian'
-            ALMA_NAME = 'AlmaLinux'
-
             def actionLinuxBuild(id, target, activeState, context, options)
                 prepareConfig(target, context)
                 buildHostsFile(id, target, options)
@@ -86,7 +80,7 @@ module ConfigLMM
                                 activeState['Config'] ||= {}
                                 activeState['Config']['ProvisionLocation'] = target['ProvisionLocation']
                                 activeState['Config']['Domain'] = target['Domain'] if target.key?('Domain')
-                                activeState['Config']['Distro'] = target['Distro'] if target.key?('Distro')
+                                activeState['Config']['OS'] = target['OS'] if target.key?('OS')
                                 activeState['Config']['Network'] = target['Network'] if target.key?('Network')
                                 activeState['Status'] = State::STATUS_PROVISIONING
                                 state.save
@@ -345,9 +339,9 @@ module ConfigLMM
 
             def hasUpdates?(connection, id, activeState, context, options)
                 result = connection.execDistroCommand(nil, 'ListUpdates', false, options).strip
-                if connection.distroName == ARCH_NAME
+                if connection.distroID == OS::ARCH_ID
                     return result.lines.length > 0
-                elsif connection.distroName == DEBIAN_NAME
+                elsif connection.distroID == OS::DEBIAN_ID
                     # 0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
                     return result.lines.last.count('0') != 4
                 else
@@ -436,8 +430,8 @@ module ConfigLMM
 
             def convertFlavour(distroInfo, target, connection, options)
                 if target['Flavour']
-                    if target['Flavour'] == PROXMOXVE_NAME
-                        if distroInfo['Name'] != DEBIAN_NAME
+                    if target['Flavour'] == OS::PROXMOXVE_NAME
+                        if distroInfo['Id'] != OS::DEBIAN_ID
                             raise 'Can\'t convert flavour!'
                         end
                         if connection.filePresent?('/etc/apt/sources.list.d/pve-install-repo.list', { **options, 'dry' => false })
@@ -571,22 +565,23 @@ module ConfigLMM
             end
 
             def deployOverLibvirt(uri, id, target, activeState, context, options)
-                iso = installationISO(target['Distro'], target['Flavour'])
-                iso = buildAutoInstallISO(id, iso, target, options)
+                osInfo = OS.info.byName(target['OS'])
+                iso = installationISO(osInfo)
+                iso = buildAutoInstallISO(osInfo, id, iso, target, options)
                 if plugins[:Libvirt].createVM(target['Name'], target, uri, iso, activeState, context, options)
                     context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users']['root'].key?('Password')
                 end
             end
 
             def deployOverProxmox(uri, id, target, activeState, context, options)
+                osInfo = OS.info.byName(target['OS'])
                 if target['LXC']
-                    info = flavourInfo(target['Distro'], target['Flavour'])
-                    if plugins[:Proxmox].createContainer(target, uri, info, activeState, context, options)
+                    if plugins[:Proxmox].createContainer(target, uri, osInfo, activeState, context, options)
                         context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users']['root'].key?('Password')
                     end
                 else
-                    iso = installationISO(target['Distro'], target['Flavour'])
-                    iso = buildAutoInstallISO(id, iso, target, options)
+                    iso = installationISO(osInfo)
+                    iso = buildAutoInstallISO(osInfo, id, iso, target, options)
                     if plugins[:Proxmox].createVM(target['Name'], target, uri, iso, activeState, context, options)
                         context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users']['root'].key?('Password')
                     end
@@ -621,15 +616,16 @@ module ConfigLMM
                     networkOptions['ClientIP'] = clientIp.split('/').first
                     networkOptions['IP'] = findNetworkIP(clientIp)
                 end
-                dir = preparePXE(id, target['Distro'], target['Flavour'], options)
+                osInfo = OS.info.byName(target['OS'])
+                dir = preparePXE(target, osInfo, id, options)
                 bootFileResolver = Proc.new do |clientArch|
                     bootFile = 'lpxelinux.0'
                     bootFile = 'pxelinux.0' unless File.exist?(dir + bootFile)
                     if [0x0007, 0x0010].include?(clientArch) # EFI x64 and x64 UEFI HTTP
-                        if target['Distro'] == SUSE_NAME
+                        if osInfo['Id'] == OS::SUSE_LEAP_ID
                             # Because we reuse Debian netboot archive...
                             bootFile = 'debian-installer/amd64/bootnetx64.efi'
-                        elsif target['Distro'] == DEBIAN_NAME
+                        elsif osInfo['Id'] == OS::DEBIAN_ID
                             bootFile = 'debian-installer/amd64/bootnetx64.efi'
                         end
                     end
@@ -680,17 +676,18 @@ module ConfigLMM
             end
 
             def buildAutoInstall(id, target, options)
-                config = prepareAutoInstallConfig(target)
-                if config['Flavour'] == PROXMOXVE_NAME
+                osInfo = OS.info.byName(target['OS'])
+                config = prepareAutoInstallConfig(target, osInfo)
+                if osInfo['Id'] == OS::PROXMOXVE_ID
                     outputFolder = options['output'] + '/' + id + '/'
                     template = ERB.new(File.read(__dir__ + '/Proxmox/answer.toml.erb'))
                     renderTemplate(template, config, outputFolder + 'answer.toml', options)
                     File.write("#{outputFolder}/auto-installer-mode.toml", 'mode = "iso"')
-                elsif config['Distro'] == SUSE_NAME
+                elsif osInfo['Id'] == OS::SUSE_LEAP_ID
                     outputFolder = options['output'] + '/' + id + '/'
                     template = ERB.new(File.read(__dir__ + '/openSUSE/autoinst.xml.erb'))
                     renderTemplate(template, config, outputFolder + 'autoinst.xml', options)
-                elsif config['Distro'] == DEBIAN_NAME
+                elsif osInfo['Id'] == OS::DEBIAN_ID
                     variables = prepareDebianStorage(config, options)
                     outputFolder = options['output'] + '/' + id + '/'
                     template = ERB.new(File.read(__dir__ + '/Debian/preseed.cfg.erb'))
@@ -698,13 +695,13 @@ module ConfigLMM
                 end
             end
 
-            def prepareAutoInstallConfig(target)
+            def prepareAutoInstallConfig(target, osInfo)
                 config = target.dup
                 if config['Apps'].to_a.include?('sshd')
                     config['Services'] << :sshd
                     config['Services'].uniq!
                 end
-                config['Apps'] = Framework::LinuxApp.mapPackages(config['Apps'], config['Distro']) if config['Distro']
+                config['Apps'] = Framework::LinuxApp.mapPackages(config['Apps'], osInfo['Id'])
                 config['Apps'].delete_if { |app| app.include?('|') } if config['Apps']
                 config
             end
@@ -774,20 +771,18 @@ module ConfigLMM
                 lines
             end
 
-            def installationISO(distro, flavour)
-                info = flavourInfo(distro, flavour)
-                downloadImage(info['ISO'], info['Checksum'], info['Signature'], info['SignatureKey'])
+            def installationISO(osInfo)
+                downloadImage(osInfo['ISO'], osInfo['Checksum'], osInfo['Signature'], osInfo['SignatureKey'])
             end
 
-            def preparePXE(id, distro, flavour, options)
+            def preparePXE(target, info, id, options)
                 outputFolder = options['output'] + '/pxe/'
                 local.mkdir(outputFolder, false)
-                info = flavourInfo(distro, flavour)
                 image = nil
                 if info['PXE']
                     image = downloadImage(info['PXE'])
                     local.exec("tar --extract --file=#{image.shellescape} --directory=#{outputFolder}", false)
-                    if distro == DEBIAN_NAME
+                    if info['Id'] == OS::DEBIAN_ID
                         local.copy(options['output'] + '/' + id + '/preseed.cfg', outputFolder, false)
                         local.exec("sed -i 's|default .*|default auto|' #{outputFolder}debian-installer/amd64/boot-screens/syslinux.cfg", false)
                         local.exec("sed -i 's|--- quiet|file=/preseed.cfg --- quiet|' #{outputFolder}debian-installer/amd64/boot-screens/adtxt.cfg", false)
@@ -797,16 +792,16 @@ module ConfigLMM
                         local.exec("cd #{options['output'] + '/' + id} && echo preseed.cfg | cpio -H newc -o -O #{outputFolder}debian-installer/amd64/initrd --append", false)
                         local.exec("gzip #{outputFolder}debian-installer/amd64/initrd", false)
                     end
-                elsif distro == SUSE_NAME
+                elsif info['Id'] == OS::SUSE_LEAP_ID
                     # openSUSE doesn't provide netboot archive
                     # and grub.efi from it's ISO doesn't work
                     # so let's just reuse Debian archive
-                    debianInfo = flavourInfo('Debian', nil)
+                    debianInfo = OS.info[OS::DEBIAN_ID]
                     debianImage = downloadImage(debianInfo['PXE'])
                     local.exec("tar --extract --file=#{debianImage.shellescape} --directory=#{outputFolder}", false)
                     local.exec("rm -rf #{outputFolder}pxelinux.cfg", false)
 
-                    syslinux = downloadImage(flavourInfo('Syslinux', nil)['Archive'])
+                    syslinux = downloadImage(OS.info[OS::SYSLINUX_ID]['Archive'])
                     syslinuxFolder = options['output'] + '/syslinux'
                     local.mkdir(syslinuxFolder, false)
                     local.mkdir(outputFolder + 'pxelinux.cfg', false)
@@ -844,12 +839,12 @@ module ConfigLMM
                 outputFolder
             end
 
-            def buildAutoInstallISO(id, iso, target, options)
-                if target['Flavour'] == PROXMOXVE_NAME
+            def buildAutoInstallISO(osInfo, id, iso, target, options)
+                if osInfo['Id'] == OS::PROXMOXVE_ID
                     iso = buildISOAutoProxmox(id, iso, target, options)
-                elsif target['Distro'] == SUSE_NAME
+                elsif osInfo['Id'] == OS::SUSE_LEAP_ID
                     iso = buildISOAutoYaST(id, iso, target, options)
-                elsif target['Distro'] == DEBIAN_NAME
+                elsif osInfo['Id'] == OS::DEBIAN_ID
                     iso = buildISOPreseed(id, iso, target, options)
                 end
                 iso

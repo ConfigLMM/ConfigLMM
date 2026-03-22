@@ -184,7 +184,7 @@ module ConfigLMM
                 OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] &= ~OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
             end
 
-            def createContainer(serverInfo, targetUri, flavourInfo, activeState, context, options)
+            def createContainer(serverInfo, targetUri, osInfo, activeState, context, options)
                 authParams = self.class.getAuthParams(targetUri, context)
                 node, compute = self.class.getNode(authParams)
                 OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] |= OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
@@ -204,12 +204,12 @@ module ConfigLMM
                     return false
                 end
 
-                raise Framework::PluginProcessError.new("Don't have LXC template!") unless flavourInfo['LXC']
+                raise Framework::PluginProcessError.new("Don't have LXC template!") unless osInfo['LXC']
 
                 storage = Fog::Storage.new(provider: :proxmox, **authParams)
                 appliances = storage.list_appliances({ node: node.node })
-                appliance = appliances.find { |appliance| appliance['package'] == flavourInfo['LXC'] }
-                raise "Couldn't find LXC template #{flavourInfo['LXC']}" unless appliance
+                appliance = appliances.find { |appliance| appliance['package'] == osInfo['LXC'] }
+                raise "Couldn't find LXC template #{osInfo['LXC']}" unless appliance
                 templateStorages = node.storages.list_by_content_type('vztmpl')
                 templateStorageName = templateStorages.first.storage
                 if options[:dry]
@@ -304,8 +304,8 @@ module ConfigLMM
                     settings['net0'] = nic.map { |name_value| name_value.join('=') }.join(',')
                 end
 
-                if flavourInfo['Type']
-                    settings[:ostype] = flavourInfo['Type']
+                if osInfo['OSType']
+                    settings[:ostype] = osInfo['OSType']
                 end
 
                 if serverInfo['Users']['root'].key?('Password')

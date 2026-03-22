@@ -1,4 +1,4 @@
-Arch Linux:
+arch:
     Cassandra: AUR|cassandra
     CertBotNginx:
         - certbot-nginx
@@ -31,7 +31,7 @@ Arch Linux:
     xorriso: libisoburn
     Yarn: yarn
 
-openSUSE Leap:
+opensuse-leap:
     Cassandra: server:database|cassandra
     CertBotNginx:
         - python3-certbot-nginx
@@ -76,7 +76,7 @@ openSUSE Leap:
     xorriso: xorriso
     Yarn: yarn
 
-Debian:
+debian:
     Cassandra: https://debian.cassandra.apache.org 41x main|cassandra
     CertBotNginx:
         - certbot
@@ -120,7 +120,7 @@ Debian:
     xorriso: xorriso
     Yarn: yarnpkg
 
-AlmaLinux:
+almalinux:
     Cassandra: https://redhat.cassandra.apache.org/50x/|cassandra
     CertBotNginx:
         - EPEL|certbot

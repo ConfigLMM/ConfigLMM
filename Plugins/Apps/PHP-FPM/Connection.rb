@@ -11,7 +11,7 @@ module ConfigLMM
             end
 
             def phpConfig
-                if @connection.distroName == Linux::SUSE_NAME
+                if @connection.distroID == OS::SUSE_LEAP_ID
                     '/etc/php8/fpm/php.ini'
                 else
                     '/etc/php/php.ini'
@@ -19,7 +19,7 @@ module ConfigLMM
             end
 
             def configFileDir
-                if @connection.distroName == Linux::SUSE_NAME
+                if @connection.distroID == OS::SUSE_LEAP_ID
                     '/etc/php8/fpm/'
                 else
                     '/etc/php/'
@@ -27,7 +27,7 @@ module ConfigLMM
             end
 
             def configDir
-                if @connection.distroName == Linux::SUSE_NAME
+                if @connection.distroID == OS::SUSE_LEAP_ID
                     '/etc/php8/fpm/php-fpm.d/'
                 else
                     '/etc/php/php-fpm.d/'
@@ -35,7 +35,7 @@ module ConfigLMM
             end
 
             def webappsDir
-                if @connection.distroName == Linux::SUSE_NAME
+                if @connection.distroID == OS::SUSE_LEAP_ID
                     '/srv/www/htdocs/'
                 else
                     '/usr/share/webapps/'
@@ -64,7 +64,7 @@ module ConfigLMM
                     configLines << "listen = /run/php-fpm/#{name}.sock\n"
                     configLines << "listen.owner = #{target['User']}\n"
                     group = 'http'
-                    group = 'nginx' if @connection.distroName == Linux::SUSE_NAME
+                    group = 'nginx' if @connection.distroID == OS::SUSE_LEAP_ID
                     configLines << "listen.group = #{group}\n"
                 end
                 configLines << "pm = dynamic\n"

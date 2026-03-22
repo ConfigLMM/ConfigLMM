@@ -8,7 +8,6 @@ module ConfigLMM
         class LinuxApp < Framework::Plugin
 
             LINUX_FOLDER = __dir__ + '/../../../../Plugins/OS/Linux/'
-            SUSE_ID = 'opensuse-leap'
             PODMAN_PACKAGE = 'Podman'
             SYSTEMD_CONTAINERS_PATH = '~/.config/containers/systemd/'
 
@@ -188,11 +187,11 @@ module ConfigLMM
                 end
             end
 
-            def self.mapPackages(packages, distroName)
+            def self.mapPackages(packages, distroID)
                 allPackages = YAML.load_file(LINUX_FOLDER + 'Packages.yaml')
                 names = []
-                raise "Distro '#{distroName}' not implemented!" unless allPackages.key?(distroName)
-                distroPackages = allPackages[distroName].to_h
+                raise "Distro '#{distroID}' not implemented!" unless allPackages.key?(distroID)
+                distroPackages = allPackages[distroID].to_h
                 packages.to_a.each do |pkg|
                     packageName = distroPackages[pkg]
                     if packageName
@@ -272,7 +271,7 @@ module ConfigLMM
 
             # DEPRECATED
             def self.distroInfo(distroID)
-                YAML.load_file(LINUX_FOLDER + 'Distributions.yaml')[distroID]
+                YAML.load_file(LINUX_FOLDER + '../General/OS.yaml')[distroID]
             end
 
         end

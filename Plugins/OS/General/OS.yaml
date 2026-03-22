@@ -1,0 +1,81 @@
+
+systemd:
+    AutoStartService: systemctl enable
+    StartService: systemctl start
+    RestartService: systemctl restart
+    ReloadService: systemctl reload
+    StopService: systemctl stop
+    DisableService: systemctl disable
+    ServiceEnabled: systemctl is-enabled
+    ReloadServiceManager: systemctl daemon-reload
+
+shadow:
+    CreateServiceUser: useradd --system --shell /usr/sbin/nologin --user-group
+    ModifyUser: usermod
+    DeleteUser: userdel --remove --force
+    DeleteGroup: groupdel
+
+syslinux:
+    Archive: https://www.kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.gz
+
+opensuse-leap:
+    _INCLUDE_:
+        - systemd
+        - shadow
+    Name: openSUSE Leap
+    ISO: https://download.opensuse.org/distribution/leap/15.6/iso/openSUSE-Leap-15.6-NET-x86_64-Media.iso
+    FILES: https://download.opensuse.org/distribution/leap/15.6/repo/oss/
+    LXC: opensuse-15.6-default
+    OSType: opensuse
+    InstallPackage: zypper install --no-confirm
+    RemovePackage: zypper remove --no-confirm
+    ListPackages: rpm --query --all | sort
+    UpdatePackages: zypper update --no-confirm
+    ListUpdates: zypper list-updates
+
+arch:
+    _INCLUDE_:
+        - systemd
+        - shadow
+    Name: Arch Linux
+    ISO: https://mirror.rackspace.com/archlinux/iso/2024.10.01/archlinux-x86_64.iso
+    LXC: archlinux-base
+    OSType: archlinux
+    InstallPackage: pacman -S --noconfirm --needed
+    RemovePackage: pacman --remove --noconfirm
+    ListPackages: pacman --query | sort
+    UpdatePackages: pacman --sync --refresh --sysupgrade --noconfirm
+    ListUpdates: pacman --query --upgrades
+
+debian:
+    _INCLUDE_:
+        - systemd
+        - shadow
+    Name: Debian
+    ISO: https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.7.0-amd64-netinst.iso
+    PXE: https://deb.debian.org/debian/dists/bookworm/main/installer-amd64/current/images/netboot/netboot.tar.gz
+    LXC: debian-12-standard
+    OSType: debian
+    InstallPackage: DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes
+    RemovePackage: apt-get remove --assume-yes
+    ListPackages: dpkg-query --list --no-pager
+    UpdatePackages: apt-get update --yes && apt-get upgrade --with-new-pkgs --yes
+    ListUpdates: apt-get update --yes && apt-get upgrade --with-new-pkgs --just-print
+
+almalinux:
+    _INCLUDE_:
+        - systemd
+        - shadow
+    Name: AlmaLinux
+    InstallPackage: dnf install --assumeyes
+    RemovePackage: dnf remove --assumeyes
+    ListPackages: rpm --query --all | sort
+    UpdatePackages: dnf upgrade --assumeyes
+    ListUpdates: dnf check-update
+
+proxmox:
+    Name: Proxmox VE
+    ISO: https://enterprise.proxmox.com/iso/proxmox-ve_8.2-2.iso
+
+    # Just install Debian first
+    PXE: https://deb.debian.org/debian/dists/bookworm/main/installer-amd64/current/images/netboot/netboot.tar.gz

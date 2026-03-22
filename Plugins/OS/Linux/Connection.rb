@@ -18,7 +18,7 @@ module ConfigLMM
                 @connection = connection
                 @local = connection.local
                 @distroID = self.class.distroID(@connection)
-                @distributions = YAML.load_file(__dir__ + '/Distributions.yaml')
+                @distributions = OS.info
                 @allServices = YAML.load_file(__dir__ + '/Services.yaml')
                 @SELinux = nil
             end
@@ -212,7 +212,7 @@ module ConfigLMM
             end
 
             def ensurePackages(names, options = {})
-                reposPackages = Framework::LinuxApp.mapPackages(names, distroName)
+                reposPackages = Framework::LinuxApp.mapPackages(names, distroID)
 
                 repos = []
                 pkgs = []
@@ -302,7 +302,7 @@ module ConfigLMM
             end
 
             def removePackage(name, options = {})
-                reposPackages = Framework::LinuxApp.mapPackages([name], distroName)
+                reposPackages = Framework::LinuxApp.mapPackages([name], distroID)
 
                 pkgs = []
                 reposPackages.each do |pkg|
@@ -320,10 +320,10 @@ module ConfigLMM
 
             def addRepo(name, options)
                 lowercaseName = name.downcase
-                if distroName == Linux::SUSE_NAME
+                if distroID == OS::SUSE_LEAP_ID
                     connection.exec("zypper addrepo https://download.opensuse.org/repositories/#{name}/#{distroVersion}/#{name}.repo", true, options)
                     connection.exec("zypper --gpg-auto-import-keys refresh", false, options)
-                elsif distroName == Linux::ALMA_NAME
+                elsif distroID == OS::ALMA_ID
                     if name == 'EPEL'
                         command = distroInfo['InstallPackage'] + ' epel-release'
                         result = connection.adminExec(command, false, options)

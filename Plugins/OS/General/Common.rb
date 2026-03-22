@@ -1,5 +1,7 @@
 require 'gpgme'
 
+require_relative 'Info'
+
 module ConfigLMM
     module LMM
         module OS
@@ -108,16 +110,6 @@ module ConfigLMM
                     target['DefaultNetwork']['Interface'] = interface if interface
                     target['DefaultNetwork']['VLAN'] = vlan if vlan
                 end
-            end
-
-            def flavourInfo(distro, flavour)
-                url = nil
-                flavour = distro unless flavour
-                flavourInfo = YAML.load_file(__dir__ + '/../Linux/Flavours.yaml')[flavour]
-                if flavourInfo.nil?
-                    raise Framework::PluginProcessError.new("#{id}: Unknown Linux Distro: #{flavour}!")
-                end
-                flavourInfo
             end
 
             def downloadImage(url, checksumUrl = nil, signatureUrl = nil, signatureKeyUrl = nil)
