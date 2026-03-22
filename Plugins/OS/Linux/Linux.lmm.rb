@@ -701,7 +701,7 @@ module ConfigLMM
                     config['Services'] << :sshd
                     config['Services'].uniq!
                 end
-                config['Apps'] = Framework::LinuxApp.mapPackages(config['Apps'], osInfo['Id'])
+                config['Apps'] = OS.packages.convert(config['Apps'], osInfo['Id'])
                 config['Apps'].delete_if { |app| app.include?('|') } if config['Apps']
                 config
             end

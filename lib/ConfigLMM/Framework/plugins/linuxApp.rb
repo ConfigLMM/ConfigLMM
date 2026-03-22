@@ -187,26 +187,6 @@ module ConfigLMM
                 end
             end
 
-            def self.mapPackages(packages, distroID)
-                allPackages = YAML.load_file(LINUX_FOLDER + 'Packages.yaml')
-                names = []
-                raise "Distro '#{distroID}' not implemented!" unless allPackages.key?(distroID)
-                distroPackages = allPackages[distroID].to_h
-                packages.to_a.each do |pkg|
-                    packageName = distroPackages[pkg]
-                    if packageName
-                        if packageName.is_a?(Array)
-                            names += packageName
-                        else
-                            names << packageName
-                        end
-                    else
-                        names << pkg.downcase
-                    end
-                end
-                names
-            end
-
             # DEPRECATED
             def self.createCertificateOverSSH(ssh)
                 dir = "/etc/letsencrypt/live/Wildcard/"

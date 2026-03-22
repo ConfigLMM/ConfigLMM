@@ -1,6 +1,7 @@
 require 'gpgme'
 
 require_relative 'Info'
+require_relative 'Packages'
 
 module ConfigLMM
     module LMM

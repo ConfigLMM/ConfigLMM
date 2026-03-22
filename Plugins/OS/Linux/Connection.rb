@@ -212,7 +212,7 @@ module ConfigLMM
             end
 
             def ensurePackages(names, options = {})
-                reposPackages = Framework::LinuxApp.mapPackages(names, distroID)
+                reposPackages = OS.packages.convert(names, distroID)
 
                 repos = []
                 pkgs = []
@@ -302,7 +302,7 @@ module ConfigLMM
             end
 
             def removePackage(name, options = {})
-                reposPackages = Framework::LinuxApp.mapPackages([name], distroID)
+                reposPackages = OS.packages.convert([name], distroID)
 
                 pkgs = []
                 reposPackages.each do |pkg|
