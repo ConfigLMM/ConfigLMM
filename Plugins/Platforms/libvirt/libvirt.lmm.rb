@@ -70,8 +70,14 @@ module ConfigLMM
                     }
                     settings[:nics] = [nic]
                 end
-                if serverInfo['Firmware'] && serverInfo['Firmware'].upcase == 'UEFI'
+                secureBoot = !!serverInfo['SecureBoot']
+                if (!serverInfo.key?('Firmware') || serverInfo['Firmware'].upcase == 'UEFI') || secureBoot
                     settings[:firmware] = 'efi'
+                    secureBoot = true unless serverInfo.key?('SecureBoot')
+                    settings[:firmware_features] = {
+                        'secure-boot' => secureBoot ? 'yes' : 'no',
+                        'enrolled-keys' => 'no'
+                    }
                 end
                 server = compute.servers.new(**settings)
                 if iso
