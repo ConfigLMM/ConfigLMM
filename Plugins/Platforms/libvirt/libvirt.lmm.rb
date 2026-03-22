@@ -13,8 +13,9 @@ module ConfigLMM
                 if !target['Location']
                     target['Location'] = 'qemu:///session'
                 end
-                compute = Fog::Compute.new(provider: :libvirt, libvirt_uri: target['Location'])
-                createPools(target, compute, self.class.isLocal?(target['Location']))
+                targetUri = Addressable::URI.parse(target['Location'])
+                compute = Fog::Compute.new(provider: :libvirt, libvirt_uri: targetUri.to_s)
+                createPools(target, compute, uri.hostname.empty?)
             end
 
             def createPools(target, compute, isLocal)
@@ -33,7 +34,7 @@ module ConfigLMM
             end
 
             def createVM(serverName, serverInfo, targetUri, iso, activeState, context, options)
-                compute = Fog::Compute.new(provider: :libvirt, libvirt_uri: targetUri)
+                compute = Fog::Compute.new(provider: :libvirt, libvirt_uri: targetUri.to_s)
                 server = compute.servers.all.find { |server| server.name == serverName }
                 if server
                     server.start
@@ -122,14 +123,6 @@ module ConfigLMM
                 xml
             end
 
-            def self.isLocal?(location)
-                self.getLocation(location).empty?
-            end
-
-            def self.getLocation(location)
-                uri = Addressable::URI.parse(location)
-                uri.hostname
-            end
         end
     end
 end

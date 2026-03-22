@@ -68,29 +68,7 @@ module ConfigLMM
 
             def actionLinuxDeploy(id, target, activeState, context, options)
                 prepareConfig(target, context)
-                if target['Location'] && target['Location'] != '@me'
-                    uri = Addressable::URI.parse(target['Location'])
-                    case uri.scheme
-                    when 'qemu'
-                        deployOverLibvirt(id, target, activeState, context, options)
-                    when 'proxmox'
-                        deployOverProxmox(id, target, activeState, context, options)
-                    when 'pxe', 'pxe+http'
-                        deployOverPXE(uri, id, target, activeState, context, options)
-                    when 'ssh'
-                        self.withConnection(uri, target) do |connection|
-                            self.class.withConnection(connection, context) do |connection|
-                                deployOverConnection(connection, id, target, activeState, context, options)
-                            end
-                        end
-                    else
-                        raise Framework::PluginProcessError.new("#{id}: Unknown protocol: #{uri.scheme}!")
-                    end
-                else
-                    self.class.withConnection(IO::Local.new(prompt, logger)) do |connection|
-                        deployLocal(connection, target, options)
-                    end
-                end
+                deployLinux(target['Location'], id, target, activeState, context, options)
                 if target['AlternativeLocation']
                     self.withConnection(target['AlternativeLocation'], target) do |connection|
                         self.class.withConnection(connection, context) do |connection|
@@ -520,26 +498,50 @@ module ConfigLMM
                 end
             end
 
-            def deployOverLibvirt(id, target, activeState, context, options)
-                location = Libvirt.getLocation(target['Location'])
-                iso = installationISO(target['Distro'], target['Flavour'], location)
+            def deployLinux(location, id, target, activeState, context, options)
+                if location && location != '@me'
+                    uri = Addressable::URI.parse(location)
+                    case uri.scheme
+                    when 'qemu'
+                        deployOverLibvirt(uri, id, target, activeState, context, options)
+                    when 'proxmox'
+                        deployOverProxmox(uri, id, target, activeState, context, options)
+                    when 'pxe', 'pxe+http'
+                        deployOverPXE(uri, id, target, activeState, context, options)
+                    when 'ssh'
+                        self.withConnection(uri, target) do |connection|
+                            self.class.withConnection(connection, context) do |connection|
+                                deployOverConnection(connection, id, target, activeState, context, options)
+                            end
+                        end
+                    else
+                        raise Framework::PluginProcessError.new("#{id}: Unknown protocol: #{uri.scheme}!")
+                    end
+                else
+                    self.class.withConnection(IO::Local.new(prompt, logger)) do |connection|
+                        deployLocal(connection, target, options)
+                    end
+                end
+            end
+
+            def deployOverLibvirt(uri, id, target, activeState, context, options)
+                iso = installationISO(target['Distro'], target['Flavour'])
                 iso = buildAutoInstallISO(id, iso, target, options)
-                if plugins[:Libvirt].createVM(target['Name'], target, target['Location'], iso, activeState, context, options)
+                if plugins[:Libvirt].createVM(target['Name'], target, uri, iso, activeState, context, options)
                     context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users']['root'].key?('Password')
                 end
             end
 
-            def deployOverProxmox(id, target, activeState, context, options)
+            def deployOverProxmox(uri, id, target, activeState, context, options)
                 if target['LXC']
                     info = flavourInfo(target['Distro'], target['Flavour'])
-                    if plugins[:Proxmox].createContainer(target, target['Location'], info, activeState, context, options)
+                    if plugins[:Proxmox].createContainer(target, uri, info, activeState, context, options)
                         context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users']['root'].key?('Password')
                     end
                 else
-                    location = Proxmox.getLocation(target['Location'])
-                    iso = installationISO(target['Distro'], target['Flavour'], location)
+                    iso = installationISO(target['Distro'], target['Flavour'])
                     iso = buildAutoInstallISO(id, iso, target, options)
-                    if plugins[:Proxmox].createVM(target['Name'], target, target['Location'], iso, activeState, context, options)
+                    if plugins[:Proxmox].createVM(target['Name'], target, uri, iso, activeState, context, options)
                         context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users']['root'].key?('Password')
                     end
                 end
@@ -729,7 +731,7 @@ module ConfigLMM
                 lines
             end
 
-            def installationISO(distro, flavour, location)
+            def installationISO(distro, flavour)
                 info = flavourInfo(distro, flavour)
                 downloadImage(info['ISO'], info['Checksum'], info['Signature'], info['SignatureKey'])
             end

@@ -442,11 +442,6 @@ module ConfigLMM
                 OpenSSL::SSL::SSLContext::DEFAULT_PARAMS[:options] &= ~OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
             end
 
-            def self.getLocation(location)
-                uri = Addressable::URI.parse(location)
-                uri.hostname
-            end
-
         end
     end
 end
