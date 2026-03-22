@@ -26,6 +26,7 @@ module ConfigLMM
             end
             begin
                 @State = YAML.safe_load_file(@StateFile, permitted_classes: [Symbol])
+                @State = {} if @State.to_h.empty?
             rescue Errno::EISDIR => error
                  # TODO
                  raise error
