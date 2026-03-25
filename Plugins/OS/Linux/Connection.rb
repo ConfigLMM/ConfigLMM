@@ -138,11 +138,33 @@ module ConfigLMM
                 connection.exec("cat #{escapePath(file)} >> #{escapePath(target)}", false, options)
             end
 
+            def fileDelete(file, options = {})
+                connection.exec("rm -rf #{escapePath(file)}", false, options)
+            end
+
+            def fileCopy(file, target, options)
+                connection.exec("cp -a #{escapePath(file)} #{escapePath(target)}", false, options)
+            end
+
             def fileReplace(target, placeholder, result, options = {})
                 hide = ''
                 hide = ' ' if options[:hide]
                 result = result.to_s.gsub('\\', '\\\\\\') if options[:escape] != false
                 pattern = "s|#{placeholder}|#{result.to_s.gsub('&', '\\\\&').gsub('|', '\\\\|')}|"
+                connection.exec("#{hide}sed -Ei #{pattern.shellescape} #{escapePath(target)}", false, options)
+            end
+
+            def fileRemoveLines(target, placeholder, options = {})
+                hide = ''
+                hide = ' ' if options[:hide]
+
+                if placeholder.is_a?(Regexp)
+                    placeholder = placeholder.source
+                else
+                    placeholder = Regexp.escape(placeholder)
+                end
+
+                pattern = "/#{placeholder.gsub('/', '\\\\/')}/d"
                 connection.exec("#{hide}sed -Ei #{pattern.shellescape} #{escapePath(target)}", false, options)
             end
 
@@ -175,6 +197,42 @@ module ConfigLMM
             def createDirs(options, *paths)
                 paths = paths.map { |path| escapePath(path) }
                 connection.exec("mkdir -p #{paths.join(' ')}", false, options)
+            end
+
+            def createSymlink(symlinkPath, target, options, *paths)
+                connection.exec("ln --symbolic --force #{escapePath(target)} #{escapePath(symlinkPath)}", false, options)
+            end
+
+            def resolve(hostname, options)
+                @HostIPs ||= {}
+                if !@HostIPs[hostname]
+                    connection.exec("getent ahosts #{hostname.shellescape}", true, options) if options['dry']
+                    addrs = connection.exec("getent ahosts #{hostname.shellescape}", true, { **options, 'dry' => false }).to_s.strip
+                    raise Framework::PluginProcessError.new("Unable to resolve hostname '#{hostname}'!") if addrs.empty?
+                    addrs = addrs.lines.map { |line| line.split(' ').first }.uniq
+                    @HostIPs[hostname] = addrs
+                end
+                return @HostIPs[hostname] if options['all']
+                @HostIPs[hostname].first
+            end
+
+            def ping?(hostname, port, options)
+                @HasNC ||= self.hasBinaries?('nc', options)
+                raise Framework::PluginProcessError.new("`nc` missing!") unless @HasNC
+                result = connection.exec("nc -z -w 1 #{hostname.shellescape} #{port.to_i.to_s} && echo OK", true, options).to_s.strip
+                result == 'OK'
+            end
+
+            def gatewayIPs(options)
+                return @GatewayIPs if @GatewayIPs
+                connection.exec("ip --json route show default", true, options) if options['dry']
+                routes = connection.exec("ip --json route show default", true, { **options, 'dry' => false }).to_s.strip
+                return nil unless routes.start_with?('[{"')
+                interface = JSON.parse(routes).first['dev']
+                connection.exec("ip --json addr show dev #{interface.shellescape} scope global", false, options) if options['dry']
+                infos = connection.exec("ip --json addr show dev #{interface.shellescape} scope global", false, { **options, 'dry' => false }).to_s.strip
+                @GatewayIPs = JSON.parse(infos).map { |info| info['addr_info'].map { |addrInfo| addrInfo['local'] } }.flatten
+                @GatewayIPs
             end
 
             def http(url, options, headers = {}, method = 'GET', data = nil, cookieFile = nil, responseFile = nil)
@@ -346,7 +404,7 @@ module ConfigLMM
                         errors = http(url, options, {}, 'GET', nil, nil, tempFile)
                         if !errors.empty?
                             logger.error(errors)
-                            connection.exec("rm -f #{tempFile.shellescape}", false, options)
+                            connection.fileDelete(tempFile, options)
                             raise errors
                         end
                         connection.adminExec("mv #{tempFile.shellescape} #{repoFile.shellescape}", false, options)
