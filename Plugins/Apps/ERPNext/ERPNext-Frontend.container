@@ -10,6 +10,7 @@ Exec=nginx-entrypoint.sh
 EnvironmentFile=/var/lib/erpnext/.config/containers/systemd/ERPNext.env
 PublishPort=127.0.0.1:18400:8080
 Network=ERPNext.network
+IP=10.90.50.12
 HostName=ERPNext-Frontend
 UserNS=keep-id:uid=1000,gid=1000
 Volume=/var/lib/erpnext/sites:/home/frappe/frappe-bench/sites:z
@@ -18,6 +19,8 @@ LogDriver=journald
 [Service]
 TimeoutStartSec=16min
 Restart=on-failure
+RestartSteps=10
+RestartMaxDelaySec=30m
 
 [Install]
 WantedBy=multi-user.target default.target

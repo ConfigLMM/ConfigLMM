@@ -1,13 +1,17 @@
 
+require 'addressable/idna'
+
+require_relative '../Podman/Podman.lmm'
+
 module ConfigLMM
     module LMM
         class ERPNext < Framework::Plugin
 
             USER = 'erpnext'
             HOME_DIR = '/var/lib/erpnext'
-            VERSION = '15'
+            VERSION = '16'
             FRAPPE_REPO = 'https://github.com/frappe/frappe_docker.git'
-            IMAGE_ID = 'ConfigLM.moe/erpnext:v' + VERSION
+            IMAGE_ID = Podman::IMAGE_DOMAIN + '/erpnext:v' + VERSION
             CONTAINER_NAME = 'ERPNext'
 
             def actionERPNextBuild(id, target, activeState, context, options)
@@ -31,13 +35,25 @@ module ConfigLMM
                     localLinux.exec("cd #{REPOS_CACHE}/frappe_docker && git checkout . --quiet", false, options)
 
                     if !IO::Connection.cmdSuccess?("podman image exists #{IMAGE_ID}")
-                        appsJSON = Base64.urlsafe_encode64(File.read(__dir__ + '/sites/apps.json').gsub('$VERSION', VERSION))
+                        appsJSON = JSON.parse(File.read(__dir__ + '/sites/apps.json').gsub('$VERSION', VERSION))
                         # if you see error like "newuidmap 5227 0 1000 1 1 100000 65536: newuidmap: write to uid_map failed: Operation not permitted"
                         # then for LXC you need to set idmap like:
                         # LXC:
                         #     - idmap: u 0 100000 165536
                         #     - idmap: g 0 100000 165536
-                        localLinux.exec("cd #{REPOS_CACHE}/frappe_docker && podman build --tag=#{IMAGE_ID} --build-arg APPS_JSON_BASE64=#{appsJSON} --build-arg FRAPPE_BRANCH=version-#{VERSION}  --file images/custom/Containerfile .", false, options)
+                        localLinux.fileReplace(REPOS_CACHE + '/frappe_docker/resources/core/nginx/nginx-template.conf', '$proxy_x_forwarded_proto://${FRAPPE_SITE_NAME_HEADER}', '$proxy_x_forwarded_proto://${PUBLIC_HOST}', options)
+                        localLinux.fileReplace(REPOS_CACHE + '/frappe_docker/resources/core/nginx/nginx-entrypoint.sh', '${FRAPPE_SITE_NAME_HEADER}', '${FRAPPE_SITE_NAME_HEADER} ${PUBLIC_HOST}', options)
+                        appsJSONPath = options['output'] + '/apps.json'
+                        File.write(appsJSONPath, appsJSON.to_json)
+                        localLinux.inDir(REPOS_CACHE + '/frappe_docker') do
+                            args = [
+                                '--build-arg', "FRAPPE_BRANCH=version-#{VERSION}",
+                                '--secret', "id=apps_json,src=#{appsJSONPath}"
+                            ]
+                            args << '--annotation' << Podman::NAMESPACE + '.erpnext.apps=' + appsJSON.map { |app| app['url'] }.join(',')
+                            args << '--annotation' << Podman::NAMESPACE + '.erpnext.branches=' + appsJSON.map { |app| app['branch'] }.join(',')
+                            Podman::buildGitImage('images/custom/Containerfile', IMAGE_ID, args, localLinux, options)
+                        end
                     end
                 end
             end
@@ -58,41 +74,69 @@ module ConfigLMM
                         local.exec("podman image save ConfigLM.moe/erpnext:v#{VERSION} | #{cmd} 'cat > #{HOME_DIR}/erpnext.tar'", false, options)
 
                         linuxConnection.withUserShell(USER) do |shell|
-                            shell.createDirs(options, '~/sites', '~/logs')
+                            shell.createDirs(options, '~/sites', '~/logs', '~/config/pids')
                             Podman.loadImage(shell, 'erpnext.tar', options)
                         end
 
-                        linuxConnection.exec("rm -f #{HOME_DIR}/erpnext.tar", false, options)
+                        linuxConnection.fileDelete(HOME_DIR + '/erpnext.tar', options)
 
                         path = Podman.containersPath(HOME_DIR)
-                        linuxConnection.exec(" echo 'FRAPPE_DB_PASSWORD=#{dbPassword}' > #{path}/ERPNext.env", false, options)
-                        linuxConnection.exec("echo 'FRAPPE_SITE_NAME_HEADER=site' >> #{path}/ERPNext.env", false, options)
-                        #linuxConnection.exec("echo 'UPSTREAM_REAL_IP_ADDRESS=127.0.0.1' >> #{path}/ERPNext.env", false, options)
-                        #linuxConnection.exec("echo 'UPSTREAM_REAL_IP_RECURSIVE=on' >> #{path}/ERPNext.env", false, options)
-                        linuxConnection.exec("echo 'BACKEND=10.90.50.10:8000' >> #{path}/ERPNext.env", false, options)
-                        linuxConnection.exec("echo 'SOCKETIO=10.90.50.11:9000' >> #{path}/ERPNext.env", false, options)
 
-                        linuxConnection.exec("chown #{USER}:#{USER} #{path}/ERPNext.env", false, options)
-                        linuxConnection.exec("chmod 600 #{path}/ERPNext.env", false, options)
+                        publicURL = 'http://localhost:18400'
+                        publicHost = 'localhost:18400'
+                        podmanPublicHost = nil
+                        if target['Domain']
+                            publicHost = target['Domain']
+                            publicURL = 'https://' + publicHost
+                            if !IO::Connection.ipAddr?(publicHost)
+                                if Podman.updateHost(publicHost, linuxConnection, options) != publicHost
+                                    podmanPublicHost = publicHost.split(':').first
+                                end
+                            end
+                        end
+
+                        linuxConnection.fileWrite(path + '/ERPNext.env', 'FRAPPE_SITE_NAME_HEADER=site', options)
+                        linuxConnection.fileAppend(path + '/ERPNext.env', 'PUBLIC_HOST=' + Addressable::IDNA.to_ascii(publicHost.downcase), options)
+                        #linuxConnection.fileAppend(path + '/ERPNext.env', 'UPSTREAM_REAL_IP_ADDRESS=127.0.0.1', options)
+                        #linuxConnection.fileAppend(path + '/ERPNext.env', 'UPSTREAM_REAL_IP_RECURSIVE=on', options)
+                        linuxConnection.fileAppend(path + '/ERPNext.env', 'BACKEND=10.90.50.10:8000', options)
+                        linuxConnection.fileAppend(path + '/ERPNext.env', 'SOCKETIO=10.90.50.11:9000', options)
+
+                        linuxConnection.setUserGroup(path + '/ERPNext.env', USER, USER, options)
+                        linuxConnection.setPrivate(path + '/ERPNext.env', options)
 
                         linuxConnection.upload(__dir__ + '/sites/apps.txt', HOME_DIR + '/sites/', options)
                         linuxConnection.upload(__dir__ + '/sites/common_site_config.json', HOME_DIR + '/sites/', options)
 
+                        linuxConnection.fileReplace(HOME_DIR + '/sites/common_site_config.json', '$PUBLIC_URL', publicURL, options)
+                        activeState['PublicURL'] = publicURL
+
+                        activeState['Database'] ||= {}
+                        dbHostName = 'host.containers.internal'
                         if target['Database'] && target['Database']['HostName']
-                            linuxConnection.exec("sed -i 's|\"10.0.2.2\"|\"#{target['Database']['HostName']}\"|' #{HOME_DIR}/sites/common_site_config.json", false, options)
+                            dbHostName = Podman.updateHost(target['Database']['HostName'], linuxConnection, options)
+                            if dbHostName != 'host.containers.internal'
+                                linuxConnection.fileReplace(HOME_DIR + '/sites/common_site_config.json', '"host.containers.internal"', '"' + dbHostName + '"', options)
+                            end
                         end
+                        activeState['Database']['HostName'] = dbHostName
 
                         if target['Valkey']
-                            linuxConnection.exec("sed -i 's|10.0.2.2:6379|#{target['Valkey']}|' #{HOME_DIR}/sites/common_site_config.json", false, options)
+                            activeState['Valkey'] = Podman.updateHost(target['Valkey'], linuxConnection, options)
+                            if activeState['Valkey'] != 'host.containers.internal:6379'
+                                linuxConnection.fileReplace(HOME_DIR + '/sites/common_site_config.json', 'host.containers.internal:6379', activeState['Valkey'], options)
+                            end
+                        else
+                            activeState['Valkey'] = 'host.containers.internal:6379'
                         end
 
                         if target['ValkeySecretId']
                             valkeyPassword = context.secrets.load(target['ValkeySecretId'], 'VALKEY_PASSWORD')
-                            linuxConnection.exec("sed -i 's|\"use_rq_auth\": false|\"use_rq_auth\": true|' #{HOME_DIR}/sites/common_site_config.json", false, options)
-                            linuxConnection.exec("sed -i 's|$VALKEY_PASSWORD|#{valkeyPassword}|' #{HOME_DIR}/sites/common_site_config.json", false, { **options, hide: true })
+                            linuxConnection.fileReplace(HOME_DIR + '/sites/common_site_config.json', '"use_rq_auth": false', '"use_rq_auth": true', options)
+                            linuxConnection.fileReplace(HOME_DIR + '/sites/common_site_config.json', '$VALKEY_PASSWORD', valkeyPassword, { **options, hide: true })
                         end
 
-                        linuxConnection.exec("chown -R #{USER}:#{USER} " + HOME_DIR + '/sites', false, options)
+                        linuxConnection.setUserGroup(HOME_DIR + '/sites', USER, USER, options)
 
                         linuxConnection.upload(__dir__ + '/ERPNext.network', path, options)
                         linuxConnection.upload(__dir__ + '/ERPNext.container', path, options)
@@ -100,18 +144,24 @@ module ConfigLMM
                         linuxConnection.upload(__dir__ + '/ERPNext-Scheduler.container', path, options)
                         linuxConnection.upload(__dir__ + '/ERPNext-Websocket.container', path, options)
                         linuxConnection.upload(__dir__ + '/ERPNext-Frontend.container', path, options)
-                        linuxConnection.exec("sed -i 's|$VERSION|#{VERSION}|' #{path}/ERPNext.container", false, options)
-                        linuxConnection.exec("sed -i 's|$VERSION|#{VERSION}|' #{path}/ERPNext-Queue.container", false, options)
-                        linuxConnection.exec("sed -i 's|$VERSION|#{VERSION}|' #{path}/ERPNext-Scheduler.container", false, options)
-                        linuxConnection.exec("sed -i 's|$VERSION|#{VERSION}|' #{path}/ERPNext-Websocket.container", false, options)
-                        linuxConnection.exec("sed -i 's|$VERSION|#{VERSION}|' #{path}/ERPNext-Frontend.container", false, options)
+                        linuxConnection.fileReplace(path + '/ERPNext.container', '$VERSION', VERSION, options)
+                        linuxConnection.fileReplace(path + '/ERPNext-Queue.container', '$VERSION', VERSION, options)
+                        linuxConnection.fileReplace(path + '/ERPNext-Scheduler.container', '$VERSION', VERSION, options)
+                        linuxConnection.fileReplace(path + '/ERPNext-Websocket.container', '$VERSION', VERSION, options)
+                        linuxConnection.fileReplace(path + '/ERPNext-Frontend.container', '$VERSION', VERSION, options)
+
+                        if podmanPublicHost
+                            linuxConnection.fileReplace(path + '/ERPNext.container', '$PUBLIC_HOST', podmanPublicHost, options)
+                        else
+                            linuxConnection.fileRemoveLines(path + '/ERPNext.container', '$PUBLIC_HOST', options)
+                        end
 
                         if !target.key?('Proxy') || target['Proxy']
                             Nginx.withConnection(linuxConnection) do |nginxConnection|
                                 nginxConnection.provisionProxy('http://127.0.0.1:18400', 'ERPNext', target, activeState, context, options)
                             end
                         elsif target.key?('Proxy') && target['Proxy'] == false
-                            linuxConnection.exec("sed -i 's|PublishPort=127.0.0.1:18400:|PublishPort=0.0.0.0:18400:|' #{path}/ERPNext-Frontend.container", false, options)
+                            linuxConnection.fileReplace(path + '/ERPNext-Frontend.container', 'PublishPort=127.0.0.1:18400:', 'PublishPort=0.0.0.0:18400:', options)
                             linuxConnection.firewallAddPort('18400/tcp', options)
                         end
 
@@ -120,18 +170,18 @@ module ConfigLMM
                         linuxConnection.restartUserService(USER, 'ERPNext', options)
 
                         MariaDB.withConnection(target['Database'], linuxConnection) do |connectionDB|
-                            if !connectionDB.tableExist?(USER, 'tabUser', { **options, 'dry': false })
-                                linuxConnection.withUserShell(USER) do |shellConnection|
-                                    Podman.withConnection(shellConnection, Podman.container(CONTAINER_NAME, shellConnection, options)) do |podmanConnection|
+                            linuxConnection.withUserShell(USER) do |shellConnection|
+                                Podman.withConnection(shellConnection, Podman.container(CONTAINER_NAME, shellConnection, options)) do |podmanConnection|
+                                    if connectionDB.tableExist?(USER, 'tabUser', { **options, 'dry' => false })
+                                        linuxConnection.fileReplace(HOME_DIR + '/sites/site/site_config.json', /"db_password".*/, "\"db_password\": \"#{dbPassword}\",", { **options, hide: true })
+                                        podmanConnection.exec('bench --site site migrate', false, options)
+                                        podmanConnection.exec('bench --site site clear-website-cache', false, options)
+                                    else
                                         adminPassword = SecureRandom.alphanumeric(20)
-                                        dbAdminPassword = connectionDB.createAdmin(options)
-                                        linuxConnection.exec("rm -rf " + HOME_DIR + '/sites/erpnext', false, options)
-                                        #podmanConnection.exec("bench new-site --no-setup-db --db-name erpnext --db-user erpnext --admin-password #{adminPassword} --install-app erpnext --set-default site", false, { **options, hide: true })
-                                        connectionDB.dropDB(USER, options)
-                                        podmanConnection.exec("bench new-site --db-root-username admin --db-root-password #{dbAdminPassword} --db-name erpnext --admin-password #{adminPassword} --install-app erpnext --set-default site", false, { **options, hide: true })
+                                        linuxConnection.fileDelete(HOME_DIR + '/sites/erpnext', options)
+                                        podmanConnection.exec("bench new-site --force --no-setup-db --db-name erpnext --db-user erpnext --db-password #{dbPassword.shellescape} --admin-password #{adminPassword.shellescape} --install-app erpnext --set-default site", false, { **options, hide: true })
                                         podmanConnection.exec("bench --site site install-app hrms", false, options)
                                         prompt.say("Administrator password: #{adminPassword}", :color => :magenta)
-                                        connectionDB.dropAdmin(options)
                                     end
                                 end
                             end

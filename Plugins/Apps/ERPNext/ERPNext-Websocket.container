@@ -19,7 +19,10 @@ LogDriver=journald
 
 [Service]
 TimeoutStartSec=16min
+TimeoutStopSec=1min
 Restart=on-failure
+RestartSteps=10
+RestartMaxDelaySec=30m
 
 [Install]
 WantedBy=multi-user.target default.target

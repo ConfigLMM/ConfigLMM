@@ -8,7 +8,8 @@ ContainerName=ERPNext-Queue
 Image=ConfigLM.moe/erpnext:v$VERSION
 Exec=bench worker --queue long,default,short
 EnvironmentFile=/var/lib/erpnext/.config/containers/systemd/ERPNext.env
-Network=slirp4netns:allow_host_loopback=true
+#Network=pasta:--map-host-loopback=10.0.2.2
+#AddHost=host.loopback.internal:10.0.2.2
 UserNS=keep-id:uid=1000,gid=1000
 Volume=/var/lib/erpnext/sites:/home/frappe/frappe-bench/sites:z
 Volume=/var/lib/erpnext/logs:/home/frappe/frappe-bench/logs:z
@@ -17,7 +18,10 @@ LogDriver=journald
 
 [Service]
 TimeoutStartSec=16min
-Restart=on-failure
+# Need to be `always` because it just exits if loses connection to Valkey
+Restart=always
+RestartSteps=10
+RestartMaxDelaySec=30m
 
 [Install]
 WantedBy=multi-user.target default.target

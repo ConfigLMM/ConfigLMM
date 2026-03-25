@@ -8,6 +8,7 @@ ContainerName=ERPNext
 Image=ConfigLM.moe/erpnext:v$VERSION
 EnvironmentFile=/var/lib/erpnext/.config/containers/systemd/ERPNext.env
 Network=ERPNext.network
+AddHost=$PUBLIC_HOST:169.254.1.2
 IP=10.90.50.10
 HostName=ERPNext
 UserNS=keep-id:uid=1000,gid=1000
@@ -19,6 +20,8 @@ LogDriver=journald
 [Service]
 TimeoutStartSec=12min
 Restart=on-failure
+RestartSteps=10
+RestartMaxDelaySec=30m
 
 [Install]
 WantedBy=multi-user.target default.target
