@@ -10,8 +10,8 @@ module ConfigLMM
             USER_NAME = 'postgres'
             PORT = '5432'
 
-            HBA_FILE = 'data/pg_hba.conf'
-            CONFIG_FILE = 'data/postgresql.conf'
+            HBA_FILE = 'pg_hba.conf'
+            CONFIG_FILE = 'postgresql.conf'
 
             def actionPostgreSQLDeploy(id, target, activeState, context, options)
                 target['Deploy'] = !!(target['ListenAll'] || target['Listen'] || target['Settings']) unless target.key?('Deploy')
@@ -36,7 +36,7 @@ module ConfigLMM
 
                                 if activeState['Status'] == State::STATUS_DEPLOYED
                                     linuxConnection.withUserShell(USER_NAME) do |shellConnection|
-                                        shellConnection.exec("pg_ctl reload -D #{postgres.pgsqlDir}data", false, options)
+                                        shellConnection.exec("pg_ctl reload -D #{postgres.pgsqlDataDir}", false, options)
                                     end
                                 else
                                     # Restart only on first deploy
@@ -89,21 +89,21 @@ module ConfigLMM
 
             def replicate(target, linuxConnection, postgres, context, options)
                 if target['Replicate']
-                    if !linuxConnection.filePresent?(postgres.pgsqlDir + "data")
+                    if !linuxConnection.filePresent?(postgres.pgsqlDataDir)
                         linuxConnection.withUserShell(USER_NAME) do |shellConnection|
                             connection = Framework::Variables.stringEval(target['Replicate']['Connection'], context)
                             extra = ''
                             if target['Replicate']['Slot']
                                 extra = "--create-slot --slot=#{target['Replicate']['Slot'].downcase}"
                             end
-                            shellConnection.exec("pg_basebackup --dbname=#{connection.shellescape} --write-recovery-conf #{extra} --pgdata #{postgres.pgsqlDir}data", false, options)
+                            shellConnection.exec("pg_basebackup --dbname=#{connection.shellescape} --write-recovery-conf #{extra} --pgdata #{postgres.pgsqlDataDir}", false, options)
                         end
                     end
                 end
             end
 
             def setupData(linuxConnection, postgres, context, options)
-                if !linuxConnection.filePresent?(postgres.pgsqlDir + 'data/PG_VERSION')
+                if !linuxConnection.filePresent?(postgres.pgsqlDataDir + 'PG_VERSION')
                     if linuxConnection.hasBinaries?('postgresql-setup', options)
                         linuxConnection.exec('postgresql-setup --initdb', false, options)
                     end
@@ -115,12 +115,12 @@ module ConfigLMM
                 hbaLines = []
                 if target['ListenAll']
                     cmd = "sed -i 's|^host    all             all             127.0.0.1/32            ident|host    all             all             0.0.0.0/0               scram-sha-256|'"
-                    postgres.connection.exec(cmd + ' ' + postgres.pgsqlDir + HBA_FILE, false, options)
+                    postgres.connection.exec(cmd + ' ' + postgres.pgsqlConfigDir + HBA_FILE, false, options)
                     settingLines << "listen_addresses = '*'\n"
                     postgres.connection.firewallAddPort('5432/tcp', options)
                 elsif target['Listen'] && !target['Listen'].empty?
                     cmd = "sed -i 's|^host    all             all             127.0.0.1/32            ident|host    all             all             127.0.0.1/32            scram-sha-256|'"
-                    postgres.connection.exec(cmd + ' ' + postgres.pgsqlDir + HBA_FILE, false, options)
+                    postgres.connection.exec(cmd + ' ' + postgres.pgsqlConfigDir + HBA_FILE, false, options)
 
                     ips = target['Listen'].map { |addr| addr.split('/').first }.join(',')
                     settingLines << "listen_addresses = '#{ips}'\n"
@@ -134,7 +134,7 @@ module ConfigLMM
                     end
                 else
                     cmd = "sed -i 's|^host    all             all             127.0.0.1/32            ident|host    all             all             127.0.0.1/32            scram-sha-256|'"
-                    postgres.connection.exec(cmd + ' ' + postgres.pgsqlDir + HBA_FILE, false, options)
+                    postgres.connection.exec(cmd + ' ' + postgres.pgsqlConfigDir + HBA_FILE, false, options)
                 end
                 if target['AllowReplication']
                     addresses = target['AllowReplication']
@@ -146,16 +146,16 @@ module ConfigLMM
                     end
                 end
 
-                postgres.connection.exec('sed -i "s|^logging_collector|#logging_collector|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
-                postgres.connection.exec('sed -i "s|^log_directory|#log_directory|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
-                postgres.connection.exec('sed -i "s|^log_file_mode|#log_file_mode|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
+                postgres.connection.exec('sed -i "s|^logging_collector|#logging_collector|" ' + postgres.pgsqlConfigDir + CONFIG_FILE, false, options)
+                postgres.connection.exec('sed -i "s|^log_directory|#log_directory|" ' + postgres.pgsqlConfigDir + CONFIG_FILE, false, options)
+                postgres.connection.exec('sed -i "s|^log_file_mode|#log_file_mode|" ' + postgres.pgsqlConfigDir + CONFIG_FILE, false, options)
 
                 settingLines << "logging_collector = on\n"
                 settingLines << "log_directory = '/var/log/postgresql'\n"
                 settingLines << "log_file_mode = 0640\n"
 
                 if postgres.version >= 15.0
-                    postgres.connection.exec('sed -i "s|^log_destination|#log_destination|" ' + postgres.pgsqlDir + CONFIG_FILE, false, options)
+                    postgres.connection.exec('sed -i "s|^log_destination|#log_destination|" ' + postgres.pgsqlConfigDir + CONFIG_FILE, false, options)
                     settingLines << "log_destination = 'jsonlog'\n"
                 end
 
@@ -167,12 +167,12 @@ module ConfigLMM
                     settingLines << "#{name} = #{value}\n"
                 end
                 if !hbaLines.empty?
-                    postgres.connection.updateFile(postgres.pgsqlDir + HBA_FILE, options, false) do |configLines|
+                    postgres.connection.updateFile(postgres.pgsqlConfigDir + HBA_FILE, options, false) do |configLines|
                         configLines += hbaLines
                     end
                 end
                 if !settingLines.empty?
-                    postgres.connection.updateFile(postgres.pgsqlDir + CONFIG_FILE, options, false) do |configLines|
+                    postgres.connection.updateFile(postgres.pgsqlConfigDir + CONFIG_FILE, options, false) do |configLines|
                         configLines += settingLines
                     end
                 end

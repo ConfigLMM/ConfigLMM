@@ -8,7 +8,8 @@ module ConfigLMM
             def initialize(connection, settings)
                 @connection = connection
                 @settings = settings
-                @pgsqlDir = nil
+                @pgsqlDataDir = nil
+                @pgsqlConfigDir = nil
                 @version = nil
             end
 
@@ -87,17 +88,29 @@ module ConfigLMM
                 end
             end
 
-            def pgsqlDir
-                return @pgsqlDir if @pgsqlDir
+            def pgsqlDataDir
+                return @pgsqlDataDir if @pgsqlDataDir
                 distroID = connection.distroID
-                if ['opensuse-leap', 'almalinux'].include?(distroID)
-                    @pgsqlDir = '/var/lib/pgsql/'
-                elsif distroID == 'arch'
-                    @pgsqlDir = '/var/lib/postgres/'
+                if [OS::SUSE_LEAP_ID, OS::ALMA_ID].include?(distroID)
+                    @pgsqlDataDir = '/var/lib/pgsql/data/'
+                elsif distroID == OS::ARCH_ID
+                    @pgsqlDataDir = '/var/lib/postgres/data/'
+                elsif distroID == OS::DEBIAN_ID
+                    @pgsqlDataDir = '/var/lib/postgresql/17/main/'
                 else
-                    raise Framework::PluginProcessError.new("Unsupported Linux Distro: #{distroID}!")
+                    raise Framework::PluginProcessError.new("Unimplemented Linux Distro: #{distroID}!")
                 end
-                @pgsqlDir
+                @pgsqlDataDir
+            end
+
+            def pgsqlConfigDir
+                return @pgsqlConfigDir if @pgsqlConfigDir
+                if connection.distroID == OS::DEBIAN_ID
+                    @pgsqlConfigDir = '/etc/postgresql/17/main/'
+                else
+                    @pgsqlConfigDir = pgsqlDataDir
+                end
+                @pgsqlConfigDir
             end
         end
     end
