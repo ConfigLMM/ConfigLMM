@@ -54,8 +54,8 @@ module ConfigLMM
                     self.fillNetworkInfo(networkOptions, dhcp)
                 end
 
-                useHTTP = uri.scheme == 'pxe+http'
-                server = useHTTP ? HTTP.new(dir, networkOptions['IP'], options, logger) : TFTP.new(dir, networkOptions['IP'], logger)
+                useHTTP = uri.scheme == 'pxe+http' || uri.scheme == 'pxe+https'
+                server = useHTTP ? HTTP.new(dir, networkOptions['IP'], uri.scheme == 'pxe+https', options, logger) : TFTP.new(dir, networkOptions['IP'], logger)
                 server.start
 
                 discoverMessages = dhcp.waitDiscover(5 * 60, useHTTP)

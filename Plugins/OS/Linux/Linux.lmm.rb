@@ -621,7 +621,9 @@ module ConfigLMM
                 osInfo = OS.info.byName(target['OS'])
                 ourPath = nil
                 if networkOptions['IP']
-                    if uri.scheme == 'pxe+http'
+                    if uri.scheme == 'pxe+https'
+                        ourPath = 'https://' + networkOptions['IP'] + ':' + IO::HTTP::PORT.to_s
+                    elsif uri.scheme == 'pxe+http'
                         ourPath = 'http://' + networkOptions['IP'] + ':' + IO::HTTP::PORT.to_s
                     else
                         ourPath = 'tftp://' + networkOptions['IP']

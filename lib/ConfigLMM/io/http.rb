@@ -27,7 +27,7 @@ module ConfigLMM
         class HTTP
             PORT = 6582
 
-            def initialize(dir, ip, options, logger)
+            def initialize(dir, ip, tls, options, logger)
                 @IP = ip
                 @Logger = HTTPLogger.new(logger, options[:level])
                 @LastReadTime = nil
@@ -37,6 +37,7 @@ module ConfigLMM
                 end
                 @Server = WEBrick::HTTPServer.new(BindAddress: @IP,
                                                   Port: PORT,
+                                                  SSLEnable: tls,
                                                   DocumentRoot: dir,
                                                   RequestCallback: requestCallback,
                                                   Logger: @Logger,
