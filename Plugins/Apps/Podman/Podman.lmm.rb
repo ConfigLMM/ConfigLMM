@@ -1,4 +1,5 @@
 require_relative 'Connection'
+require_relative '../Git/Git'
 
 require 'uri'
 
@@ -7,6 +8,8 @@ module ConfigLMM
         class Podman < Framework::Plugin
 
             PACKAGE_NAME = 'Podman'
+            IMAGE_DOMAIN = 'ConfigLM.moe'
+            NAMESPACE = 'moe.configlm'
             SYSTEM_CONTAINERS_PATH = '/etc/containers/systemd'
             USER_CONTAINERS_PATH = '~/.config/containers/systemd'
             HOST_IP = '10.0.2.2'
@@ -60,6 +63,26 @@ module ConfigLMM
                 # This is a workaround for performance issue with Podman --userns keep-id
                 # See https://github.com/containers/podman/issues/16541
                 linuxConnection.upload(__dir__ + '/storage.conf', homedir + '/.config/containers/', options)
+            end
+
+            def self.buildGitAnnotations(systemConnection, options)
+                annotations = {}
+                annotations['org.opencontainers.image.created'] = Time.now.utc.iso8601
+                annotations['org.opencontainers.image.source'] = Git::getRemoteUrl(systemConnection, options)
+                annotations['org.opencontainers.image.revision'] = Git::getCommit(systemConnection, options)
+                annotations['org.opencontainers.image.vendor'] = 'ConfigLMM'
+                annotations['org.opencontainers.image.ref.name'] = Git::getRefName(systemConnection, options)
+                annotations
+            end
+
+            def self.buildImage(containerfile, imageID, args, systemConnection,  options)
+                args = args.map(&:shellescape)
+                systemConnection.exec("podman build --tag=#{imageID} --file images/custom/Containerfile #{args.join(' ')} .", false, options)
+            end
+
+            def self.buildGitImage(containerfile, imageID, args, systemConnection, options)
+                args += self.buildGitAnnotations(systemConnection, options).map { |pair| pair.join('=') }.map { |annotation| ['--annotation', annotation] }.flatten
+                self.buildImage(containerfile, imageID, args, systemConnection,  options)
             end
 
             def self.loadImage(userShell, imageFile, options = {})
