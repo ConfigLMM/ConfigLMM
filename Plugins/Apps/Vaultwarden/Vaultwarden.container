@@ -18,6 +18,8 @@ AutoUpdate=registry
 [Service]
 TimeoutStartSec=6min
 Restart=on-failure
+RestartSteps=10
+RestartMaxDelaySec=30m
 
 [Install]
 WantedBy=multi-user.target default.target
