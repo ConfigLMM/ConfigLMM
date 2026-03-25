@@ -70,7 +70,7 @@ module ConfigLMM
 
             def updateConfig(config, linuxConnection, activeState, options)
                 if linuxConnection.hasBinaries?('valkey-server', options)
-                    config[:serviceName] = 'valkey'
+                    config[:serviceName] = 'valkey-server'
                     config[:configFile] = CONFIG_FILE
                     config[:userName] = 'valkey'
                     activeState[:Valkey] = true

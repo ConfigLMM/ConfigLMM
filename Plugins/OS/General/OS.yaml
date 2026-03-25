@@ -52,9 +52,12 @@ debian:
         - systemd
         - shadow
     Name: Debian
-    ISO: https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-12.7.0-amd64-netinst.iso
-    PXE: https://deb.debian.org/debian/dists/bookworm/main/installer-amd64/current/images/netboot/netboot.tar.gz
-    LXC: debian-12-standard
+    ISO: https://cdimage.debian.org/debian-cd/current/amd64/iso-dvd/debian-13.4.0-amd64-DVD-1.iso
+    Checksum: https://cdimage.debian.org/debian-cd/current/amd64/iso-dvd/SHA256SUMS
+    Signature: https://cdimage.debian.org/debian-cd/current/amd64/iso-dvd/SHA256SUMS.sign
+    SignatureKey: https://www.debian.org/CD/key-DA87E80D6294BE9B.txt
+    PXE: https://deb.debian.org/debian/dists/trixie/main/installer-amd64/current/images/netboot/netboot.tar.gz
+    LXC: debian-13-standard
     OSType: debian
     InstallPackage: DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes
     RemovePackage: apt-get remove --assume-yes

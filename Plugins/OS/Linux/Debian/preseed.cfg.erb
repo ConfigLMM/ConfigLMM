@@ -39,10 +39,13 @@ d-i passwd/root-password-crypted password <%= config['Users']['root']['PasswordH
 d-i passwd/root-password password <%= config['Users']['root']['Password'] %>
 <% end %>
 
+d-i clock-setup/utc boolean true
+d-i clock-setup/ntp boolean true
 d-i time/zone string UTC
 
 d-i partman-auto/method string regular
 d-i partman-auto/choose_recipe select atomic
+
 <% if !config['Disks'].empty? %>
 d-i partman-auto/disk string <%= config['Disks'].join(' ') %>
 <% end %>
@@ -61,7 +64,8 @@ d-i mirror/country string US
 d-i mirror/http/mirror select deb.debian.org
 d-i mirror/http/proxy string
 
-d-i pkgsel/run_tasksel boolean false
+tasksel tasksel/first multiselect standard, ssh-server
+#d-i pkgsel/run_tasksel boolean false
 
 <% if !config['Apps'].to_a.empty? %>
 d-i pkgsel/include string <%= config['Apps'].map(&:downcase).join(' ') %>
@@ -73,6 +77,10 @@ popularity-contest popularity-contest/participate boolean false
 
 d-i grub-installer/only_debian boolean true
 d-i grub-installer/bootdev  string default
+d-i grub-installer/skip boolean true
+
+d-i systemd-boot-installer/skip boolean false
+
 
 d-i finish-install/reboot_in_progress note
 

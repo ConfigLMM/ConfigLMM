@@ -103,7 +103,11 @@ debian:
         - php-mysql
     php-pecl:
     pnpm: GitHub|pnpm/pnpm:pnpm-linux-x64
-    Podman: podman
+    Podman:
+        - podman
+        - uidmap
+        - fuse-overlayfs
+        - passt
     PostgreSQL: postgresql
     Postfix: postfix-lmdb
     PowerDNS:
@@ -115,7 +119,7 @@ debian:
     Roundcube: roundcube-pgsql
     socat: socat
     sshd: openssh-server
-    Valkey: redis
+    Valkey: valkey-server
     WireGuard: wireguard
     xorriso: xorriso
     Yarn: yarnpkg

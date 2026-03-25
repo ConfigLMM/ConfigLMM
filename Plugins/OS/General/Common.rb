@@ -10,7 +10,9 @@ module ConfigLMM
 
                 IMAGE_LOCATION = '~/.cache/configlmm/images/'
 
-                TRUSTED_KEYS = []
+                TRUSTED_KEYS = [
+                    'DF9B9C49EAA9298432589D76DA87E80D6294BE9B'  # Debian CD signing key <debian-cd@lists.debian.org>
+                ]
 
                 def prepareConfig(target, context)
                     target['SSH'] ||= {}
