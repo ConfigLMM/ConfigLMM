@@ -13,6 +13,8 @@ module ConfigLMM
 
             def self.ensurePresent(linuxConnection, options = {})
                 linuxConnection.ensurePackage(PACKAGE_NAME, options)
+                # This is needed for openSUSE Leap so that rootless Podman works
+                Systemd::enableUserCgroups(linuxConnection, options)
             end
 
             def self.container(name, connection, options = {})

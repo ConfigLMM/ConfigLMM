@@ -10,9 +10,7 @@ module ConfigLMM
                 self.withConnection(target['Location'], target) do |connection|
                     Linux.withConnection(connection) do |linuxConnection|
                         if target['UserCgroups']
-                            linuxConnection.createDirs(options, USER_SERVICE_DIR)
-                            linuxConnection.upload(__dir__ + '/user-0.slice', SYSTEMD_CONFIG_PATH, options)
-                            linuxConnection.upload(__dir__ + '/user@.service.d/delegate.conf', USER_SERVICE_DIR, options)
+                            self.class.enableUserCgroups(linuxConnection, options)
                         end
                         if target['InstallServices']
                             target['InstallServices'].each do |file, data|
@@ -23,6 +21,14 @@ module ConfigLMM
                         end
                     end
                 end
+            end
+
+            def self.enableUserCgroups(linuxConnection, options)
+                # You need to enable this if you see error like:
+                # Failed to open cgroups file: /sys/fs/cgroup/user.slice/.../memory.events
+                linuxConnection.createDirs(options, USER_SERVICE_DIR)
+                linuxConnection.upload(__dir__ + '/user@.service.d/delegate.conf', USER_SERVICE_DIR, options)
+                linuxConnection.reloadServiceManager(options)
             end
 
             def self.parseCGroup(cgroup)
