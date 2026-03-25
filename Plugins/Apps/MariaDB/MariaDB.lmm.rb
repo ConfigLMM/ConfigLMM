@@ -15,11 +15,30 @@ module ConfigLMM
                         linuxConnection.ensureServiceAutoStart(SERVICE_NAME, options)
                         linuxConnection.startService(SERVICE_NAME, options)
 
+                        mycnf = '/etc/my.cnf'
+                        servercnf = mycnf
+                        if !linuxConnection.filePresent?(mycnf, options)
+                            # Debian 13 (trixie)
+                            mycnf = '/etc/mysql/mariadb.cnf'
+                            servercnf = '/etc/mysql/mariadb.conf.d/50-server.cnf'
+                            if !linuxConnection.filePresent?(mycnf, options)
+                                raise 'Don\'t know how to configure MariaDB because /etc/my.cnf is not present!'
+                            end
+                        end
                         self.class.secureInstallation(connection)
-                        linuxConnection.exec("sed -i 's|^log-error |#log-error |' /etc/my.cnf", false, options)
+
+                        linuxConnection.fileReplace(mycnf, '^log-error ', '#log-error ', options)
                         if target['Listen']
-                            linuxConnection.exec("sed -i 's|bind-address .*|bind-address = #{target['Listen']}|' /etc/my.cnf", false, options)
+                            activeState['bind-address'] = target['Listen']
+                            if !IO::Connection.ipAddr?(activeState['bind-address'])
+                                activeState['bind-address'] = linuxConnection.resolve(activeState['bind-address'], options)
+                            end
+
+                            raise 'Don\'t know how to configure MariaDB!' unless linuxConnection.filePresent?(servercnf, options)
+                            linuxConnection.fileReplace(servercnf, 'bind-address .*', "bind-address = #{activeState['bind-address']}", options)
                             linuxConnection.restartService(SERVICE_NAME, options)
+                        else
+                            activeState.delete('bind-address')
                         end
                     end
                 end
