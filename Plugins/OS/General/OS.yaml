@@ -23,9 +23,12 @@ opensuse-leap:
         - systemd
         - shadow
     Name: openSUSE Leap
-    ISO: https://download.opensuse.org/distribution/leap/15.6/iso/openSUSE-Leap-15.6-NET-x86_64-Media.iso
-    FILES: https://download.opensuse.org/distribution/leap/15.6/repo/oss/
-    LXC: opensuse-15.6-default
+    ProductId: openSUSE_Leap
+    ISO: https://download.opensuse.org/distribution/leap/16.0/offline/Leap-16.0-offline-installer-x86_64.install.iso
+    Checksum: https://download.opensuse.org/distribution/leap/16.0/offline/Leap-16.0-offline-installer-x86_64.install.iso.sha256
+    Signature: https://download.opensuse.org/distribution/leap/16.0/offline/Leap-16.0-offline-installer-x86_64.install.iso.sha256.asc
+    SignatureKey: https://download.opensuse.org/tumbleweed/repo/oss/gpg-pubkey-29b700a4-62b07e22.asc
+    LXC: opensuse-16.0-default
     OSType: opensuse
     InstallPackage: zypper install --no-confirm
     RemovePackage: zypper remove --no-confirm

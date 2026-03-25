@@ -8,7 +8,6 @@ module ConfigLMM
             DEFAULT_DIR = '/var/lib/valkey/'
 
             REDIS_CONFIG_FILE = '/etc/redis/redis.conf'
-            REDIS_PID_FILE = '/run/redis/redis.pid'
             REDIS_DEFAULT_DIR = '/var/lib/redis/'
 
             def actionValkeyDeploy(id, target, activeState, context, options)
@@ -25,13 +24,20 @@ module ConfigLMM
                         target['Settings'] ||= {}
                         target['Settings']['supervised'] = 'systemd'
 
-                        if linuxConnection.distroID == OS::SUSE_LEAP_ID
-                            config[:serviceName] = 'redis@redis'
-                            target['Settings']['pidfile'] = REDIS_PID_FILE
-                            target['Settings']['dir'] = '/var/lib/redis/default/'
-                        end
 
                         updateConfig(config, linuxConnection, activeState, options)
+
+                        if linuxConnection.distroID == OS::SUSE_LEAP_ID
+                            if !linuxConnection.filePresent?(CONFIG_FILE)
+                                linuxConnection.fileCopy('/etc/valkey/default.conf.example', CONFIG_FILE, options)
+                            end
+                            config[:serviceName] = 'valkey@valkey'
+                            target['Settings']['pidfile'] = '/run/valkey/valkey.pid'
+                            target['Settings']['dir'] = '/var/lib/valkey/valkey/'
+                            target['Settings']['logfile'] = '/var/log/valkey/valkey.log'
+                            linuxConnection.createDirs(options, target['Settings']['dir'])
+                            linuxConnection.setUserGroup(target['Settings']['dir'], config[:userName], nil, options)
+                        end
 
                         password = context.secrets.load(target['SecretId'], 'VALKEY_PASSWORD')
                         if password.nil?
@@ -109,7 +115,7 @@ module ConfigLMM
                     isValkey = !!state.item(id)[:Valkey]
                     Linux.withConnection(connection) do |linuxConnection|
                         serviceName = isValkey ? 'valkey' : 'redis'
-                        serviceName = 'redis@redis' if linuxConnection.distroID == OS::SUSE_LEAP_ID
+                        serviceName = 'valkey@valkey' if linuxConnection.distroID == OS::SUSE_LEAP_ID
 
                         linuxConnection.stopService(serviceName, options)
                         linuxConnection.removePackage(PACKAGE_NAME, options)

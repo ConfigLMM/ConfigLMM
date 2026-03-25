@@ -41,6 +41,7 @@ module ConfigLMM
                         else
                             activeState.delete('bind-address')
                         end
+                        SELinux.restoreContext('/var/lib/mysql', linuxConnection, options)
                     end
                 end
             end

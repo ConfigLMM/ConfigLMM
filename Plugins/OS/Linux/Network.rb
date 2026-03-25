@@ -11,59 +11,7 @@ module ConfigLMM
                 end
 
                 def configureNetworkManager(target, connection, options)
-                    updateNetworkInterface(target['Network'], 'eth0', connection, options)
-                    if target['Network']['Interfaces']
-                        target['Network']['Interfaces'].each do |interface, config|
-                            updateNetworkInterface(config, interface, connection, options)
-                        end
-                    end
-                    if target['Network']['DNS']
-                        configFile = '/etc/sysconfig/network/config'
-                        dns = target['Network']['DNS']
-                        dns = [dns] unless dns.is_a?(Array)
-                        connection.exec("sed -i 's|^NETCONFIG_DNS_STATIC_SERVERS=.*|NETCONFIG_DNS_STATIC_SERVERS=\"#{dns.join(' ')}\"|' #{configFile}", false, options)
-                    end
-                    if target['Network']['Gateway']
-                        routesFile = '/etc/sysconfig/network/routes'
-                        connection.exec("sed -i 's|^default |#default |' #{routesFile}", false, options)
-                        connection.updateFile(routesFile, options) do |fileLines|
-                            fileLines << "default #{target['Network']['Gateway']}\n"
-                        end
-                    end
-                end
-
-                def updateNetworkInterface(config, interface, connection, options)
-                    baseFile = '/etc/sysconfig/network/ifcfg-'
-                    networkFile = baseFile + interface
-                    connection.exec("touch #{networkFile}", false, options)
-                    connection.exec("sed -i \"/^BOOTPROTO=.*/d\" #{networkFile}", false, options)
-                    connection.exec("sed -i \"/^STARTMODE=.*/d\" #{networkFile}", false, options)
-                    connection.exec("sed -i \"/^ZONE=.*/d\" #{networkFile}", false, options)
-                    if config['IP']
-                        connection.exec("sed -i 's|^IPADDR=|#IPADDR=|' #{networkFile}", false, options)
-                    end
-                    connection.updateFile(networkFile, options, false) do |fileLines|
-                        fileLines << "STARTMODE=auto\n"
-                        fileLines << "ZONE=public\n"
-                        if config == 'dhcp'
-                            fileLines << "BOOTPROTO=dhcp\n"
-                        else
-                            fileLines << "BOOTPROTO=static\n"
-                            fileLines << "\n"
-                            if config['IP']
-                                if config['IP'].is_a?(Array)
-                                    config['IP'].each_with_index do |ip, i|
-                                        c = "_#{i}"
-                                        c = '' if i.zero?
-                                        fileLines << "IPADDR#{c}=#{ip}\n"
-                                    end
-                                else
-                                    fileLines << "IPADDR=#{config['IP']}\n"
-                                end
-                            end
-                        end
-                        fileLines
-                    end
+                    # TODO FIXME implement `nmcli`
                 end
 
                 def networkingEnabled?(target, connection, options)
@@ -183,6 +131,21 @@ module ConfigLMM
 
                 def networkLinks(connection)
                     connection.exec("ls /sys/class/net/").strip.split("\n").select { |name| name.start_with?('enp') }
+                end
+
+                def self.kernelNetworkCMD(target)
+                    ip = 'ip=dhcp'
+                    if target['DefaultNetwork']['IP'] != 'dhcp'
+                        ip = 'ip=' + target['DefaultNetwork']['IP'].split('/').first
+                        ip += ':'
+                        ip += ':' + target['DefaultNetwork']['Gateway'].to_s
+                        ip += ':' + IPAddr.new(target['DefaultNetwork']['IP']).netmask
+                        ip += ':' + (target['Domain'] ? target['Domain'] : '')
+                        ip += ':'
+                        ip += ':off'
+                        ip += ':' + target['DefaultNetwork']['DNS'] if target['DefaultNetwork']['DNS']
+                    end
+                    ip
                 end
             end
         end

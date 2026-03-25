@@ -11,7 +11,8 @@ module ConfigLMM
                 IMAGE_LOCATION = '~/.cache/configlmm/images/'
 
                 TRUSTED_KEYS = [
-                    'DF9B9C49EAA9298432589D76DA87E80D6294BE9B'  # Debian CD signing key <debian-cd@lists.debian.org>
+                    'DF9B9C49EAA9298432589D76DA87E80D6294BE9B', # Debian CD signing key <debian-cd@lists.debian.org>
+                    'AD485664E901B867051AB15F35A2F86E29B700A4'  # openSUSE Project Signing Key <opensuse@opensuse.org>
                 ]
 
                 def prepareConfig(target, context)
@@ -162,6 +163,17 @@ module ConfigLMM
                         end
                     end
                     image
+                end
+
+                def extractISO(iso, outputFolder, options)
+                    local.exec("xorriso -osirrox on -indev #{iso.shellescape} -extract / #{outputFolder.shellescape}", false, options)
+                end
+
+                def readISOparams(iso, options)
+                    cmd = "xorriso -indev #{iso} -report_el_torito as_mkisofs"
+                    local.exec(cmd, true, { **options, 'dry' => true }) if options['dry']
+                    result = local.exec(cmd, true, { **options, 'dry' => false })
+                    result.lines.take_while { |line| !line.empty? && line[0] == '-' }.map(&:strip)
                 end
 
             end

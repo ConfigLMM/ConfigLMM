@@ -71,7 +71,7 @@ opensuse-leap:
     Roundcube: roundcubemail
     socat: socat
     sshd: openssh
-    Valkey: redis
+    Valkey: valkey
     WireGuard: wireguard-tools
     xorriso: xorriso
     Yarn: yarn

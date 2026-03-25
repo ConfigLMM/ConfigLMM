@@ -13,6 +13,12 @@ module ConfigLMM
                 end
             end
 
+            def self.restoreContext(path, linuxConnection, options)
+                if linuxConnection.selinux?
+                    linuxConnection.exec("restorecon -R #{linuxConnection.escapePath(path)}", false, options)
+                end
+            end
+
         end
     end
 end

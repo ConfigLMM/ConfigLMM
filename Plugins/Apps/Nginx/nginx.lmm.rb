@@ -84,8 +84,7 @@ module ConfigLMM
                                         local.exec("cd #{errorPages} && cp -R dist errors", false, options)
                                     end
                                     linuxConnection.uploadFolder(errorPages + '/errors', NginxConnection::WWW_DIR, options)
-                                    linuxConnection.exec("restorecon -R #{NginxConnection::WWW_DIR}", true, options)
-
+                                    SELinux.restoreContext(NginxConnection::WWW_DIR, linuxConnection, options)
                                 end
 
                                 linuxConnection.createWildecardCertificate(options)

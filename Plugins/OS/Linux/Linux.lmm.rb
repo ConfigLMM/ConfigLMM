@@ -619,18 +619,19 @@ module ConfigLMM
                     networkOptions['IP'] = findNetworkIP(clientIp)
                 end
                 osInfo = OS.info.byName(target['OS'])
-                dir = preparePXE(target, osInfo, id, options)
-                bootFileResolver = Proc.new do |clientArch|
-                    bootFile = 'lpxelinux.0'
-                    bootFile = 'pxelinux.0' unless File.exist?(dir + bootFile)
-                    if [0x0007, 0x0010].include?(clientArch) # EFI x64 and x64 UEFI HTTP
-                        if osInfo['Id'] == OS::SUSE_LEAP_ID
-                            # Because we reuse Debian netboot archive...
-                            bootFile = 'debian-installer/amd64/bootnetx64.efi'
-                        elsif osInfo['Id'] == OS::DEBIAN_ID
-                            bootFile = 'debian-installer/amd64/bootnetx64.efi'
-                        end
+                ourPath = nil
+                if networkOptions['IP']
+                    if uri.scheme == 'pxe+http'
+                        ourPath = 'http://' + networkOptions['IP'] + ':' + IO::HTTP::PORT.to_s
+                    else
+                        ourPath = 'tftp://' + networkOptions['IP']
                     end
+                end
+
+                dir, biosBootFile, uefiBootFile = preparePXE(ourPath, target, osInfo, id, options)
+                bootFileResolver = Proc.new do |clientArch|
+                    bootFile = biosBootFile
+                    bootFile = uefiBootFile if [0x0007, 0x0010].include?(clientArch) # EFI x64 and x64 UEFI HTTP
                     bootFile
                 end
                 IO::PXE.boot(dir, uri, networkOptions, bootFileResolver, options, logger)
@@ -685,10 +686,6 @@ module ConfigLMM
                     template = ERB.new(File.read(__dir__ + '/Proxmox/answer.toml.erb'))
                     renderTemplate(template, config, outputFolder + 'answer.toml', options)
                     File.write("#{outputFolder}/auto-installer-mode.toml", 'mode = "iso"')
-                elsif osInfo['Id'] == OS::SUSE_LEAP_ID
-                    outputFolder = options['output'] + '/' + id + '/'
-                    template = ERB.new(File.read(__dir__ + '/openSUSE/autoinst.xml.erb'))
-                    renderTemplate(template, config, outputFolder + 'autoinst.xml', options)
                 elsif osInfo['Id'] == OS::DEBIAN_ID
                     variables = prepareDebianStorage(config, options)
                     outputFolder = options['output'] + '/' + id + '/'
@@ -777,14 +774,14 @@ module ConfigLMM
                 downloadImage(osInfo['ISO'], osInfo['Checksum'], osInfo['Signature'], osInfo['SignatureKey'])
             end
 
-            def preparePXE(target, info, id, options)
+            def preparePXE(ourPath, target, osInfo, id, options)
                 outputFolder = options['output'] + '/pxe/'
+                uefiBootFile = nil
                 local.mkdir(outputFolder, false)
-                image = nil
-                if info['PXE']
-                    image = downloadImage(info['PXE'])
+                if osInfo['PXE']
+                    image = downloadImage(osInfo['PXE'])
                     local.exec("tar --extract --file=#{image.shellescape} --directory=#{outputFolder}", false)
-                    if info['Id'] == OS::DEBIAN_ID
+                    if osInfo['Id'] == OS::DEBIAN_ID
                         local.copy(options['output'] + '/' + id + '/preseed.cfg', outputFolder, false)
                         local.exec("sed -i 's|default .*|default auto|' #{outputFolder}debian-installer/amd64/boot-screens/syslinux.cfg", false)
                         local.exec("sed -i 's|--- quiet|file=/preseed.cfg --- quiet|' #{outputFolder}debian-installer/amd64/boot-screens/adtxt.cfg", false)
@@ -793,59 +790,24 @@ module ConfigLMM
                         local.exec("gunzip #{outputFolder}debian-installer/amd64/initrd.gz", false)
                         local.exec("cd #{options['output'] + '/' + id} && echo preseed.cfg | cpio -H newc -o -O #{outputFolder}debian-installer/amd64/initrd --append", false)
                         local.exec("gzip #{outputFolder}debian-installer/amd64/initrd", false)
+                        uefiBootFile = 'debian-installer/amd64/bootnetx64.efi'
                     end
-                elsif info['Id'] == OS::SUSE_LEAP_ID
-                    # openSUSE doesn't provide netboot archive
-                    # and grub.efi from it's ISO doesn't work
-                    # so let's just reuse Debian archive
-                    debianInfo = OS.info[OS::DEBIAN_ID]
-                    debianImage = downloadImage(debianInfo['PXE'])
-                    local.exec("tar --extract --file=#{debianImage.shellescape} --directory=#{outputFolder}", false)
-                    local.exec("rm -rf #{outputFolder}pxelinux.cfg", false)
-
-                    syslinux = downloadImage(OS.info[OS::SYSLINUX_ID]['Archive'])
-                    syslinuxFolder = options['output'] + '/syslinux'
-                    local.mkdir(syslinuxFolder, false)
-                    local.mkdir(outputFolder + 'pxelinux.cfg', false)
-                    local.copy(options['output'] + '/' + id + '/autoinst.xml', outputFolder, false)
-                    local.exec("tar --extract --file=#{syslinux.shellescape} --directory=#{syslinuxFolder}", false)
-                    local.exec("cp #{syslinuxFolder}/*/bios/core/lpxelinux.0 #{outputFolder}", false)
-                    local.exec("cp #{syslinuxFolder}/*/bios/com32/elflink/ldlinux/ldlinux.c32 #{outputFolder}", false)
-                    local.exec("cp #{__dir__ + '/Syslinux/default'} #{outputFolder}pxelinux.cfg/", false)
-                    local.exec("sed -i 's|$OPTIONS|install=#{info['FILES']} autoyast=/autoinst.xml|' #{outputFolder}pxelinux.cfg/default", false)
-
-                    # If you have Network/IP configured in UEFI firmware which is different than what we use
-                    # then Syslinux will use that IP instead of ours so you need to reset those settings
-                    #
-                    # Not using Syslinux.efi because for some reason it doesn't work - reboots after loading initrd
-                    #local.exec("cp #{syslinuxFolder}/*/efi64/efi/syslinux.efi #{outputFolder}", false)
-                    #local.exec("cp #{syslinuxFolder}/*/efi64/com32/elflink/ldlinux/ldlinux.e64 #{outputFolder}", false)
-
-                    local.remoteDownload(info['FILES'] + 'boot/x86_64/loader/initrd', outputFolder)
-                    local.remoteDownload(info['FILES'] + 'boot/x86_64/loader/linux', outputFolder)
-
-                    # Not using grub.efi because UEFI Firemware says "Unsupported"
-                    #local.remoteDownload(info['FILES'] + 'EFI/BOOT/bootx64.efi', outputFolder)
-                    #local.remoteDownload(info['FILES'] + 'EFI/BOOT/grub.efi', outputFolder)
-                    #local.remoteDownload(info['FILES'] + 'EFI/BOOT/grub.cfg', outputFolder)
-
-                    local.exec("cp #{__dir__ + '/Grub/grub.cfg'} #{outputFolder}debian-installer/amd64/grub/", false)
-                    local.exec("sed -i 's|$OPTIONS|install=#{info['FILES']} autoyast=/autoinst.xml|' #{outputFolder}debian-installer/amd64/grub/grub.cfg", false)
-
-                    local.exec("xz --decompress --stdout #{outputFolder}initrd > #{outputFolder}initrd.decompressed", false)
-                    local.exec("cd #{options['output'] + '/' + id} && echo autoinst.xml | cpio -H newc -o -O #{outputFolder}initrd.decompressed --append", false)
-                    local.exec("xz --compress --stdout --check=crc32 #{outputFolder}initrd.decompressed > #{outputFolder}initrd", false)
+                    biosBootFile = 'lpxelinux.0'
+                    biosBootFile = 'pxelinux.0' unless File.exist?(outputFolder + biosBootFile)
+                elsif osInfo['Id'] == OS::SUSE_LEAP_ID
+                    iso = installationISO(osInfo)
+                    biosBootFile, uefiBootFile = preparePXEAgama(ourPath, iso, outputFolder, osInfo, id, target, options)
                 else
                     raise 'Not implemented!'
                 end
-                outputFolder
+                [outputFolder, biosBootFile, uefiBootFile]
             end
 
             def buildAutoInstallISO(osInfo, id, iso, target, options)
                 if osInfo['Id'] == OS::PROXMOXVE_ID
                     iso = buildISOAutoProxmox(id, iso, target, options)
                 elsif osInfo['Id'] == OS::SUSE_LEAP_ID
-                    iso = buildISOAutoYaST(id, iso, target, options)
+                    iso = buildISOAgama(osInfo, id, iso, target, options)
                 elsif osInfo['Id'] == OS::DEBIAN_ID
                     iso = buildISOPreseed(id, iso, target, options)
                 end
