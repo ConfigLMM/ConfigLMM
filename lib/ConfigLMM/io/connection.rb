@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'addressable/uri'
+require 'ipaddr'
 require_relative 'local'
 require_relative 'ssh'
 require_relative 'icmp'
@@ -104,6 +105,12 @@ module ConfigLMM
                 else
                     SSH.sshSuccess?(ssh, command)
                 end
+            end
+
+            def self.ipAddr?(content)
+                IPAddr.new(content)
+            rescue IPAddr::InvalidAddressError
+                false
             end
 
             # `connect': No route to host - connect(2) for 192.168.1.3:22 (Errno::EHOSTUNREACH)
