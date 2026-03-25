@@ -10,9 +10,9 @@ Exec=worker
 EnvironmentFile=/var/lib/authentik/.config/containers/systemd/Authentik.env
 Network=slirp4netns:allow_host_loopback=true
 UserNS=keep-id:uid=1000,gid=1000
-Volume=/var/lib/authentik/media:/media
-Volume=/var/lib/authentik/templates:/templates
-Volume=/var/lib/authentik/certs:/certs
+Volume=/var/lib/authentik/media:/media:z
+Volume=/var/lib/authentik/templates:/templates:z
+Volume=/var/lib/authentik/certs:/certs:Z
 LogDriver=journald
 AutoUpdate=registry
 

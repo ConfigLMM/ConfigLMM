@@ -15,10 +15,10 @@ UserNS=keep-id:uid=1000,gid=1000
 #GroupAdd=keep-groups
 PodmanArgs=--group-add keep-groups
 #PodmanArgs=--passwd-entry 'vllm:x:1000:1000:vLLM:/home/vllm:/bin/bash'
-Volume=/var/lib/vllm/.cache:/app/.cache
-Volume=/var/lib/vllm/.triton:/app/.triton
-Volume=/var/lib/vllm/.cache:/root/.cache
-Volume=/var/lib/vllm/.cache:/workspace/.cache
+Volume=/var/lib/vllm/.cache:/app/.cache:Z
+Volume=/var/lib/vllm/.triton:/app/.triton:Z
+Volume=/var/lib/vllm/.cache:/root/.cache:Z
+Volume=/var/lib/vllm/.cache:/workspace/.cache:Z
 ShmSize=1G
 $DEVICES
 LogDriver=journald

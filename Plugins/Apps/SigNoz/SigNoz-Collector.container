@@ -10,8 +10,8 @@ Exec=--config=/etc/otel/otel-collector-config.yaml --copy-path=/var/tmp/collecto
 Network=slirp4netns:allow_host_loopback=true
 PublishPort=127.0.0.1:4317:4317
 PublishPort=127.0.0.1:4318:4318
-Volume=/var/lib/signoz-collector/otel-collector-config.yaml:/etc/otel/otel-collector-config.yaml
-Volume=/var/lib/signoz-collector/otel-collector-opamp-config.yaml:/etc/otel/otel-collector-opamp-config.yaml
+Volume=/var/lib/signoz-collector/otel-collector-config.yaml:/etc/otel/otel-collector-config.yaml:Z
+Volume=/var/lib/signoz-collector/otel-collector-opamp-config.yaml:/etc/otel/otel-collector-opamp-config.yaml:Z
 LogDriver=journald
 AutoUpdate=registry
 

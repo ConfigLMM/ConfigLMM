@@ -10,7 +10,7 @@ Exec=bundle exec sidekiq
 EnvironmentFile=/var/lib/mastodon/.config/containers/systemd/Mastodon.env
 Network=slirp4netns:allow_host_loopback=true
 UserNS=keep-id:uid=991,gid=991
-Volume=/var/lib/mastodon/system:/mastodon/public/system
+Volume=/var/lib/mastodon/system:/mastodon/public/system:z
 LogDriver=journald
 AutoUpdate=registry
 

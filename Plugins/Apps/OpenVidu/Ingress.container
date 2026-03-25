@@ -12,7 +12,7 @@ PublishPort=127.0.0.1:1935:1935
 PublishPort=127.0.0.1:8085:8085
 PublishPort=127.0.0.1:7895:7895/udp
 UserNS=keep-id:uid=1000,gid=1000
-Volume=/var/lib/openvidu/ingress.yaml:/etc/ingress.yaml
+Volume=/var/lib/openvidu/ingress.yaml:/etc/ingress.yaml:Z
 LogDriver=journald
 AutoUpdate=registry
 

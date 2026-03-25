@@ -11,7 +11,7 @@ EnvironmentFile=/var/lib/matrix/.config/containers/systemd/Matrix.env
 Network=slirp4netns:allow_host_loopback=true
 PublishPort=127.0.0.1:8008:8008
 UserNS=keep-id:uid=991,gid=991
-Volume=/var/lib/matrix/data:/data
+Volume=/var/lib/matrix/data:/data:Z
 LogDriver=journald
 AutoUpdate=registry
 

@@ -9,7 +9,7 @@ Image=ghcr.io/gethomepage/homepage:latest
 PublishPort=127.0.0.1:13400:3000
 LogDriver=journald
 AutoUpdate=registry
-Volume=/var/lib/homepage/config:/app/config
+Volume=/var/lib/homepage/config:/app/config:Z
 
 [Service]
 TimeoutStartSec=3min

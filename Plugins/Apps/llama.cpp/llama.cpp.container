@@ -14,8 +14,8 @@ UserNS=keep-id:uid=1000,gid=1000
 #GroupAdd=keep-groups
 PodmanArgs=--group-add keep-groups
 #PodmanArgs=--passwd-entry 'llama.cpp:x:1000:1000:llama.cpp:/home/llama.cpp:/bin/bash'
-Volume=/var/lib/llama.cpp/.cache:/app/.cache
-Volume=/var/lib/llama.cpp/models:/models
+Volume=/var/lib/llama.cpp/.cache:/app/.cache:Z
+Volume=/var/lib/llama.cpp/models:/models:Z
 $DEVICES
 LogDriver=journald
 AutoUpdate=registry

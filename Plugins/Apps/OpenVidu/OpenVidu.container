@@ -10,7 +10,7 @@ Exec=--config /etc/livekit.yaml --bind=$BindIP
 EnvironmentFile=/var/lib/openvidu/.config/containers/systemd/OpenVidu.env
 Network=host
 UserNS=keep-id:uid=1000,gid=1000
-Volume=/var/lib/openvidu/livekit.yaml:/etc/livekit.yaml
+Volume=/var/lib/openvidu/livekit.yaml:/etc/livekit.yaml:Z
 LogDriver=journald
 AutoUpdate=registry
 

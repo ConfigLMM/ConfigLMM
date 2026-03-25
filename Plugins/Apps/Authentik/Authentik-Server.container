@@ -12,8 +12,8 @@ Network=slirp4netns:allow_host_loopback=true
 PublishPort=127.0.0.1:19000:9000
 PublishPort=127.0.0.1:19300:9300
 UserNS=keep-id:uid=1000,gid=1000
-Volume=/var/lib/authentik/media:/media
-Volume=/var/lib/authentik/templates:/templates
+Volume=/var/lib/authentik/media:/media:z
+Volume=/var/lib/authentik/templates:/templates:z
 LogDriver=journald
 AutoUpdate=registry
 

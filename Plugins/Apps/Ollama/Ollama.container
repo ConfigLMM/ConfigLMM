@@ -13,7 +13,7 @@ UserNS=keep-id:uid=1000,gid=1000
 #GroupAdd=keep-groups
 PodmanArgs=--group-add keep-groups
 #PodmanArgs=--passwd-entry 'ollama:x:1000:1000:Ollama:/home/ollama:/bin/bash'
-Volume=/var/lib/ollama/data:/.ollama
+Volume=/var/lib/ollama/data:/.ollama:Z
 $DEVICES
 LogDriver=journald
 AutoUpdate=registry

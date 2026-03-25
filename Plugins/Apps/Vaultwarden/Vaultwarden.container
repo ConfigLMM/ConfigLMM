@@ -11,7 +11,7 @@ Network=pasta:--map-host-loopback=10.0.2.2
 AddHost=host.loopback.internal:10.0.2.2
 PublishPort=0.0.0.0:18000:8000
 UserNS=keep-id:uid=1000,gid=1000
-Volume=/var/lib/vaultwarden/data/:/data/
+Volume=/var/lib/vaultwarden/data/:/data/:Z
 LogDriver=journald
 AutoUpdate=registry
 

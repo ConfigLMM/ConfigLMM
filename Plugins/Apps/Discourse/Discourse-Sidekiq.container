@@ -11,7 +11,7 @@ Exec=/opt/bitnami/scripts/discourse-sidekiq/run.sh
 EnvironmentFile=/var/lib/discourse/.config/containers/systemd/Discourse.env
 Network=slirp4netns:allow_host_loopback=true
 UserNS=keep-id:uid=999,gid=999
-Volume=/var/lib/discourse/sidekiq:/bitnami/discourse
+Volume=/var/lib/discourse/sidekiq:/bitnami/discourse:z
 LogDriver=journald
 AutoUpdate=registry
 

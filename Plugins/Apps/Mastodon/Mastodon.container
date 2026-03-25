@@ -14,9 +14,9 @@ EnvironmentFile=/var/lib/mastodon/.config/containers/systemd/Mastodon.env
 Network=slirp4netns:allow_host_loopback=true
 PublishPort=127.0.0.1:13600:3000
 UserNS=keep-id:uid=991,gid=991
-Volume=/var/lib/mastodon/system:/mastodon/public/system
-Volume=/var/lib/mastodon/.configlmm/entrypoint.sh:/entrypoint.sh
-Volume=/var/lib/mastodon/.configlmm/configlmm.rake:/mastodon/lib/tasks/configlmm.rake
+Volume=/var/lib/mastodon/system:/mastodon/public/system:z
+Volume=/var/lib/mastodon/.configlmm/entrypoint.sh:/entrypoint.sh:Z
+Volume=/var/lib/mastodon/.configlmm/configlmm.rake:/mastodon/lib/tasks/configlmm.rake:Z
 LogDriver=journald
 AutoUpdate=registry
 

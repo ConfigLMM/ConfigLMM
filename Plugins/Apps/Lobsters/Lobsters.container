@@ -10,13 +10,13 @@ EnvironmentFile=/var/lib/lobsters/.config/containers/systemd/Lobsters.env
 Network=slirp4netns:allow_host_loopback=true
 UserNS=keep-id:uid=1000,gid=1000
 PublishPort=127.0.0.1:19292:9292
-Volume=/var/lib/lobsters/config:/config
-Volume=/var/lib/lobsters/logs:/srv/lobste.rs/log
-Volume=/var/lib/lobsters/cache:/srv/lobste.rs/cache
-Volume=/var/lib/lobsters/storage:/srv/lobste.rs/storage
-Volume=/var/lib/lobsters/queue:/srv/lobste.rs/queue
-Volume=/var/lib/lobsters/tmp:/lobsters/tmp
-Volume=/srv/lobsters:/srv/lobsters
+Volume=/var/lib/lobsters/config:/config:z
+Volume=/var/lib/lobsters/logs:/srv/lobste.rs/log:z
+Volume=/var/lib/lobsters/cache:/srv/lobste.rs/cache:z
+Volume=/var/lib/lobsters/storage:/srv/lobste.rs/storage:z
+Volume=/var/lib/lobsters/queue:/srv/lobste.rs/queue:z
+Volume=/var/lib/lobsters/tmp:/lobsters/tmp:z
+Volume=/srv/lobsters:/srv/lobsters:z
 LogDriver=journald
 
 [Service]

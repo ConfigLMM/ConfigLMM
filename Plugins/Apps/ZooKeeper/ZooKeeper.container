@@ -12,7 +12,7 @@ PublishPort=127.0.0.1:2888:2888
 PublishPort=127.0.0.1:3888:3888
 PublishPort=127.0.0.1:18500:8080
 UserNS=keep-id:uid=1001,gid=1001
-Volume=/var/lib/zookeeper/data:/bitnami/zookeeper/data
+Volume=/var/lib/zookeeper/data:/bitnami/zookeeper/data:Z
 LogDriver=journald
 AutoUpdate=registry
 

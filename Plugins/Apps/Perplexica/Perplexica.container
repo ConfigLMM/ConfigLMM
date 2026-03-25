@@ -10,9 +10,9 @@ EnvironmentFile=/var/lib/perplexica/.config/containers/systemd/Perplexica.env
 Network=slirp4netns:allow_host_loopback=true
 PublishPort=127.0.0.1:13500:3000
 UserNS=keep-id:uid=1000,gid=1000
-Volume=/var/lib/perplexica/data:/home/perplexica/data
-Volume=/var/lib/perplexica/uploads:/home/perplexica/uploads
-Volume=/var/lib/perplexica/config.toml:/home/perplexica/config.toml
+Volume=/var/lib/perplexica/data:/home/perplexica/data:Z
+Volume=/var/lib/perplexica/uploads:/home/perplexica/uploads:Z
+Volume=/var/lib/perplexica/config.toml:/home/perplexica/config.toml:Z
 
 LogDriver=journald
 AutoUpdate=registry

@@ -10,9 +10,9 @@ EnvironmentFile=/var/lib/odoo/.config/containers/systemd/Odoo.env
 Network=slirp4netns:allow_host_loopback=true
 PublishPort=0.0.0.0:8069:8069
 UserNS=keep-id:uid=101,gid=101
-Volume=/var/lib/odoo/config:/etc/odoo
-Volume=/var/lib/odoo/data:/var/lib/odoo
-Volume=/var/lib/odoo/addons:/mnt/extra-addons
+Volume=/var/lib/odoo/config:/etc/odoo:Z
+Volume=/var/lib/odoo/data:/var/lib/odoo:Z
+Volume=/var/lib/odoo/addons:/mnt/extra-addons:Z
 LogDriver=journald
 AutoUpdate=registry
 

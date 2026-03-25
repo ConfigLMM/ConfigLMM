@@ -12,8 +12,8 @@ Network=slirp4netns:allow_host_loopback=true
 PublishPort=127.0.0.1:4320:4320
 PublishPort=127.0.0.1:6060:6060
 PublishPort=127.0.0.1:18600:8080
-Volume=/var/lib/signoz/config:/root/config
-Volume=/var/lib/signoz/data:/var/lib/signoz
+Volume=/var/lib/signoz/config:/root/config:Z
+Volume=/var/lib/signoz/data:/var/lib/signoz:Z
 LogDriver=journald
 AutoUpdate=registry
 
