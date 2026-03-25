@@ -7,6 +7,7 @@ module ConfigLMM
             PACKAGE_NAME = 'MariaDB'
             SERVICE_NAME = :mariadb
             USER_NAME = 'mariadb'
+            DB_PORT = 3306
 
             def actionMariaDBDeploy(id, target, activeState, context, options)
                 self.withConnection(target['Location'], target) do |connection|
@@ -99,12 +100,14 @@ module ConfigLMM
                 end
             end
 
-            def self.withConnection(settings, linuxConnection)
-                if settings['HostName'].nil? || settings['HostName'] == 'localhost'
-                    settings['HostName'] = 'localhost'
+            def self.withConnection(settings, linuxConnection, options = {})
+                settings['HostName'] = 'localhost' unless settings['HostName']
+                hostname = settings['HostName']
+                port = settings['Port'] ? settings['Port'] : DB_PORT
+                if linuxConnection.ping?(hostname, port, options)
                     yield(MariaDBConnection.new(linuxConnection, settings))
                 else
-                    IO::Connection.tunnel("ssh://#{settings['HostName']}/", {}, {}, {}, linuxConnection.prompt, linuxConnection.logger) do |connection|
+                    IO::Connection.tunnel("ssh://#{hostname}/", {}, {}, {}, linuxConnection.prompt, linuxConnection.logger) do |connection|
                         yield(MariaDBConnection.new(connection, settings))
                     end
                 end
