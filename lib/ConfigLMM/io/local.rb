@@ -15,6 +15,7 @@ module ConfigLMM
                 @prompt = prompt
                 @logger = logger
                 @local = self
+                @execOptions = {}
             end
 
             def fileWrite(target, data, dry)
@@ -104,7 +105,11 @@ module ConfigLMM
             end
 
             def exec(command, allowFailure = false, options = {})
-                self.class.exec(command, allowFailure, options, self.prompt, self.logger)
+                opts = {}
+                opts['dry'] = options['dry'] || options[:dry]
+                opts[:hide] = options['hide'] || options[:hide]
+                opts['exec'] = @execOptions.merge(options['exec'] || {})
+                self.class.exec(command, allowFailure, opts, self.prompt, self.logger)
             end
 
             def filePresent?(file, options = {})
@@ -181,6 +186,15 @@ module ConfigLMM
                 end
             end
 
+            def inDir(dir, &block)
+                opts = @execOptions.dup
+                @execOptions[:chdir] = File.expand_path(dir)
+                yield
+                self
+            ensure
+                @execOptions = opts
+            end
+
             def self.exec(command, allowFailure = false, options = {}, prompt = nil, logger = nil)
                 if options['dry']
                     message = "Would execute: #{command}"
@@ -201,14 +215,17 @@ module ConfigLMM
                         logger.debug("# #{command}")
                     end
                 end
-                stdout, stdeerr, status = Open3.capture3(command)
+                execOptions = options['exec'] || {}
+                stdout, stdeerr, status = Open3.capture3(command, execOptions)
                 if !allowFailure && !status.success?
                     $stderr.puts(stdout)
                     $stderr.puts(stdeerr)
                     raise ExecError.new("Failed '#{command}'", command, stdout, stdeerr, status)
                 end
                 if logger
-                    logger.debug("(#{status.exitstatus})> #{stdout + stdeerr}")
+                    dir = ''
+                    dir = '[' + execOptions[:chdir] + ']' if execOptions[:chdir]
+                    logger.debug("#{dir}(#{status.exitstatus})> #{stdout + stdeerr}")
                 end
                 stdout + stdeerr
             rescue Errno::ENOENT => error

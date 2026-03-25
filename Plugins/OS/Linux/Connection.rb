@@ -65,6 +65,12 @@ module ConfigLMM
                 connection.exec(*args)
             end
 
+            def inDir(*args, &block)
+                connection.inDir(*args) do
+                    yield
+                end
+            end
+
             def rm(*args)
                 connection.rm(*args)
             end
