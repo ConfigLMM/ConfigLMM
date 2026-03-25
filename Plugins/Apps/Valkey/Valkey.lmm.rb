@@ -24,6 +24,10 @@ module ConfigLMM
                         target['Settings'] ||= {}
                         target['Settings']['supervised'] = 'systemd'
 
+                        if target['Listen']
+                            target['Listen'] = [target['Listen']] unless target['Listen'].is_a?(Array)
+                            target['Settings']['bind'] = target['Listen'].join(' ')
+                        end
 
                         updateConfig(config, linuxConnection, activeState, options)
 
