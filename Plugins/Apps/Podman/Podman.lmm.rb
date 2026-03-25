@@ -10,11 +10,26 @@ module ConfigLMM
             SYSTEM_CONTAINERS_PATH = '/etc/containers/systemd'
             USER_CONTAINERS_PATH = '~/.config/containers/systemd'
             HOST_IP = '10.0.2.2'
+            HOST_LOOPBACK_IP = '10.0.2.2'
+            HOST_LOOPBACK = 'host.loopback.internal'
+            HOST_IP = '169.254.1.2'
+            HOST_NAME = 'host.containers.internal'
 
             def self.ensurePresent(linuxConnection, options = {})
                 linuxConnection.ensurePackage(PACKAGE_NAME, options)
                 # This is needed for openSUSE Leap so that rootless Podman works
                 Systemd::enableUserCgroups(linuxConnection, options)
+
+                # Temporary HACK till Podman fixes their stuff...
+                # see:
+                # * https://github.com/containers/podman/issues/22197
+                # * https://github.com/containers/podman/issues/24796
+                # Podman ships with broken `podman-user-wait-network-online.service`
+                # that runs `systemctl is-active network-online.target`
+                # which will never become active unless something wants it
+                # so we just make it always wanted
+                linuxConnection.createSymlink('/etc/systemd/system/multi-user.target.wants/network-online.target', '/usr/lib/systemd/system/network-online.target', options)
+                linuxConnection.restartService('network-online.target', options)
             end
 
             def self.container(name, connection, options = {})
@@ -65,9 +80,34 @@ module ConfigLMM
                 end
             end
 
-            def self.updateHost(host)
-                host = HOST_IP if host.to_s.empty? || ['localhost', '127.0.0.1', '::1'].include?(host)
+            def self.loopback?(host, systemConnection, options)
+                return true if host.to_s.empty?
+                hostname, port = host.to_s.split(':')
+                return true if ['localhost', '127.0.0.1', '::1'].include?(hostname)
+
+                return false unless systemConnection
+                ip = systemConnection.resolve(hostname, options)
+                ['127.0.0.1', '::1'].include?(ip)
+            end
+
+            def self.updateHost(host, systemConnection = nil, options = {})
+                if self.loopback?(host, systemConnection, options)
+                    hostname, port = host.to_s.split(':')
+                    return port.nil? ? HOST_LOOPBACK : HOST_LOOPBACK + ':' + port
+                end
+
+                return host unless systemConnection
+
+                hostname, port = host.to_s.split(':')
+                ip = systemConnection.resolve(hostname, options)
+                if systemConnection.gatewayIPs(options).include?(ip)
+                    return port.nil? ? HOST_NAME : HOST_NAME + ':' + port
+                end
                 host
+            end
+
+            def self.removeLoopback(containerFile, systemConnection, options)
+                systemConnection.fileRemoveLines(containerFile, 'loopback', options)
             end
 
             def self.updateURL(url, defaultPort = nil)

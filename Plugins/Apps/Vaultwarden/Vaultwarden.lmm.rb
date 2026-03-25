@@ -52,12 +52,12 @@ module ConfigLMM
                             adminTokenHash = Argon2::Password.new(profile: :rfc_9106_low_memory).create(adminToken)
                             linuxConnection.fileAppend("#{path}/Vaultwarden.env", "ADMIN_TOKEN=#{adminTokenHash}", { **options, hide: true })
 
-
+                            removeLoopback = true
                             if target['SMTP']
-                                host = target['SMTP']['Host']
-                                host = HOST_IP if host.to_s.empty? || ['localhost', '127.0.0.1'].include?(host)
+                                smtpHost = Podman.updateHost(target['SMTP']['Host'], linuxConnection, options)
+                                removeLoopback = !smtpHost.start_with?(Podman::HOST_LOOPBACK)
 
-                                linuxConnection.fileAppend("#{path}/Vaultwarden.env", "SMTP_HOST=#{host}", options)
+                                linuxConnection.fileAppend("#{path}/Vaultwarden.env", "SMTP_HOST=#{smtpHost}", options)
                                 if target['SMTP']['Port']
                                     linuxConnection.fileAppend("#{path}/Vaultwarden.env", "SMTP_PORT=#{target['SMTP']['Port']}", options)
                                 end
@@ -79,9 +79,10 @@ module ConfigLMM
                                 end
                             end
 
-                            linuxConnection.setUserGroup("#{path}/Vaultwarden.env", USER, USER, options)
-                            linuxConnection.setPrivate("#{path}/Vaultwarden.env", options)
+                            linuxConnection.setUserGroup(path + '/Vaultwarden.env', USER, USER, options)
+                            linuxConnection.setPrivate(path + '/Vaultwarden.env', options)
                             linuxConnection.upload(__dir__ + '/Vaultwarden.container', path, options)
+                            Podman.removeLoopback(path + '/Vaultwarden.container', linuxConnection, options) if removeLoopback
                             linuxConnection.reloadUserServices(USER, options)
                             linuxConnection.restartUserService(USER, 'Vaultwarden', options)
                             if target['Proxy'] != 'only'
