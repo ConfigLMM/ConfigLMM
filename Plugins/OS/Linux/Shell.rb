@@ -37,6 +37,16 @@ module ConfigLMM
                 @connection.rm(*args)
             end
 
+            def escapePath(path)
+                self.class.escapePath(path)
+            end
+
+            def self.escapePath(path)
+                escaped = path.shellescape
+                escaped = escaped[1..] if escaped.start_with?('\~')
+                escaped
+            end
+
             def fileWrite(target, data, options = {})
                 hide = ''
                 hide = ' ' if options[:hide]
@@ -54,10 +64,22 @@ module ConfigLMM
             end
 
             def fileReplace(target, placeholder, result, options = {})
+                self.class.fileReplace(self, target, placeholder, result, options)
+            end
+
+            def self.fileReplace(connection, target, placeholder, result, options = {})
                 hide = ''
                 hide = ' ' if options[:hide]
-                pattern = "s|#{placeholder}|#{result.gsub('\\', '\\\\\\').gsub('&', '\\\\&').gsub('|', '\\\\|')}|"
-                self.exec("#{hide}sed -i #{pattern.shellescape} #{target}", false, options)
+
+                if placeholder.is_a?(Regexp)
+                    placeholder = placeholder.source
+                else
+                    placeholder = Regexp.escape(placeholder)
+                end
+
+                result = result.to_s.gsub('\\', '\\\\\\') if options[:escape] != false
+                pattern = "s;#{placeholder.gsub(';', '\\;')};#{result.to_s.gsub('&', '\\\\&').gsub(';', '\\\\;')};"
+                connection.exec("#{hide}sed -Ei #{pattern.shellescape} #{connection.escapePath(target)}", false, options)
             end
 
             def createDirs(options, *paths)

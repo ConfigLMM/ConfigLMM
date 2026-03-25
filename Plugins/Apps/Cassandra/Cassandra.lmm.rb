@@ -15,9 +15,9 @@ module ConfigLMM
                             configFile = '/etc/cassandra/conf/cassandra.yaml'
                         end
 
-                        linuxConnection.fileReplace(configFile, '^uuid_sstable_identifiers_enabled:.*', 'uuid_sstable_identifiers_enabled: true', options)
+                        linuxConnection.fileReplace(configFile, /^uuid_sstable_identifiers_enabled:.*/, 'uuid_sstable_identifiers_enabled: true', options)
                         if target['ClusterName']
-                            linuxConnection.fileReplace(configFile, '^cluster_name:.*', "cluster_name: #{target['ClusterName']}", options)
+                            linuxConnection.fileReplace(configFile, /^cluster_name:.*/, "cluster_name: #{target['ClusterName']}", options)
                         end
 
                         linuxConnection.restartService(SERVICE_NAME, options)

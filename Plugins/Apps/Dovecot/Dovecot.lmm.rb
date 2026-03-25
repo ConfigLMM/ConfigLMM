@@ -21,9 +21,9 @@ module ConfigLMM
                         uid = linuxConnection.exec("id -u #{EMAIL_USER}", false, options).strip
 
 
-                        linuxConnection.fileReplace("#{DOVECOT_DIR}conf.d/10-mail.conf", '^#mail_uid =.*', "mail_uid = #{uid}", options)
-                        linuxConnection.fileReplace("#{DOVECOT_DIR}conf.d/10-mail.conf", '^#mail_gid =.*', "mail_gid = #{uid}", options)
-                        linuxConnection.fileReplace("#{DOVECOT_DIR}conf.d/10-mail.conf", '^#mail_location =.*', "mail_location = maildir:~/Mail", options)
+                        linuxConnection.fileReplace("#{DOVECOT_DIR}conf.d/10-mail.conf", /^#mail_uid =.*/, "mail_uid = #{uid}", options)
+                        linuxConnection.fileReplace("#{DOVECOT_DIR}conf.d/10-mail.conf", /^#mail_gid =.*/, "mail_gid = #{uid}", options)
+                        linuxConnection.fileReplace("#{DOVECOT_DIR}conf.d/10-mail.conf", /^#mail_location =.*/, "mail_location = maildir:~/Mail", options)
 
                         if !target['Protocols'].to_a.empty?
                             linuxConnection.updateFile(DOVECOT_DIR + 'dovecot.conf', options) do |configLines|
@@ -75,10 +75,10 @@ module ConfigLMM
 
                         linuxConnection.firewallAddService('imaps', options)
 
-                        linuxConnection.fileReplace("#{DOVECOT_DIR}conf.d/10-auth.conf", '^!include auth-system.conf.ext', "#!include auth-system.conf.ext", options)
+                        linuxConnection.fileReplace("#{DOVECOT_DIR}conf.d/10-auth.conf", /^!include auth-system.conf.ext/, "#!include auth-system.conf.ext", options)
 
                         if target['OAuth2']
-                            linuxConnection.fileReplace("#{DOVECOT_DIR}conf.d/10-auth.conf", 'auth_mechanisms =.*', "auth_mechanisms = xoauth2 oauthbearer", options)
+                            linuxConnection.fileReplace("#{DOVECOT_DIR}conf.d/10-auth.conf", /auth_mechanisms =.*/, "auth_mechanisms = xoauth2 oauthbearer", options)
 
                             linuxConnection.updateFile(DOVECOT_DIR + 'conf.d/10-auth.conf', options) do |configLines|
                                 configLines << "userdb {\n"
@@ -116,7 +116,7 @@ module ConfigLMM
                                 end
                             end
                         else
-                            linuxConnection.fileReplace("#{DOVECOT_DIR}conf.d/10-auth.conf", 'auth_mechanisms =.*', "auth_mechanisms = plain", options)
+                            linuxConnection.fileReplace("#{DOVECOT_DIR}conf.d/10-auth.conf", /auth_mechanisms =.*/, "auth_mechanisms = plain", options)
 
                             linuxConnection.updateFile(DOVECOT_DIR + 'conf.d/10-auth.conf', options) do |configLines|
                                 configLines << "auth_username_format = %u\n"

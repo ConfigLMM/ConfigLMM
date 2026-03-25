@@ -118,11 +118,12 @@ module ConfigLMM
             end
 
             def fileReplace(target, placeholder, result, options = {})
+                placeholder = Regexp.new(Regexp.escape(placeholder)) unless placeholder.is_a?(Regexp)
                 if options['dry']
-                    prompt.say("Would replace /#{placeholder}/ with '#{result}' in #{target}")
+                    prompt.say("Would replace /#{placeholder.source}/ with '#{result}' in #{target}")
                 else
                     content = File.read(target).to_s
-                    content.gsub!(Regexp.new(placeholder), result)
+                    content.gsub!(placeholder, result)
                     File.write(target, content)
                 end
             end

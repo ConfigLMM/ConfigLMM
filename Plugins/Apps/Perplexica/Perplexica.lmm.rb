@@ -19,16 +19,16 @@ module ConfigLMM
                         linuxConnection.upload(__dir__ + '/config.toml', HOME_DIR, options)
 
                         grokKey = target['GrokSecretId'] ? context.secrets.load(target['GrokSecretId'], 'API_KEY') : nil
-                        linuxConnection.fileReplace("#{HOME_DIR}/config.toml", '\$GROQ_KEY', grokKey, options)
+                        linuxConnection.fileReplace("#{HOME_DIR}/config.toml", '$GROQ_KEY', grokKey, options)
 
                         anthropicKey = target['AnthropicSecretId'] ? context.secrets.load(target['AnthropicSecretId'], 'API_KEY') : nil
-                        linuxConnection.fileReplace("#{HOME_DIR}/config.toml", '\$ANTHROPIC_KEY', anthropicKey, options)
+                        linuxConnection.fileReplace("#{HOME_DIR}/config.toml", '$ANTHROPIC_KEY', anthropicKey, options)
 
                         geminiKey = target['GeminiSecretId'] ? context.secrets.load(target['GeminiSecretId'], 'API_KEY') : nil
-                        linuxConnection.fileReplace("#{HOME_DIR}/config.toml", '\$GEMINI_KEY', geminiKey, options)
+                        linuxConnection.fileReplace("#{HOME_DIR}/config.toml", '$GEMINI_KEY', geminiKey, options)
 
                         deepseekKey = target['DeepSeekSecretId'] ? context.secrets.load(target['DeepSeekSecretId'], 'API_KEY') : nil
-                        linuxConnection.fileReplace("#{HOME_DIR}/config.toml", '\$DEEPSEEK_KEY', deepseekKey, options)
+                        linuxConnection.fileReplace("#{HOME_DIR}/config.toml", '$DEEPSEEK_KEY', deepseekKey, options)
 
                         openaiKey = nil
                         openaiURL = nil
@@ -38,15 +38,15 @@ module ConfigLMM
                             openaiURL = Podman.updateURL(target['OpenAI']['URL']) unless target['OpenAI']['URL'].to_s.empty?
                             openaiModel = target['OpenAI']['Model']
                         end
-                        linuxConnection.fileReplace("#{HOME_DIR}/config.toml", '\$OPENAI_KEY', openaiKey, options)
-                        linuxConnection.fileReplace("#{HOME_DIR}/config.toml", '\$OPENAI_URL', openaiURL, options)
-                        linuxConnection.fileReplace("#{HOME_DIR}/config.toml", '\$OPENAI_MODEL', openaiModel, options)
+                        linuxConnection.fileReplace("#{HOME_DIR}/config.toml", '$OPENAI_KEY', openaiKey, options)
+                        linuxConnection.fileReplace("#{HOME_DIR}/config.toml", '$OPENAI_URL', openaiURL, options)
+                        linuxConnection.fileReplace("#{HOME_DIR}/config.toml", '$OPENAI_MODEL', openaiModel, options)
 
                         ollamaURL = nil
                         if target['Ollama'] && !target['Ollama'].to_h.empty?
                             ollamaURL = Podman.updateURL(target['Ollama']['URL'], Ollama::PORT)
                         end
-                        linuxConnection.fileReplace("#{HOME_DIR}/config.toml", '\$OLLAMA_URL', ollamaURL, options)
+                        linuxConnection.fileReplace("#{HOME_DIR}/config.toml", '$OLLAMA_URL', ollamaURL, options)
 
                         linuxConnection.setUserGroup("#{HOME_DIR}/config.toml", USER, USER, options)
 

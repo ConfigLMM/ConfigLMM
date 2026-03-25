@@ -55,7 +55,7 @@ module ConfigLMM
                                 end
                                 resolverIP = linuxConnection.exec("cat /etc/resolv.conf | grep 'nameserver' | grep -v ':' | head -n 1 | cut -d ' ' -f 2", { **options, 'dry': false }).strip
 
-                                linuxConnection.fileReplace('/etc/nginx/conf.d/configlmm.conf', '^resolver .*', "resolver #{resolverIP};", options)
+                                linuxConnection.fileReplace('/etc/nginx/conf.d/configlmm.conf', /^resolver .*/, "resolver #{resolverIP};", options)
 
                                 linuxConnection.uploadFolder(dir + 'config-lmm', NginxConnection::CONFIG_DIR, options)
                                 linuxConnection.uploadFolder(dir + 'servers-lmm', NginxConnection::CONFIG_DIR, options)

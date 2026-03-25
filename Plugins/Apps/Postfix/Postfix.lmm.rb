@@ -41,13 +41,13 @@ module ConfigLMM
                 if target['Instance']
                     linuxConnection.exec("postmulti -e init", false, options)
                     linuxConnection.exec("postmulti -I #{postfixDirName} -e create", true, options)
-                    linuxConnection.fileReplace(postfixDir + MAIN_FILE, '^master_service_disable', '#master_service_disable', options)
+                    linuxConnection.fileReplace(postfixDir + MAIN_FILE, /^master_service_disable/, '#master_service_disable', options)
                 end
 
-                linuxConnection.fileReplace("#{postfixDir + MASTER_FILE}", '^tlsmgr', '#tlsmgr', options)
+                linuxConnection.fileReplace("#{postfixDir + MASTER_FILE}", /^tlsmgr/, '#tlsmgr', options)
                 if target.key?('SMTP')
                     if !target['SMTP'] || target['SMTP'] == 'unix'
-                        linuxConnection.fileReplace("#{postfixDir + MASTER_FILE}", '^smtp', '#smtp', options)
+                        linuxConnection.fileReplace("#{postfixDir + MASTER_FILE}", /^smtp/, '#smtp', options)
                     end
                 end
 
@@ -81,20 +81,20 @@ module ConfigLMM
                     fileLines
                 end
 
-                linuxConnection.fileReplace(postfixDir + MAIN_FILE, '^myhostname = .*', "myhostname = #{domain}", options)
-                linuxConnection.fileReplace(postfixDir + MAIN_FILE, '^#myhostname = virtual.domain.tld', "myhostname = #{domain}", options)
+                linuxConnection.fileReplace(postfixDir + MAIN_FILE, /^myhostname = .*/, "myhostname = #{domain}", options)
+                linuxConnection.fileReplace(postfixDir + MAIN_FILE, /^#myhostname = virtual.domain.tld/, "myhostname = #{domain}", options)
 
                 # Fix config bug
-                linuxConnection.fileReplace(postfixDir + MAIN_FILE, '^alias_maps = :/etc/aliases', 'alias_maps = lmdb:/etc/aliases', options)
-                linuxConnection.fileReplace(postfixDir + MAIN_FILE, '^canonical_maps = :/etc/postfix/canonical', 'canonical_maps = lmdb:/etc/postfix/canonical', options)
-                linuxConnection.fileReplace(postfixDir + MAIN_FILE, '^relocated_maps = :/etc/postfix/relocated', 'relocated_maps = lmdb:/etc/postfix/relocated', options)
-                linuxConnection.fileReplace(postfixDir + MAIN_FILE, '^sender_canonical_maps = :/etc/postfix/sender_canonical', 'sender_canonical_maps = lmdb:/etc/postfix/sender_canonical', options)
-                linuxConnection.fileReplace(postfixDir + MAIN_FILE, '^transport_maps = :/etc/postfix/transport', 'transport_maps = lmdb:/etc/postfix/transport', options)
-                linuxConnection.fileReplace(postfixDir + MAIN_FILE, '^smtpd_sender_restrictions = :/etc/postfix/access', 'smtpd_sender_restrictions = lmdb:/etc/postfix/access', options)
-                linuxConnection.fileReplace(postfixDir + MAIN_FILE, '^virtual_alias_maps = :/etc/postfix/virtual', 'virtual_alias_maps = lmdb:/etc/postfix/virtual', options)
-                linuxConnection.fileReplace(postfixDir + MAIN_FILE, '^relay_domains = $mydestination :/etc/postfix/relay', 'relay_domains = $mydestination lmdb:/etc/postfix/relay', options)
-                linuxConnection.fileReplace(postfixDir + MAIN_FILE, '^relay_recipient_maps = :/etc/postfix/relay_recipients', 'relay_recipient_maps = lmdb:/etc/postfix/relay_recipients', options)
-                linuxConnection.fileReplace(postfixDir + MAIN_FILE, '^virtual_mailbox_maps =.*', 'virtual_mailbox_maps = lmdb:/etc/postfix/mailboxes', options)
+                linuxConnection.fileReplace(postfixDir + MAIN_FILE, /^alias_maps = :\/etc\/aliases/, 'alias_maps = lmdb:/etc/aliases', options)
+                linuxConnection.fileReplace(postfixDir + MAIN_FILE, /^canonical_maps = :\/etc\/postfix\/canonical/, 'canonical_maps = lmdb:/etc/postfix/canonical', options)
+                linuxConnection.fileReplace(postfixDir + MAIN_FILE, /^relocated_maps = :\/etc\/postfix\/relocated/, 'relocated_maps = lmdb:/etc/postfix/relocated', options)
+                linuxConnection.fileReplace(postfixDir + MAIN_FILE, /^sender_canonical_maps = :\/etc\/postfix\/sender_canonical/, 'sender_canonical_maps = lmdb:/etc/postfix/sender_canonical', options)
+                linuxConnection.fileReplace(postfixDir + MAIN_FILE, /^transport_maps = :\/etc\/postfix\/transport/, 'transport_maps = lmdb:/etc/postfix/transport', options)
+                linuxConnection.fileReplace(postfixDir + MAIN_FILE, /^smtpd_sender_restrictions = :\/etc\/postfix\/access/, 'smtpd_sender_restrictions = lmdb:/etc/postfix/access', options)
+                linuxConnection.fileReplace(postfixDir + MAIN_FILE, /^virtual_alias_maps = :\/etc\/postfix\/virtual/, 'virtual_alias_maps = lmdb:/etc/postfix/virtual', options)
+                linuxConnection.fileReplace(postfixDir + MAIN_FILE, /^relay_domains = $mydestination :\/etc\/postfix\/relay/, 'relay_domains = $mydestination lmdb:/etc/postfix/relay', options)
+                linuxConnection.fileReplace(postfixDir + MAIN_FILE, /^relay_recipient_maps = :\/etc\/postfix\/relay_recipients/, 'relay_recipient_maps = lmdb:/etc/postfix/relay_recipients', options)
+                linuxConnection.fileReplace(postfixDir + MAIN_FILE, /^virtual_mailbox_maps =.*/, 'virtual_mailbox_maps = lmdb:/etc/postfix/mailboxes', options)
 
                 if target['AlternativePort']
                     linuxConnection.firewallAddPort("#{target['AlternativePort']}/tcp", options)
@@ -129,7 +129,7 @@ module ConfigLMM
                         linuxConnection.rm("/etc/postfix/aliases", false, options[:dry])
                     end
                     target['Aliases'].each do |name, destination|
-                        linuxConnection.fileReplace('/etc/aliases', '^'+name + ':', '#' + name + ':', options)
+                        linuxConnection.fileReplace('/etc/aliases', /^#{name}:/, '#' + name + ':', options)
                     end
                     linuxConnection.updateFile('/etc/aliases', options, true) do |fileLines|
                         target['Aliases'].each do |name, destination|
@@ -212,7 +212,7 @@ module ConfigLMM
                 loadIntegrationSettings(target, target['Location'], target['Settings'])
 
                 target['Settings'].each do |name, value|
-                    linuxConnection.fileReplace(postfixDir + MAIN_FILE, "^#{name}[[:blank:]]*=[[:blank:]]*", "##{name} = ", options)
+                    linuxConnection.fileReplace(postfixDir + MAIN_FILE, /^#{name}[[:blank:]]*=[[:blank:]]*/, "##{name} = ", options)
                 end
                 linuxConnection.updateFile(postfixDir + MAIN_FILE, options) do |fileLines|
                     target['Settings'].each do |name, value|
@@ -224,11 +224,11 @@ module ConfigLMM
                 end
 
                 if target['ForwardDovecot']
-                    linuxConnection.fileReplace(postfixDir + MAIN_FILE, '^#virtual_transport =.*', 'virtual_transport = lmtp:unix:/run/dovecot/lmtp', options)
+                    linuxConnection.fileReplace(postfixDir + MAIN_FILE, /^#virtual_transport =.*/, 'virtual_transport = lmtp:unix:/run/dovecot/lmtp', options)
                 end
 
                 if target['ForwardAll']
-                    linuxConnection.fileReplace(postfixDir + MAIN_FILE, '^transport_maps =.*', "transport_maps = lmdb:#{postfixDir}transport", options)
+                    linuxConnection.fileReplace(postfixDir + MAIN_FILE, /^transport_maps =.*/, "transport_maps = lmdb:#{postfixDir}transport", options)
 
                     linuxConnection.updateFile(postfixDir + TRANSPORT_FILE, options, true) do |fileLines|
                         hostname, port = target['ForwardAll'].split(':')

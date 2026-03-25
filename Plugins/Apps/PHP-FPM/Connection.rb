@@ -45,7 +45,7 @@ module ConfigLMM
             def enableExtension(name, options = {})
                 phpFile = self.phpConfig
                 if @connection.fileContains?(phpFile, "extension=#{name}", options)
-                    @connection.fileReplace(phpFile, "^;extension=#{name}", "extension=#{name}", options)
+                    @connection.fileReplace(phpFile, /^;extension=#{name}/, "extension=#{name}", options)
                 else
                     @connection.fileReplace(phpFile, 'extension=zip', "extension=zip\\nextension=#{name}", { **options, escape: false })
                     #self.sshExec!(ssh, "sed -i 's|extension=zip|extension=zip\\nextension=#{name}|' #{phpFile}")

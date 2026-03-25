@@ -49,13 +49,13 @@ module ConfigLMM
                         end
 
                         args = target['Args'].to_s
-                        linuxConnection.fileReplace("#{path}/llama.cpp.container", '\$ARGS', args, options)
+                        linuxConnection.fileReplace("#{path}/llama.cpp.container", '$ARGS', args, options)
 
                         devicesString = ''
                         if !devices.empty?
                             devicesString = devices.map { |device| "AddDevice=#{device}" }.join('\n')
                         end
-                        linuxConnection.fileReplace("#{path}/llama.cpp.container", '\$DEVICES', devicesString, { **options, escape: false })
+                        linuxConnection.fileReplace("#{path}/llama.cpp.container", '$DEVICES', devicesString, { **options, escape: false })
 
                         linuxConnection.reloadUserServices(USER, options)
                         linuxConnection.restartUserService(USER, 'llama.cpp', options)

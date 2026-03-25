@@ -85,23 +85,23 @@ module ConfigLMM
 
                 settings.each do |name, value|
                     hide = name == 'adminAccountBase64MD5'
-                    linuxConnection.fileReplace("#{HOME_DIR}/DATA/SETTINGS/yacy.conf", "^#{name}=.*", "#{name}=#{value}", { **options, hide: hide })
+                    linuxConnection.fileReplace("#{HOME_DIR}/DATA/SETTINGS/yacy.conf", /^#{name}=.*/, "#{name}=#{value}", { **options, hide: hide })
                 end
 
                 target['Profile'].to_h.each do |name, value|
-                    linuxConnection.fileReplace("#{HOME_DIR}/DATA/SETTINGS/profile.txt", "^#{name}=.*", "#{name}=#{value.gsub(':', '\\:')}", options)
+                    linuxConnection.fileReplace("#{HOME_DIR}/DATA/SETTINGS/profile.txt", /^#{name}=.*/, "#{name}=#{value.gsub(':', '\\:')}", options)
                 end
 
                 if settings['staticIP']
-                    linuxConnection.fileReplace("#{HOME_DIR}/DATA/INDEX/freeworld/NETWORK/mySeed.txt", "IP=[^,]*,", "IP=#{settings['staticIP']},", options)
+                    linuxConnection.fileReplace("#{HOME_DIR}/DATA/INDEX/freeworld/NETWORK/mySeed.txt", /IP=[^,]*,/, "IP=#{settings['staticIP']},", options)
                 end
 
                 if target['PeerName']
-                    linuxConnection.fileReplace("#{HOME_DIR}/DATA/INDEX/freeworld/NETWORK/mySeed.txt", "Name=[^,]*,", "Name=#{target['PeerName']},", options)
+                    linuxConnection.fileReplace("#{HOME_DIR}/DATA/INDEX/freeworld/NETWORK/mySeed.txt", /Name=[^,]*,/, "Name=#{target['PeerName']},", options)
                 end
 
                 if target['SeedURL']
-                    linuxConnection.fileReplace("#{HOME_DIR}/DATA/INDEX/freeworld/NETWORK/mySeed.txt", "seedURL=[^,]*,", "seedURL=#{target['SeedURL']},", options)
+                    linuxConnection.fileReplace("#{HOME_DIR}/DATA/INDEX/freeworld/NETWORK/mySeed.txt", /seedURL=[^,]*,/, "seedURL=#{target['SeedURL']},", options)
                 end
 
                 settings['adminAccountBase64MD5'] = '<REDACTED>'

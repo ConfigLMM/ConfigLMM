@@ -38,7 +38,7 @@ module ConfigLMM
                         if !devices.empty?
                             devicesString = devices.map { |device| "AddDevice=#{device}" }.join('\n')
                         end
-                        linuxConnection.fileReplace("#{path}/Ollama.container", '\$DEVICES', devicesString, { **options, escape: false })
+                        linuxConnection.fileReplace("#{path}/Ollama.container", '$DEVICES', devicesString, { **options, escape: false })
 
                         linuxConnection.reloadUserServices(USER, options)
                         linuxConnection.restartUserService(USER, 'Ollama', options)

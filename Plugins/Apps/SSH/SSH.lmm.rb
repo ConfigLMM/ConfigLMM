@@ -10,13 +10,13 @@ module ConfigLMM
                 self.withConnection(target['Location'], target) do |connection|
                     Linux.withConnection(connection) do |linuxConnection|
                         if target['Port']
-                            linuxConnection.fileReplace(CONFIG_FILE, '^Port ', '#Port ', options)
+                            linuxConnection.fileReplace(CONFIG_FILE, /^Port /, '#Port ', options)
                         end
                         if target['ListenAddress']
-                            linuxConnection.fileReplace(CONFIG_FILE, '^ListenAddress ', '#ListenAddress ', options)
+                            linuxConnection.fileReplace(CONFIG_FILE, /^ListenAddress /, '#ListenAddress ', options)
                         end
                         target['Settings'].to_h.each do |name, value|
-                            linuxConnection.fileReplace(CONFIG_FILE, "^#{name} ", "##{name} ", options)
+                            linuxConnection.fileReplace(CONFIG_FILE, /^#{name} /, "##{name} ", options)
                         end
                         linuxConnection.updateFile(CONFIG_FILE, options) do |configLines|
                             if target['Port']

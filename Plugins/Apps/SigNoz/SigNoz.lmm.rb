@@ -94,9 +94,9 @@ module ConfigLMM
                 linuxConnection.upload(configFile, HOME_DIR + '/config', options)
                 linuxConnection.upload(__dir__ + '/Config/alerts.yml', HOME_DIR + '/config', options)
 
-                linuxConnection.fileReplace("#{path}/SigNoz.container", '\$VERSION', VERSION, options)
-                linuxConnection.fileReplace("#{path}/SigNoz-Migrator.container", '\$VERSION', COLLECTOR_VERSION, options)
-                linuxConnection.fileReplace("#{path}/SigNoz-Migrator.container", '\$DSN', dbUrl, { **options, hide: true })
+                linuxConnection.fileReplace("#{path}/SigNoz.container", '$VERSION', VERSION, options)
+                linuxConnection.fileReplace("#{path}/SigNoz-Migrator.container", '$VERSION', COLLECTOR_VERSION, options)
+                linuxConnection.fileReplace("#{path}/SigNoz-Migrator.container", '$DSN', dbUrl, { **options, hide: true })
             end
 
             def deploySigNozProxy(id, linuxConnection, target, activeState, context, options)
@@ -162,7 +162,7 @@ module ConfigLMM
                         linuxConnection.upload(__dir__ + '/Config/otel-collector-opamp-config.yaml', COLLECTOR_HOME_DIR, options)
 
                         path = Podman.containersPath(COLLECTOR_HOME_DIR)
-                        linuxConnection.fileReplace("#{path}/SigNoz-Collector.container", '\$VERSION', COLLECTOR_VERSION, options)
+                        linuxConnection.fileReplace("#{path}/SigNoz-Collector.container", '$VERSION', COLLECTOR_VERSION, options)
 
                         if target['Listen']
                             linuxConnection.fileReplace("#{path}/SigNoz-Collector.container", 'PublishPort=127.0.0.1:', "PublishPort=#{target['Listen']}:", options)

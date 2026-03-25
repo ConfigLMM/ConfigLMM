@@ -28,7 +28,7 @@ module ConfigLMM
                         end
                         self.class.secureInstallation(connection)
 
-                        linuxConnection.fileReplace(mycnf, '^log-error ', '#log-error ', options)
+                        linuxConnection.fileReplace(mycnf, /^log-error /, '#log-error ', options)
                         if target['Listen']
                             activeState['bind-address'] = target['Listen']
                             if !IO::Connection.ipAddr?(activeState['bind-address'])
@@ -36,7 +36,7 @@ module ConfigLMM
                             end
 
                             raise 'Don\'t know how to configure MariaDB!' unless linuxConnection.filePresent?(servercnf, options)
-                            linuxConnection.fileReplace(servercnf, 'bind-address .*', "bind-address = #{activeState['bind-address']}", options)
+                            linuxConnection.fileReplace(servercnf, /bind-address .*/, "bind-address = #{activeState['bind-address']}", options)
                             linuxConnection.restartService(SERVICE_NAME, options)
                         else
                             activeState.delete('bind-address')

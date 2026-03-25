@@ -19,7 +19,7 @@ module ConfigLMM
                             linuxConnection.upload(__dir__ + '/hooks/' + hook + '.sh', "#{CONFIG_DIR}renewal-hooks/deploy/", options)
                         end
                         linuxConnection.exec("chmod +x #{CONFIG_DIR}renewal-hooks/deploy/*.sh", false, options)
-                        linuxConnection.fileReplace(CONFIG_DIR + 'rfc2136.ini', '\$IP', target['DNS']['IP'] , options)
+                        linuxConnection.fileReplace(CONFIG_DIR + 'rfc2136.ini', '$IP', target['DNS']['IP'] , options)
 
                         secretId, secretName = target['DNS']['SecretId'].to_s.split('.')
                         key = nil
@@ -27,7 +27,7 @@ module ConfigLMM
                         key = context.secrets.load('LETSENCRYPT', 'DNS_SECRET') if key.nil?
                         raise Framework::PluginProcessError.new('LetsEncrypt missing RFC2136 TSIG key! Specify DNS.SecretId or LETSENCRYPT_DNS_SECRET env variable') unless key
 
-                        linuxConnection.fileReplace(CONFIG_DIR + 'rfc2136.ini', '\$SECRET', key, options)
+                        linuxConnection.fileReplace(CONFIG_DIR + 'rfc2136.ini', '$SECRET', key, options)
                         linuxConnection.setPrivate(CONFIG_DIR + 'rfc2136.ini', options)
                         if target['Domain']
                             createCertificate('Wildcard', target['Domain'], target, linuxConnection, options)

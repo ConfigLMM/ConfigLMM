@@ -13,17 +13,17 @@ module ConfigLMM
                             name = "tunnelUDP-#{port}"
                             linuxConnection.upload(__dir__ + '/tunnelUDP.service', "/etc/systemd/system/#{name}.service", options)
                             linuxConnection.upload(__dir__ + '/tunnelUDP.socket', "/etc/systemd/system/#{name}.socket", options)
-                            linuxConnection.fileReplace("/etc/systemd/system/#{name}.service", '\$PORT', port, options)
-                            linuxConnection.fileReplace("/etc/systemd/system/#{name}.socket", '\$PORT', port, options)
-                            linuxConnection.fileReplace("/etc/systemd/system/#{name}.service", '\$REMOTE', Addressable::IDNA.to_ascii(target['Remote']) , options)
+                            linuxConnection.fileReplace("/etc/systemd/system/#{name}.service", '$PORT', port, options)
+                            linuxConnection.fileReplace("/etc/systemd/system/#{name}.socket", '$PORT', port, options)
+                            linuxConnection.fileReplace("/etc/systemd/system/#{name}.service", '$REMOTE', Addressable::IDNA.to_ascii(target['Remote']) , options)
                             linuxConnection.firewallAddPort("#{port}/udp", options)
                         else
                             name = "tunnelTCP-#{port}"
                             linuxConnection.upload(__dir__ + '/tunnelTCP.service', "/etc/systemd/system/#{name}.service", options)
                             linuxConnection.upload(__dir__ + '/tunnelTCP.socket', "/etc/systemd/system/#{name}.socket", options)
-                            linuxConnection.fileReplace("/etc/systemd/system/#{name}.service", '\$PORT', port, options)
-                            linuxConnection.fileReplace("/etc/systemd/system/#{name}.socket", '\$PORT', port, options)
-                            linuxConnection.fileReplace("/etc/systemd/system/#{name}.service", '\$REMOTE', Addressable::IDNA.to_ascii(target['Remote']), options)
+                            linuxConnection.fileReplace("/etc/systemd/system/#{name}.service", '$PORT', port, options)
+                            linuxConnection.fileReplace("/etc/systemd/system/#{name}.socket", '$PORT', port, options)
+                            linuxConnection.fileReplace("/etc/systemd/system/#{name}.service", '$REMOTE', Addressable::IDNA.to_ascii(target['Remote']), options)
                             linuxConnection.firewallAddPort("#{port}/tcp", options)
                         end
 

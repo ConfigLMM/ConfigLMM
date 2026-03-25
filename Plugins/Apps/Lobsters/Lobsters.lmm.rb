@@ -66,7 +66,7 @@ module ConfigLMM
                         localLinux.exec(" sed -i 's|password: \"test\"|password: \"#{adminPassword}\"|' #{lobstersDir}/db/seeds.rb", false, { **options, hide: true })
                         localLinux.exec(" sed -i 's|password_confirmation: \"test\"|password_confirmation: \"#{adminPassword}\"|' #{lobstersDir}/db/seeds.rb", false, { **options, hide: true })
 
-                        #localLinux.fileReplace("#{REPOS_CACHE}/lobsters/Dockerfile.dev", 'COPY Gemfile.*', 'COPY . ./',  options)
+                        #localLinux.fileReplace("#{REPOS_CACHE}/lobsters/Dockerfile.dev", /COPY Gemfile.*/, 'COPY . ./',  options)
                         rubyVersion = localLinux.fileRead("#{REPOS_CACHE}/lobsters/.ruby-version", options).strip
                         localLinux.exec("cd #{REPOS_CACHE}/lobsters && podman build --tag=#{IMAGE_ID} --build-arg RUBY_VERSION=#{rubyVersion} --file Containerfile .", false, options)
                     end

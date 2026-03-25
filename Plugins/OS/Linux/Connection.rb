@@ -105,9 +105,7 @@ module ConfigLMM
             end
 
             def escapePath(path)
-                escaped = path.shellescape
-                escaped = escaped[1..] if escaped.start_with?('\~')
-                escaped
+                LinuxShell::escapePath(path)
             end
 
             def ensureFile(file, options = {})
@@ -147,11 +145,7 @@ module ConfigLMM
             end
 
             def fileReplace(target, placeholder, result, options = {})
-                hide = ''
-                hide = ' ' if options[:hide]
-                result = result.to_s.gsub('\\', '\\\\\\') if options[:escape] != false
-                pattern = "s|#{placeholder}|#{result.to_s.gsub('&', '\\\\&').gsub('|', '\\\\|')}|"
-                connection.exec("#{hide}sed -Ei #{pattern.shellescape} #{escapePath(target)}", false, options)
+                LinuxShell::fileReplace(self, target, placeholder, result, options)
             end
 
             def fileRemoveLines(target, placeholder, options = {})

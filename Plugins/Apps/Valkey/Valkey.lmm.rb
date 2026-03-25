@@ -57,7 +57,7 @@ module ConfigLMM
                         if target['Settings']
                             target['Settings']['bind'] = '127.0.0.1 -::1' unless target['Settings']['bind']
                             target['Settings'].each do |name, value|
-                                linuxConnection.fileReplace(config[:configFile], "^#{name}[[:blank:]]", "##{name} ", options)
+                                linuxConnection.fileReplace(config[:configFile], /^#{name}[[:blank:]]/, "##{name} ", options)
                             end
                             linuxConnection.updateFile(config[:configFile], options, false) do |configLines|
                                 target['Settings'].each do |name, value|

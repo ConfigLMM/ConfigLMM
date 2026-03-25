@@ -54,11 +54,11 @@ module ConfigLMM
 
                             linuxConnection.upload(__dir__ + '/autoconfig.php', configDir, options)
 
-                            linuxConnection.fileReplace("#{configDir}autoconfig.php", "'dbuser' .*", "'dbuser' => '#{target['User']}',", options)
-                            linuxConnection.fileReplace("#{configDir}autoconfig.php", "'dbpass' .*", "'dbpass' => '#{dbPassword}',", { **options, hide: true })
+                            linuxConnection.fileReplace("#{configDir}autoconfig.php", /'dbuser' .*/, "'dbuser' => '#{target['User']}',", options)
+                            linuxConnection.fileReplace("#{configDir}autoconfig.php", /'dbpass' .*/, "'dbpass' => '#{dbPassword}',", { **options, hide: true })
 
                             if target['Database']['HostName'] != 'localhost'
-                                linuxConnection.fileReplace("#{configDir}autoconfig.php", "'dbhost' .*", "'dbhost' => '#{target['Database']['HostName']}',", options)
+                                linuxConnection.fileReplace("#{configDir}autoconfig.php", /'dbhost' .*/, "'dbhost' => '#{target['Database']['HostName']}',", options)
                             end
 
                             if target['Admin'].to_h.empty?
@@ -66,7 +66,7 @@ module ConfigLMM
                                 linuxConnection.fileReplace("#{configDir}autoconfig.php", "'adminpass'", "//'adminpass'", options)
                             else
                                 raise 'Admin.Name missing!' unless target['Admin']['Name']
-                                linuxConnection.fileReplace("#{configDir}autoconfig.php", "'adminlogin' .*", "'adminlogin' => '#{target['Admin']['Name']}',", options)
+                                linuxConnection.fileReplace("#{configDir}autoconfig.php", /'adminlogin' .*/, "'adminlogin' => '#{target['Admin']['Name']}',", options)
 
                                 adminPassword = context.secrets.load(target['SecretId'], 'ADMIN_PASSWORD')
                                 if adminPassword.nil?
@@ -75,7 +75,7 @@ module ConfigLMM
                                     context.secrets.print("Nextcloud Admin '#{target['Admin']['Name']}' password", adminPassword)
                                 end
 
-                                linuxConnection.fileReplace("#{configDir}autoconfig.php", "'adminpass' .*", "'adminpass' => '#{adminPassword}',", { **options, hide: true })
+                                linuxConnection.fileReplace("#{configDir}autoconfig.php", /'adminpass' .*/, "'adminpass' => '#{adminPassword}',", { **options, hide: true })
                             end
 
                             linuxConnection.upload(__dir__ + '/config.php', configDir, options)
@@ -86,11 +86,11 @@ module ConfigLMM
                                 linuxConnection.fileReplace("#{configDir}config.php", "'memcache.locking'", "//'memcache.locking'", options)
                             else
                                 if target['Valkey']['Host']
-                                    linuxConnection.fileReplace("#{configDir}config.php", "'host' .*", "'host' => '#{target['Valkey']['Host']}',", options)
+                                    linuxConnection.fileReplace("#{configDir}config.php", /'host' .*/, "'host' => '#{target['Valkey']['Host']}',", options)
                                 end
                                 if target['Valkey']['SecretId']
                                     valkeyPassword = context.secrets.load(target['Valkey']['SecretId'], 'VALKEY_PASSWORD')
-                                    linuxConnection.fileReplace("#{configDir}config.php", "'password' .*", "'password' => '#{valkeyPassword}',", { **options, hide: true })
+                                    linuxConnection.fileReplace("#{configDir}config.php", /'password' .*/, "'password' => '#{valkeyPassword}',", { **options, hide: true })
                                 end
                             end
 
@@ -109,7 +109,7 @@ module ConfigLMM
 
                         linuxConnection.upload(__dir__ + '/nextcloudcron.service', '/etc/systemd/system/', options)
                         linuxConnection.upload(__dir__ + '/nextcloudcron.timer', '/etc/systemd/system/', options)
-                        linuxConnection.fileReplace('/etc/systemd/system/nextcloudcron.service', '\$WEBAPPS/', webappsDir, options)
+                        linuxConnection.fileReplace('/etc/systemd/system/nextcloudcron.service', '$WEBAPPS/', webappsDir, options)
 
                         linuxConnection.reloadServiceManager(options)
                         linuxConnection.startService(PHP_FPM::PHPFPM_SERVICE, options)

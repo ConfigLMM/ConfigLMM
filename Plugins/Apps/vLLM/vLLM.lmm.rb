@@ -42,20 +42,20 @@ module ConfigLMM
                         elsif devices.include?('nvidia.com/gpu=all')
                             image = CUDA_IMAGE
                         end
-                        linuxConnection.fileReplace("#{path}/vLLM.container", '\$IMAGE', image, options)
+                        linuxConnection.fileReplace("#{path}/vLLM.container", '$IMAGE', image, options)
 
                         args = target['Args'].to_s
                         if target['Model']
                             args += ' --model ' + target['Model'].to_s
                         end
-                        linuxConnection.fileReplace("#{path}/vLLM.container", '\$ARGS', args, options)
+                        linuxConnection.fileReplace("#{path}/vLLM.container", '$ARGS', args, options)
 
                         devicesString = ''
                         if !devices.empty?
                             devicesString = devices.map { |device| "AddDevice=#{device}" }.join('\n')
                         end
 
-                        linuxConnection.fileReplace("#{path}/vLLM.container", '\$DEVICES', devicesString, { **options, escape: false })
+                        linuxConnection.fileReplace("#{path}/vLLM.container", '$DEVICES', devicesString, { **options, escape: false })
 
                         linuxConnection.reloadUserServices(USER, options)
                         linuxConnection.restartUserService(USER, 'vLLM', options)
