@@ -688,6 +688,8 @@ module ConfigLMM
                     template = ERB.new(File.read(__dir__ + '/Proxmox/answer.toml.erb'))
                     renderTemplate(template, config, outputFolder + 'answer.toml', options)
                     File.write("#{outputFolder}/auto-installer-mode.toml", 'mode = "iso"')
+                elsif osInfo['Id'] == OS::SUSE_MICROOS_ID
+                    buildAutoYaSTConfig(config, osInfo, id, target, options)
                 elsif osInfo['Id'] == OS::DEBIAN_ID
                     variables = prepareDebianStorage(config, options)
                     outputFolder = options['output'] + '/' + id + '/'
@@ -810,6 +812,8 @@ module ConfigLMM
                     iso = buildISOAutoProxmox(id, iso, target, options)
                 elsif osInfo['Id'] == OS::SUSE_LEAP_ID
                     iso = buildISOAgama(osInfo, id, iso, target, options)
+                elsif osInfo['Id'] == OS::SUSE_MICROOS_ID
+                    iso = buildISOAutoYaST(id, iso, target, options)
                 elsif osInfo['Id'] == OS::DEBIAN_ID
                     iso = buildISOPreseed(id, iso, target, options)
                 end

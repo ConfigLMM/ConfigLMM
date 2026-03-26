@@ -76,6 +76,9 @@ opensuse-leap:
     xorriso: xorriso
     Yarn: yarn
 
+opensuse-microos:
+    _INCLUDE_: opensuse-leap
+
 debian:
     Cassandra: https://debian.cassandra.apache.org 41x main|cassandra
     CertBotNginx:

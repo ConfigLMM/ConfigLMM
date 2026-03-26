@@ -6,11 +6,6 @@
       <confirm config:type="boolean">false</confirm>
     </mode>
   </general>
-  <bootloader t="map">
-    <global t="map">
-      <append>splash=silent preempt=full mitigations=auto quiet security=apparmor console=ttyS0,115200</append>
-    </global>
-  </bootloader>
   <host t="map">
     <% if !config['Hosts'].to_a.empty? %>
       <hosts t="list">
@@ -62,6 +57,14 @@
     <% end %>
   </networking>
   <software t="map">
+    <install_recommended config:type="boolean">false</install_recommended>
+    <% if !config['Patterns'].to_a.empty? %>
+      <patterns config:type="list">
+        <% config['Patterns'].each do |pattern| %>
+          <pattern><%= pattern.downcase %></pattern>
+        <% end %>
+      </patterns>
+    <% end %>
     <% if !config['Apps'].to_a.empty? %>
       <packages t="list">
         <% config['Apps'].each do |app| %>
@@ -81,8 +84,12 @@
       <% end %>
     </services>
   </services-manager>
+  <language>
+    <language>en_US</language>
+  </language>
   <timezone t="map">
-    <timezone>Etc/UTC</timezone>
+    <hwclock>UTC</hwclock>
+    <timezone>UTC</timezone>
   </timezone>
   <% if !config['Users'].to_h.empty? %>
     <users config:type="list">

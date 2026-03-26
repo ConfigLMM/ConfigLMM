@@ -4,6 +4,17 @@ module ConfigLMM
         module OS
             module OpenSUSE
 
+                def buildAutoYaSTConfig(config, osInfo, id, target, options)
+                    outputFolder = options['output'] + '/' + id + '/'
+                    template = ERB.new(File.read(__dir__ + '/openSUSE/autoinst.xml.erb'))
+                    config['Patterns'] ||= []
+                    if osInfo['Id'] == SUSE_MICROOS_ID
+                        config['Patterns'] << 'microos_base'
+                        config['Patterns'] << 'microos_base_zypper'
+                    end
+                    renderTemplate(template, config, outputFolder + 'autoinst.xml', options)
+                end
+
                 def buildISOAutoYaST(id, iso, target, options)
                     outputFolder = options['output'] + '/iso/'
                     mkdir(outputFolder, false)
@@ -11,15 +22,9 @@ module ConfigLMM
                     FileUtils.chmod_R(0750, outputFolder) # Need to make it writeable so it can be deleted
                     copy(options['output'] + '/' + id + '/autoinst.xml', outputFolder, false)
 
-                    cfg = outputFolder + "boot/x86_64/loader/isolinux.cfg"
-                    local.exec("sed -i 's|default harddisk|default linux|' #{cfg}")
-                    local.exec("sed -i 's|append initrd=initrd splash=silent showopts|append initrd=initrd splash=silent autoyast=device://sr0/autoinst.xml|' #{cfg}")
-                    local.exec("sed -i 's|prompt		1|prompt		0|' #{cfg}")
-                    local.exec("sed -i 's|timeout		600|timeout		1|' #{cfg}")
-
-                    ifcfg = ''
+                    opts = []
                     if target['DefaultNetwork']['IP'] != 'dhcp'
-                        ifcfg = "ifcfg=\"eth*=#{target['DefaultNetwork']['IP']}"
+                        ifcfg = "ifcfg=\"e*=#{target['DefaultNetwork']['IP']}"
                         if target['DefaultNetwork']['Gateway'] || target['DefaultNetwork']['DNS']
                             ifcfg +=  ',' + target['DefaultNetwork']['Gateway'].to_s
                             if target['DefaultNetwork']['DNS']
@@ -28,14 +33,23 @@ module ConfigLMM
                             end
                         end
                         ifcfg += '"'
+                        opts << ifcfg
                     end
 
+                    opts << 'autoyast=device://sr0/autoinst.xml'
+
+                    cfg = outputFolder + "boot/x86_64/loader/isolinux.cfg"
+                    local.fileReplace(cfg, 'default harddisk', 'default linux', options)
+                    local.fileReplace(cfg, 'append initrd=initrd splash=silent showopts', 'append initrd=initrd splash=silent ' + opts.join(' '), options)
+                    local.fileReplace(cfg, 'prompt		1', 'prompt		0|', options)
+                    local.fileReplace(cfg, 'timeout		600', 'timeout		1|', options)
+
                     cfg = outputFolder + "EFI/BOOT/grub.cfg"
-                    local.exec("sed -i 's|timeout=.*|timeout=1|' #{cfg}")
-                    local.exec("sed -i 's|linux splash=silent|linux splash=silent #{ifcfg} autoyast=device://sr0/autoinst.xml|' #{cfg}")
+                    local.fileReplace(cfg, /timeout=.*/, 'timeout=1', options)
+                    local.fileReplace(cfg, 'linux splash=silent', 'linux splash=silent ' + opts.join(' '), options)
 
                     patchedIso = File.dirname(iso) + '/patched.iso'
-                    local.exec("xorriso -as mkisofs -no-emul-boot -boot-info-table -boot-load-size 4 -iso-level 4 -b boot/x86_64/loader/isolinux.bin -c boot/x86_64/loader/boot.cat -eltorito-alt-boot -no-emul-boot -e boot/x86_64/efi -o #{patchedIso} #{outputFolder}")
+                    rebuildISO(iso, outputFolder, patchedIso, options)
                     patchedIso
                 end
 
@@ -80,10 +94,7 @@ module ConfigLMM
                     updateGrub2Config(outputFolder, opts, options)
 
                     patchedIso = File.dirname(iso) + '/patched.iso'
-
-                    isoParams = readISOparams(iso, options)
-                    local.exec("xorriso -as mkisofs #{isoParams.join(' ')} -o #{patchedIso} #{outputFolder}", false, options)
-
+                    rebuildISO(iso, outputFolder, patchedIso, options)
                     patchedIso
                 end
 

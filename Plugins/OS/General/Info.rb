@@ -8,6 +8,7 @@ module ConfigLMM
             SYSLINUX_ID = 'syslinux'
             ARCH_ID = 'arch'
             SUSE_LEAP_ID = 'opensuse-leap'
+            SUSE_MICROOS_ID = 'opensuse-microos'
             PROXMOXVE_ID = 'proxmox'
             PROXMOXVE_NAME = 'Proxmox VE'
             DEBIAN_ID = 'debian'

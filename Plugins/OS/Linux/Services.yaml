@@ -1,11 +1,14 @@
-Arch Linux:
+arch:
     sshd: sshd
 
-openSUSE Leap:
+opensuse-leap:
     sshd: sshd
 
-Debian:
+opensuse-microos:
+    sshd: sshd
+
+debian:
     sshd: ssh
 
-AlmaLinux:
+almalinux:
    sshd: sshd

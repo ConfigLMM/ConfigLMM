@@ -91,7 +91,7 @@ module ConfigLMM
             def pgsqlDataDir
                 return @pgsqlDataDir if @pgsqlDataDir
                 distroID = connection.distroID
-                if [OS::SUSE_LEAP_ID, OS::ALMA_ID].include?(distroID)
+                if [OS::SUSE_LEAP_ID, OS::SUSE_MICROOS_ID, OS::ALMA_ID].include?(distroID)
                     @pgsqlDataDir = '/var/lib/pgsql/data/'
                 elsif distroID == OS::ARCH_ID
                     @pgsqlDataDir = '/var/lib/postgres/data/'

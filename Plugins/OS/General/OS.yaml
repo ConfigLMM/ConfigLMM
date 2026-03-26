@@ -36,6 +36,20 @@ opensuse-leap:
     UpdatePackages: zypper update --no-confirm
     ListUpdates: zypper list-updates
 
+opensuse-microos:
+    _INCLUDE_: opensuse-leap
+    Name: openSUSE MicroOS
+    ProductId: MicroOS
+    ISO: https://download.opensuse.org/tumbleweed/iso/openSUSE-MicroOS-DVD-x86_64-Current.iso
+    #ISO: https://download.opensuse.org/tumbleweed/appliances/iso/openSUSE-MicroOS.x86_64-ContainerHost-SelfInstall.iso
+    Checksum: https://download.opensuse.org/tumbleweed/iso/openSUSE-MicroOS-DVD-x86_64-Current.iso.sha256
+    Signature: https://download.opensuse.org/tumbleweed/iso/openSUSE-MicroOS-DVD-x86_64-Current.iso.sha256.asc
+    SignatureKey: https://download.opensuse.org/tumbleweed/repo/oss/gpg-pubkey-29b700a4-62b07e22.asc
+    InstallPackage: transactional-update pkg install --no-confirm
+    RemovePackage: transactional-update pkg remove --no-confirm
+    UpdatePackages: transactional-update update
+    ApplyUpdates: transactional-update reboot
+
 arch:
     _INCLUDE_:
         - systemd

@@ -31,7 +31,7 @@ module ConfigLMM
 
                         updateConfig(config, linuxConnection, activeState, options)
 
-                        if linuxConnection.distroID == OS::SUSE_LEAP_ID
+                        if linuxConnection.distroID == OS::SUSE_LEAP_ID || linuxConnection.distroID == OS::SUSE_MICROOS_ID
                             if !linuxConnection.filePresent?(CONFIG_FILE)
                                 linuxConnection.fileCopy('/etc/valkey/default.conf.example', CONFIG_FILE, options)
                             end

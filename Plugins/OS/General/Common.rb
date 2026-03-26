@@ -176,6 +176,11 @@ module ConfigLMM
                     result.lines.take_while { |line| !line.empty? && line[0] == '-' }.map(&:strip)
                 end
 
+                def rebuildISO(iso, outputFolder, patchedIso, options)
+                    isoParams = readISOparams(iso, options)
+                    local.exec("xorriso -as mkisofs #{isoParams.join(' ')} -o #{patchedIso} #{outputFolder}", false, options)
+                end
+
             end
         end
     end

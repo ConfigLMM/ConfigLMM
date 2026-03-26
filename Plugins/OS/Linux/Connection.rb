@@ -212,6 +212,10 @@ module ConfigLMM
 
             def ping?(hostname, port, options)
                 @HasNC ||= self.hasBinaries?('nc', options)
+                if !@HasNC
+                    ensurePackage('netcat', options)
+                    @HasNC = self.hasBinaries?('nc', options)
+                end
                 raise Framework::PluginProcessError.new("`nc` missing!") unless @HasNC
                 result = connection.exec("nc -z -w 1 #{hostname.shellescape} #{port.to_i.to_s} && echo OK", true, options).to_s.strip
                 result == 'OK'
@@ -413,9 +417,9 @@ module ConfigLMM
             def hasBinaries?(names, options)
                 names = [names] unless names.is_a?(Array)
                 names.each do |name|
-                    connection.exec("which #{name}", true, options) if options['dry']
-                    result = connection.exec("which #{name}", true, { **options, 'dry' => false }).strip
-                    return false if result.empty? || result.include?("no #{name}")
+                    connection.exec("sh -c 'type #{name.shellescape}'", true, options) if options['dry']
+                    result = connection.exec("sh -c 'type #{name.shellescape}'", true, { **options, 'dry' => false }).strip
+                    return false if result.empty? || result.include?("not found")
                 end
                 true
             end
@@ -536,8 +540,8 @@ module ConfigLMM
 
             def convertServiceName(name)
                 if name.is_a?(Symbol)
-                    raise "Distro '#{distroName}' not implemented!" unless allServices.key?(distroName)
-                    serviceName = allServices[distroName][name.to_s]
+                    raise "Distro '#{distroID}' not implemented!" unless allServices.key?(distroID)
+                    serviceName = allServices[distroID][name.to_s]
                     name = serviceName || name.to_s
                 end
                 name
