@@ -145,6 +145,16 @@ module ConfigLMM
 
                 singleTarget['Location'] = '@me' unless singleTarget['Location']
                 singleTarget['SecretId'] = (singleTarget['SecretId'] || id).upcase
+                if singleTarget['Database'].to_h['Type']
+                    dbType = singleTarget['Database']['Type'].to_s.downcase
+                    if ['postgresql', 'postgres'].include?(dbType)
+                        singleTarget['Database']['Type'] = :postgresql
+                    elsif ['mysql', 'mariadb'].include?(dbType)
+                        singleTarget['Database']['Type'] = :mariadb
+                    elsif dbType == 'sqlite'
+                        singleTarget['Database']['Type'] = :sqlite
+                    end
+                end
 
                 actionMethod = plugin.class.actionMethod(singleTarget['Type'], 'Deploy')
                 if plugin.methods.include?(:authenticate)

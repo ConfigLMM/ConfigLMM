@@ -49,6 +49,11 @@ module ConfigLMM
                 connection.exec("dropuser #{user.shellescape}", true, options)
             end
 
+            def tableExist?(db, table, options = {})
+                table = self.exec("SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename = '#{table}'", db, false, ['--csv', '--tuples-only'], options).strip
+                !table.empty?
+            end
+
             def grantReplication(user, options = {})
                  exec("ALTER USER #{user} REPLICATION", nil, false, [], options)
                  if version >= 14.0

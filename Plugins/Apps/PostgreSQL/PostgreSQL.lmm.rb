@@ -250,7 +250,7 @@ module ConfigLMM
                 settings['Port'] = PORT unless settings['Port']
             end
 
-            def self.withConnection(settings, linuxConnection)
+            def self.withConnection(settings, linuxConnection, options = {})
                 if settings.nil? || settings['HostName'].nil? || settings['HostName'] == 'localhost' || settings['HostName'].start_with?('/')
                     settings ||= {}
                     settings = settings.dup

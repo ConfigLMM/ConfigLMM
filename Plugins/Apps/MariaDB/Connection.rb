@@ -16,6 +16,10 @@ module ConfigLMM
             end
 
             def createUserAndDB(user, password, host = nil, options = {})
+                if host.is_a?(Hash) && options.empty?
+                    options = host
+                    host = nil
+                end
                 if host.nil?
                   if @settings['HostName'] == 'localhost'
                       host = 'localhost'

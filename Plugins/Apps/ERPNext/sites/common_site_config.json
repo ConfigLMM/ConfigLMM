@@ -1,7 +1,7 @@
 {
     "host_name": "$PUBLIC_URL",
     "db_host": "host.containers.internal",
-    "db_port": 3306,
+    "db_port": $DB_PORT,
     "redis_cache": "redis://default:$VALKEY_PASSWORD@host.containers.internal:6379",
     "redis_queue": "redis://default:$VALKEY_PASSWORD@host.containers.internal:6379",
     "redis_socketio": "redis://default:$VALKEY_PASSWORD@host.containers.internal:6379",

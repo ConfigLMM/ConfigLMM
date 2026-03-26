@@ -61,16 +61,16 @@ module ConfigLMM
             def actionERPNextDeploy(id, target, activeState, context, options)
                 raise Framework::PluginProcessError.new('Domain field must be set!') if (!target.key?('Proxy') || target['Proxy']) && !target['Domain']
 
-                target['Database'] ||= {}
                 self.withConnection(target['Location'], target) do |connection|
                     Linux.withConnection(connection) do |linuxConnection|
 
-                        dbPassword = self.configureMariaDB(target['Database'], activeState, linuxConnection, options)
+                        dbType, dbPassword = self.configureDB(target, activeState, linuxConnection, options)
 
                         Podman.ensurePresent(linuxConnection, options)
                         Podman.createUser(USER, HOME_DIR, 'ERPNext', linuxConnection, options)
 
                         cmd = IO::SSH.cmd(target['Location'])
+
                         local.exec("podman image save ConfigLM.moe/erpnext:v#{VERSION} | #{cmd} 'cat > #{HOME_DIR}/erpnext.tar'", false, options)
 
                         linuxConnection.withUserShell(USER) do |shell|
@@ -111,15 +111,13 @@ module ConfigLMM
                         linuxConnection.fileReplace(HOME_DIR + '/sites/common_site_config.json', '$PUBLIC_URL', publicURL, options)
                         activeState['PublicURL'] = publicURL
 
-                        activeState['Database'] ||= {}
-                        dbHostName = 'host.containers.internal'
-                        if target['Database'] && target['Database']['HostName']
-                            dbHostName = Podman.updateHost(target['Database']['HostName'], linuxConnection, options)
-                            if dbHostName != 'host.containers.internal'
-                                linuxConnection.fileReplace(HOME_DIR + '/sites/common_site_config.json', '"host.containers.internal"', '"' + dbHostName + '"', options)
-                            end
+                        dbPort = activeState['Database']['Port']
+                        linuxConnection.fileReplace(HOME_DIR + '/sites/common_site_config.json', '$DB_PORT', dbPort ? dbPort : 'null', options)
+
+                        dbHostName = Podman.updateHost(activeState['Database']['HostName'], linuxConnection, options)
+                        if dbHostName != 'host.containers.internal'
+                            linuxConnection.fileReplace(HOME_DIR + '/sites/common_site_config.json', '"host.containers.internal"', '"' + dbHostName + '"', options)
                         end
-                        activeState['Database']['HostName'] = dbHostName
 
                         if target['Valkey']
                             activeState['Valkey'] = Podman.updateHost(target['Valkey'], linuxConnection, options)
@@ -169,7 +167,7 @@ module ConfigLMM
                         linuxConnection.restartUserService(USER, 'ERPNext-network', options)
                         linuxConnection.restartUserService(USER, 'ERPNext', options)
 
-                        MariaDB.withConnection(target['Database'], linuxConnection) do |connectionDB|
+                        self.withDBConnection(activeState['Database'], linuxConnection, options) do |connectionDB|
                             linuxConnection.withUserShell(USER) do |shellConnection|
                                 Podman.withConnection(shellConnection, Podman.container(CONTAINER_NAME, shellConnection, options)) do |podmanConnection|
                                     if connectionDB.tableExist?(USER, 'tabUser', { **options, 'dry' => false })
@@ -179,7 +177,7 @@ module ConfigLMM
                                     else
                                         adminPassword = SecureRandom.alphanumeric(20)
                                         linuxConnection.fileDelete(HOME_DIR + '/sites/erpnext', options)
-                                        podmanConnection.exec("bench new-site --force --no-setup-db --db-name erpnext --db-user erpnext --db-password #{dbPassword.shellescape} --admin-password #{adminPassword.shellescape} --install-app erpnext --set-default site", false, { **options, hide: true })
+                                        podmanConnection.exec("bench new-site --force --no-setup-db --db-type #{dbType} --db-name erpnext --db-user erpnext --db-password #{dbPassword.shellescape} --admin-password #{adminPassword.shellescape} --install-app erpnext --set-default site", false, { **options, hide: true })
                                         podmanConnection.exec("bench --site site install-app hrms", false, options)
                                         prompt.say("Administrator password: #{adminPassword}", :color => :magenta)
                                     end
@@ -195,12 +193,36 @@ module ConfigLMM
                 end
             end
 
-            def configureMariaDB(settings, activeState, linuxConnection, options)
+            def configureDB(target, activeState, linuxConnection, options)
+                target['Database'] ||= {}
+                target['Database']['Type'] = :mariadb unless target['Database']['Type']
+                type = target['Database']['Type'].to_s
+                type = 'postgres' if target['Database']['Type'] == :postgresql
+
                 password = SecureRandom.alphanumeric(20)
-                MariaDB.withConnection(settings, linuxConnection) do |mariaConnection|
-                    mariaConnection.createUserAndDB(USER, password, nil, options)
+                self.withDBConnection(target['Database'], linuxConnection, options) do |dbConnection|
+                    dbConnection.createUserAndDB(USER, password, options)
                 end
-                password
+                activeState['Database'] = target['Database'].dup
+
+                [type, password]
+            end
+
+            def withDBConnection(settings, linuxConnection, options, &block)
+                case settings['Type']
+                when :postgresql
+                    PostgreSQL.withConnection(settings, linuxConnection, options) do |postgresConnection|
+                        yield(postgresConnection)
+                    end
+                when :mariadb
+                    MariaDB.withConnection(settings, linuxConnection, options) do |mariaConnection|
+                        yield(mariaConnection)
+                    end
+                when :sqlite
+                    raise Framework::PluginProcessError.new("SQlite database not implemented!")
+                else
+                    raise Framework::PluginProcessError.new("Unsupported database type #{settings['Type']}!")
+                end
             end
 
             def cleanup(configs, state, context, options)
