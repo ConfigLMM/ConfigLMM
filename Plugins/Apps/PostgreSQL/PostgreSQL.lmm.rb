@@ -119,8 +119,9 @@ module ConfigLMM
                     settingLines << "listen_addresses = '*'\n"
                     postgres.connection.firewallAddPort('5432/tcp', options)
                 elsif target['Listen'] && !target['Listen'].empty?
-                    cmd = "sed -i 's|^host    all             all             127.0.0.1/32            ident|host    all             all             127.0.0.1/32            scram-sha-256|'"
-                    postgres.connection.exec(cmd + ' ' + postgres.pgsqlConfigDir + HBA_FILE, false, options)
+                    target['Listen'] = [target['Listen']] unless target['Listen'].is_a?(Array)
+
+                    postgres.connection.fileReplace(postgres.pgsqlConfigDir + HBA_FILE, /^host    all             all             127.0.0.1\/32            ident/, 'host    all             all             127.0.0.1/32            scram-sha-256', options)
 
                     ips = target['Listen'].map { |addr| addr.split('/').first }.join(',')
                     settingLines << "listen_addresses = '#{ips}'\n"
