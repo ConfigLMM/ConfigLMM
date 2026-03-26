@@ -14,7 +14,7 @@ module ConfigLMM
             end
 
             def version
-                @version ||= connection.exec('postmaster --version | cut -d " " -f 3', false).strip.to_f
+                @version ||= connection.exec('pg_ctl --version | cut -d " " -f 3', false).strip.to_f
             end
 
             def exec(sql, db, allowFailure = false, queryOptions = [], options = {})
