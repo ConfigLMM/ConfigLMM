@@ -26,6 +26,14 @@ module ConfigLMM
                 end
             end
 
+            def fileAppend(target, data, options = {})
+                if options['dry']
+                    prompt.say('Would append to file ' + target)
+                else
+                    File.write(target, data, mode: 'a+')
+                end
+            end
+
             def copy(source, target, dry)
                 if dry
                     prompt.say('Would copy ' + source + ' to ' + target)
