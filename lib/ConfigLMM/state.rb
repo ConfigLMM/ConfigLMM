@@ -28,7 +28,7 @@ module ConfigLMM
                 @StateFile = self.findStateFile(configList)
             end
             begin
-                @State = YAML.safe_load_file(@StateFile, permitted_classes: [Symbol])
+                @State = YAML.safe_load_file(@StateFile, permitted_classes: [Symbol, Date])
                 @State = {} if @State.to_h.empty?
             rescue Errno::EISDIR => error
                  # TODO

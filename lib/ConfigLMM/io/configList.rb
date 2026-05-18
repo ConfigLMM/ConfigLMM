@@ -69,7 +69,7 @@ module ConfigLMM
                 config = {}
                 @Sources.each do |source|
                     seenIncludes = Set.new
-                    data = YAML.safe_load_file(source.to_s, permitted_classes: [Symbol])
+                    data = YAML.safe_load_file(source.to_s, permitted_classes: [Symbol, Date])
                     next unless data.is_a?(Hash)
                     data = processIncludes(data, source.to_s, seenIncludes)
                     data = processVariables(data, source.to_s)
