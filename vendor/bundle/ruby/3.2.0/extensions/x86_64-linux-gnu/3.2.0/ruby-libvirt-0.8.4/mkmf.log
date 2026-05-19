@@ -1,2 +1,0 @@
-LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu x86_64-linux-gnu-pkg-config --exists libvirt
-package configuration for libvirt is not found

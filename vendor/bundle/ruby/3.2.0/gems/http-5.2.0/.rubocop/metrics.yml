@@ -1,4 +1,0 @@
-Metrics/BlockLength:
-  Exclude:
-    - 'spec/**/*.rb'
-    - '*.gemspec'
