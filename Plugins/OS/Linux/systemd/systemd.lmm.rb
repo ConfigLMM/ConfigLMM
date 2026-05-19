@@ -56,6 +56,37 @@ module ConfigLMM
                     service[:specialService]
                 end
             end
+
+            def self.restart(linuxConnection, options)
+                linuxConnection.exec("systemctl daemon-reexec", false, options)
+            end
+
+            def self.serviceArgs(service)
+                if service[:service] && !service[:uid]
+                    args = service[:service].shellescape
+                elsif service[:service] && service[:uid]
+                    args = '--user --machine=' + service[:uid].to_s.shellescape + '@ ' + service[:service].shellescape
+                elsif service[:specialService]
+                    args = service[:specialService].shellescape
+                else
+                    raise 'This shouldn\'t happen!'
+                end
+                args
+            end
+
+            def self.serviceProperty(service, property, linuxConnection, options)
+                args = self.serviceArgs(service)
+                linuxConnection.exec("systemctl show --property=#{property.to_s.shellescape} #{args} | cut -d '=' -f 2", true, options).strip
+            end
+
+            def self.restartService(service, linuxConnection, options)
+                options = options.dup
+                options[:commandTimeout] = 20*60 # 20min timeout
+                service = { service: service } unless service.is_a?(Hash)
+                args = self.serviceArgs(service)
+                linuxConnection.exec("systemctl restart #{args}", false, options)
+            end
+
         end
     end
 end

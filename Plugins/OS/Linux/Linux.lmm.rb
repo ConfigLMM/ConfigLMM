@@ -372,7 +372,7 @@ module ConfigLMM
 
                 connection.ensurePackage('lsof', options) unless connection.hasBinaries?('lsof', options)
                 pids = connection.exec("lsof -anlPX -d DEL 2>/dev/null | grep -E ' /(usr|lib|bin|sbin|opt)' | tr -s ' ' | cut -d ' ' -f 2 | uniq", false, options).strip.split("\n")
-                pids += connection.exec("lsof -anlPX +L1 -d fd,txt 2>/dev/null | grep -E ' /(usr|lib|bin|sbin|opt)' | tr -s ' ' | cut -d ' ' -f 2 | uniq", false, options).strip.split("\n")
+                pids += connection.exec("lsof -anlPX +L1 -d fd,txt,mem 2>/dev/null | grep -E ' /(usr|lib|bin|sbin|opt)' | tr -s ' ' | cut -d ' ' -f 2 | uniq", false, options).strip.split("\n")
                 if !pids.empty?
                     if autoRestart
                         services = Set.new
@@ -384,9 +384,15 @@ module ConfigLMM
                                 next
                             end
                             cgroup = connection.exec("cat /proc/#{pid}/cgroup 2>/dev/null", true, options).strip
-                            info = Systemd.parseCGroup(cgroup)
-                            if info
-                                services << info
+                            serviceInfo = Systemd.parseCGroup(cgroup)
+                            if serviceInfo
+                                serviceName = serviceInfo[:service] ? serviceInfo[:service] : serviceInfo[:specialService]
+                                if Systemd.serviceProperty(serviceInfo, 'RefuseManualStop', connection, options) != 'yes'
+                                    services << serviceInfo
+                                else
+                                    prompt.warn(serviceName + ' requires restart but it\'s not restartable thus system reboot required!')
+                                    needReboot = true
+                                end
                             else
                                 processes[pid] = connection.exec("stat /proc/#{pid}/exe 2>/dev/null | grep File | cut -d '>' -f 2", true, options).strip.gsub(' (deleted)', '')
                             end
@@ -395,20 +401,12 @@ module ConfigLMM
                         if services.length <= MAX_SERVICES_RESTART
                             if restartSystemd
                                 prompt.warn('Reexecuting systemd!')
-                                connection.exec("systemctl daemon-reexec", false, options)
+                                Systemd.restart(connection, options)
                             end
-                            timeoutOptions = { **options, commandTimeout: 20*60 } # 20min timeout
                             services.each do |service|
-                                prompt.warn("Restarting #{service[:service] ? service[:service] : service[:specialService]}")
-                                if service[:service] && !service[:uid]
-                                    connection.exec("systemctl restart #{service[:service]}", false, timeoutOptions)
-                                elsif service[:service] && service[:uid]
-                                    connection.exec("systemctl --user --machine=#{service[:uid]}@ restart #{service[:service]}", false, timeoutOptions)
-                                elsif service[:specialService]
-                                    connection.exec("systemctl restart #{service[:specialService]}", false, timeoutOptions)
-                                else
-                                    raise 'This shouldn\'t happen!'
-                                end
+                                serviceName = service[:service] ? service[:service] : service[:specialService]
+                                prompt.warn('Restarting ' + serviceName)
+                                Systemd.restartService(service, connection, options)
                             end
                         else
                             needReboot = true
@@ -427,6 +425,10 @@ module ConfigLMM
 
                 if needReboot
                     prompt.warn('System reboot required!')
+                    if result.include?('grub2') && connection.filePresent?('/boot/efi/EFI/opensuse/sealed.tpm', options)
+                        prompt.warn('grub2 was updated, after reboot disk encryption password might be asked!')
+                        prompt.warn('You might need to run `fdectl tpm-authorize`')
+                    end
                 end
             end
 
