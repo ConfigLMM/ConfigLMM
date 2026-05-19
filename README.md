@@ -47,7 +47,8 @@ You need Ruby and RubyGems. Then:
 $ gem install ConfigLMM
 ```
 
-If that doesn't work (e.g. Ruby is too old), use the bootstrap script — it will install [RVM](https://rvm.io/) automatically:
+If that doesn't work (e.g. Ruby is too old), use the bootstrap script — it will install [RVM](https://rvm.io/) automatically.
+You can [review the script](https://raw.githubusercontent.com/ConfigLMM/ConfigLMM/master/bootstrap.sh) before running it:
 
 ```
 $ curl -sS https://raw.githubusercontent.com/ConfigLMM/ConfigLMM/master/bootstrap.sh | sh
