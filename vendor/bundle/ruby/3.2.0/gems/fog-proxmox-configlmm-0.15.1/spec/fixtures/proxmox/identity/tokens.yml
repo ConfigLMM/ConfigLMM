@@ -1,0 +1,494 @@
+---
+http_interactions:
+- request:
+    method: post
+    uri: https://192.168.56.101:8006/api2/json/access/users
+    body:
+      encoding: US-ASCII
+      string: userid=bobsinclar%40pve&password=bobsinclar1&firstname=Bob&lastname=Sinclar&email=bobsinclar%40proxmox.com
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9A::lMeg+B18NQFzF46l2eN3U+UQYN1ktkO/WsXaKUenNmSRmos/bHiNDv+CcnQzGBQgQBvLVtY7XgOUL/Rd7owQfMf4/y9t6QKlAaeQtjYhRHW4yAzjIxz0ya8ZvOb9BPyY8/IHwiUgi+zivEP/tbEd8ZKrDTtDdnrNpTN9xG8QAW6VaCFoAi1S0RpVEonXz5vB/nrvWw/5HBvCJt5Ctgx1iBRz+CxMAG2Bh/jlZlfxIZzcJWm3iVd5fq0iNbm5twRrnzcUQD54TJCQSrwIVdN7bOxFlWNgix3TgJYYOuVN5FU1bEZDUao5EhkhKPBA1K5xVvwKDdEMfzM/qXxtHmMxZg==
+      Csrfpreventiontoken:
+      - 5FBE5C9A:z+KToa302E5JhHPWrHLN7/hvF3XKOo9y934hStmyeHU
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - close, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:08 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/users
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9A::lMeg+B18NQFzF46l2eN3U+UQYN1ktkO/WsXaKUenNmSRmos/bHiNDv+CcnQzGBQgQBvLVtY7XgOUL/Rd7owQfMf4/y9t6QKlAaeQtjYhRHW4yAzjIxz0ya8ZvOb9BPyY8/IHwiUgi+zivEP/tbEd8ZKrDTtDdnrNpTN9xG8QAW6VaCFoAi1S0RpVEonXz5vB/nrvWw/5HBvCJt5Ctgx1iBRz+CxMAG2Bh/jlZlfxIZzcJWm3iVd5fq0iNbm5twRrnzcUQD54TJCQSrwIVdN7bOxFlWNgix3TgJYYOuVN5FU1bEZDUao5EhkhKPBA1K5xVvwKDdEMfzM/qXxtHmMxZg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '206'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"email":"proxmox@proxmox.com","enable":1,"expire":0,"userid":"root@pam"},{"expire":0,"enable":1,"email":"bobsinclar@proxmox.com","userid":"bobsinclar@pve","firstname":"Bob","lastname":"Sinclar"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:08 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/users
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9A::lMeg+B18NQFzF46l2eN3U+UQYN1ktkO/WsXaKUenNmSRmos/bHiNDv+CcnQzGBQgQBvLVtY7XgOUL/Rd7owQfMf4/y9t6QKlAaeQtjYhRHW4yAzjIxz0ya8ZvOb9BPyY8/IHwiUgi+zivEP/tbEd8ZKrDTtDdnrNpTN9xG8QAW6VaCFoAi1S0RpVEonXz5vB/nrvWw/5HBvCJt5Ctgx1iBRz+CxMAG2Bh/jlZlfxIZzcJWm3iVd5fq0iNbm5twRrnzcUQD54TJCQSrwIVdN7bOxFlWNgix3TgJYYOuVN5FU1bEZDUao5EhkhKPBA1K5xVvwKDdEMfzM/qXxtHmMxZg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '206'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"email":"proxmox@proxmox.com","enable":1,"expire":0,"userid":"root@pam"},{"email":"bobsinclar@proxmox.com","enable":1,"expire":0,"firstname":"Bob","lastname":"Sinclar","userid":"bobsinclar@pve"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:08 GMT
+- request:
+    method: post
+    uri: https://192.168.56.101:8006/api2/json/access/users/bobsinclar@pve/token/bobsinclar1
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9A::lMeg+B18NQFzF46l2eN3U+UQYN1ktkO/WsXaKUenNmSRmos/bHiNDv+CcnQzGBQgQBvLVtY7XgOUL/Rd7owQfMf4/y9t6QKlAaeQtjYhRHW4yAzjIxz0ya8ZvOb9BPyY8/IHwiUgi+zivEP/tbEd8ZKrDTtDdnrNpTN9xG8QAW6VaCFoAi1S0RpVEonXz5vB/nrvWw/5HBvCJt5Ctgx1iBRz+CxMAG2Bh/jlZlfxIZzcJWm3iVd5fq0iNbm5twRrnzcUQD54TJCQSrwIVdN7bOxFlWNgix3TgJYYOuVN5FU1bEZDUao5EhkhKPBA1K5xVvwKDdEMfzM/qXxtHmMxZg==
+      Csrfpreventiontoken:
+      - 5FBE5C9A:z+KToa302E5JhHPWrHLN7/hvF3XKOo9y934hStmyeHU
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - close, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '122'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"value":"bb012ce5-eadd-4c47-a7cd-2413c6dd2c76","info":{"privsep":1},"full-tokenid":"bobsinclar@pve!bobsinclar1"}}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:08 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/users/bobsinclar@pve/token
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9A::lMeg+B18NQFzF46l2eN3U+UQYN1ktkO/WsXaKUenNmSRmos/bHiNDv+CcnQzGBQgQBvLVtY7XgOUL/Rd7owQfMf4/y9t6QKlAaeQtjYhRHW4yAzjIxz0ya8ZvOb9BPyY8/IHwiUgi+zivEP/tbEd8ZKrDTtDdnrNpTN9xG8QAW6VaCFoAi1S0RpVEonXz5vB/nrvWw/5HBvCJt5Ctgx1iBRz+CxMAG2Bh/jlZlfxIZzcJWm3iVd5fq0iNbm5twRrnzcUQD54TJCQSrwIVdN7bOxFlWNgix3TgJYYOuVN5FU1bEZDUao5EhkhKPBA1K5xVvwKDdEMfzM/qXxtHmMxZg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '59'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"tokenid":"bobsinclar1","privsep":1,"expire":0}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:08 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/users/bobsinclar@pve/token
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9A::lMeg+B18NQFzF46l2eN3U+UQYN1ktkO/WsXaKUenNmSRmos/bHiNDv+CcnQzGBQgQBvLVtY7XgOUL/Rd7owQfMf4/y9t6QKlAaeQtjYhRHW4yAzjIxz0ya8ZvOb9BPyY8/IHwiUgi+zivEP/tbEd8ZKrDTtDdnrNpTN9xG8QAW6VaCFoAi1S0RpVEonXz5vB/nrvWw/5HBvCJt5Ctgx1iBRz+CxMAG2Bh/jlZlfxIZzcJWm3iVd5fq0iNbm5twRrnzcUQD54TJCQSrwIVdN7bOxFlWNgix3TgJYYOuVN5FU1bEZDUao5EhkhKPBA1K5xVvwKDdEMfzM/qXxtHmMxZg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '59'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"expire":0,"privsep":1,"tokenid":"bobsinclar1"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:08 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/users/bobsinclar@pve/token
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9A::lMeg+B18NQFzF46l2eN3U+UQYN1ktkO/WsXaKUenNmSRmos/bHiNDv+CcnQzGBQgQBvLVtY7XgOUL/Rd7owQfMf4/y9t6QKlAaeQtjYhRHW4yAzjIxz0ya8ZvOb9BPyY8/IHwiUgi+zivEP/tbEd8ZKrDTtDdnrNpTN9xG8QAW6VaCFoAi1S0RpVEonXz5vB/nrvWw/5HBvCJt5Ctgx1iBRz+CxMAG2Bh/jlZlfxIZzcJWm3iVd5fq0iNbm5twRrnzcUQD54TJCQSrwIVdN7bOxFlWNgix3TgJYYOuVN5FU1bEZDUao5EhkhKPBA1K5xVvwKDdEMfzM/qXxtHmMxZg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '59'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"expire":0,"privsep":1,"tokenid":"bobsinclar1"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:08 GMT
+- request:
+    method: put
+    uri: https://192.168.56.101:8006/api2/json/access/users/bobsinclar@pve/token/bobsinclar1
+    body:
+      encoding: US-ASCII
+      string: comment=test&expire=0&privsep=0
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9A::lMeg+B18NQFzF46l2eN3U+UQYN1ktkO/WsXaKUenNmSRmos/bHiNDv+CcnQzGBQgQBvLVtY7XgOUL/Rd7owQfMf4/y9t6QKlAaeQtjYhRHW4yAzjIxz0ya8ZvOb9BPyY8/IHwiUgi+zivEP/tbEd8ZKrDTtDdnrNpTN9xG8QAW6VaCFoAi1S0RpVEonXz5vB/nrvWw/5HBvCJt5Ctgx1iBRz+CxMAG2Bh/jlZlfxIZzcJWm3iVd5fq0iNbm5twRrnzcUQD54TJCQSrwIVdN7bOxFlWNgix3TgJYYOuVN5FU1bEZDUao5EhkhKPBA1K5xVvwKDdEMfzM/qXxtHmMxZg==
+      Csrfpreventiontoken:
+      - 5FBE5C9A:z+KToa302E5JhHPWrHLN7/hvF3XKOo9y934hStmyeHU
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '54'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"comment":"test","expire":"0","privsep":"0"}}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:08 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/users/bobsinclar@pve/token
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9A::lMeg+B18NQFzF46l2eN3U+UQYN1ktkO/WsXaKUenNmSRmos/bHiNDv+CcnQzGBQgQBvLVtY7XgOUL/Rd7owQfMf4/y9t6QKlAaeQtjYhRHW4yAzjIxz0ya8ZvOb9BPyY8/IHwiUgi+zivEP/tbEd8ZKrDTtDdnrNpTN9xG8QAW6VaCFoAi1S0RpVEonXz5vB/nrvWw/5HBvCJt5Ctgx1iBRz+CxMAG2Bh/jlZlfxIZzcJWm3iVd5fq0iNbm5twRrnzcUQD54TJCQSrwIVdN7bOxFlWNgix3TgJYYOuVN5FU1bEZDUao5EhkhKPBA1K5xVvwKDdEMfzM/qXxtHmMxZg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '76'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"tokenid":"bobsinclar1","comment":"test","expire":0,"privsep":0}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:08 GMT
+- request:
+    method: delete
+    uri: https://192.168.56.101:8006/api2/json/access/users/bobsinclar@pve/token/bobsinclar1
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9A::lMeg+B18NQFzF46l2eN3U+UQYN1ktkO/WsXaKUenNmSRmos/bHiNDv+CcnQzGBQgQBvLVtY7XgOUL/Rd7owQfMf4/y9t6QKlAaeQtjYhRHW4yAzjIxz0ya8ZvOb9BPyY8/IHwiUgi+zivEP/tbEd8ZKrDTtDdnrNpTN9xG8QAW6VaCFoAi1S0RpVEonXz5vB/nrvWw/5HBvCJt5Ctgx1iBRz+CxMAG2Bh/jlZlfxIZzcJWm3iVd5fq0iNbm5twRrnzcUQD54TJCQSrwIVdN7bOxFlWNgix3TgJYYOuVN5FU1bEZDUao5EhkhKPBA1K5xVvwKDdEMfzM/qXxtHmMxZg==
+      Csrfpreventiontoken:
+      - 5FBE5C9A:z+KToa302E5JhHPWrHLN7/hvF3XKOo9y934hStmyeHU
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:08 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/users/bobsinclar@pve/token
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9A::lMeg+B18NQFzF46l2eN3U+UQYN1ktkO/WsXaKUenNmSRmos/bHiNDv+CcnQzGBQgQBvLVtY7XgOUL/Rd7owQfMf4/y9t6QKlAaeQtjYhRHW4yAzjIxz0ya8ZvOb9BPyY8/IHwiUgi+zivEP/tbEd8ZKrDTtDdnrNpTN9xG8QAW6VaCFoAi1S0RpVEonXz5vB/nrvWw/5HBvCJt5Ctgx1iBRz+CxMAG2Bh/jlZlfxIZzcJWm3iVd5fq0iNbm5twRrnzcUQD54TJCQSrwIVdN7bOxFlWNgix3TgJYYOuVN5FU1bEZDUao5EhkhKPBA1K5xVvwKDdEMfzM/qXxtHmMxZg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '11'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:08 GMT
+- request:
+    method: delete
+    uri: https://192.168.56.101:8006/api2/json/access/users/bobsinclar@pve
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9A::lMeg+B18NQFzF46l2eN3U+UQYN1ktkO/WsXaKUenNmSRmos/bHiNDv+CcnQzGBQgQBvLVtY7XgOUL/Rd7owQfMf4/y9t6QKlAaeQtjYhRHW4yAzjIxz0ya8ZvOb9BPyY8/IHwiUgi+zivEP/tbEd8ZKrDTtDdnrNpTN9xG8QAW6VaCFoAi1S0RpVEonXz5vB/nrvWw/5HBvCJt5Ctgx1iBRz+CxMAG2Bh/jlZlfxIZzcJWm3iVd5fq0iNbm5twRrnzcUQD54TJCQSrwIVdN7bOxFlWNgix3TgJYYOuVN5FU1bEZDUao5EhkhKPBA1K5xVvwKDdEMfzM/qXxtHmMxZg==
+      Csrfpreventiontoken:
+      - 5FBE5C9A:z+KToa302E5JhHPWrHLN7/hvF3XKOo9y934hStmyeHU
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:08 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/users
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9A::lMeg+B18NQFzF46l2eN3U+UQYN1ktkO/WsXaKUenNmSRmos/bHiNDv+CcnQzGBQgQBvLVtY7XgOUL/Rd7owQfMf4/y9t6QKlAaeQtjYhRHW4yAzjIxz0ya8ZvOb9BPyY8/IHwiUgi+zivEP/tbEd8ZKrDTtDdnrNpTN9xG8QAW6VaCFoAi1S0RpVEonXz5vB/nrvWw/5HBvCJt5Ctgx1iBRz+CxMAG2Bh/jlZlfxIZzcJWm3iVd5fq0iNbm5twRrnzcUQD54TJCQSrwIVdN7bOxFlWNgix3TgJYYOuVN5FU1bEZDUao5EhkhKPBA1K5xVvwKDdEMfzM/qXxtHmMxZg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '84'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:06 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"email":"proxmox@proxmox.com","enable":1,"userid":"root@pam","expire":0}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:08 GMT
+recorded_with: VCR 4.0.0

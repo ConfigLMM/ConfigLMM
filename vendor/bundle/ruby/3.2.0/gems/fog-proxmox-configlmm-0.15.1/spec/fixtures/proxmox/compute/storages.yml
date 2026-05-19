@@ -1,0 +1,151 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/nodes
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5EB5::VX8nZcDBdLagFD6/jWT/Ysds3vzjd3mXPaGCtdRe78KcCHeZzUo3YnfiXaXi8GxjdIx6Cz02biLkJzL5FbCHAK3TzzsmzrYxNGMVXUh5uucdprSZO5/zLc4Kus26YVg4axRsGzdmol9+qOBXzkM1G+a1eagOmvZbTuaEb4vh+g9kf7CMDlMTzT5j0a2Ndb2tzaBe9aP6ewHTRNkRVZlezuw04eON3y1GKYeumrbg8w9soZZf8M0rdSXJl7Ghms89hP1CN/Ccnwj4N7fVFs0jduFBjwmZ+3OEnazONaQqUu/ISNqdF2LyuSplO4O6gctkbF/cy5e4lbENzbcvk1SB+g==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:40:05 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '324'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:40:05 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"uptime":599,"id":"node/pve","maxdisk":2839314432,"disk":1983451136,"status":"online","level":"","node":"pve","ssl_fingerprint":"D2:93:56:38:4A:E7:83:67:9D:50:46:80:A5:DD:7E:69:7E:E3:3E:D1:CF:45:30:AB:CB:90:FA:76:4F:9D:52:4B","maxmem":2083995648,"type":"node","cpu":0.0530081962998535,"maxcpu":2,"mem":812482560}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:40:07 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/nodes/pve/storage
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5EB5::VX8nZcDBdLagFD6/jWT/Ysds3vzjd3mXPaGCtdRe78KcCHeZzUo3YnfiXaXi8GxjdIx6Cz02biLkJzL5FbCHAK3TzzsmzrYxNGMVXUh5uucdprSZO5/zLc4Kus26YVg4axRsGzdmol9+qOBXzkM1G+a1eagOmvZbTuaEb4vh+g9kf7CMDlMTzT5j0a2Ndb2tzaBe9aP6ewHTRNkRVZlezuw04eON3y1GKYeumrbg8w9soZZf8M0rdSXJl7Ghms89hP1CN/Ccnwj4N7fVFs0jduFBjwmZ+3OEnazONaQqUu/ISNqdF2LyuSplO4O6gctkbF/cy5e4lbENzbcvk1SB+g==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:40:06 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '363'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:40:06 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"shared":0,"avail":691355648,"content":"backup,vztmpl,iso","used_fraction":0.698600099251001,"active":1,"total":2839314432,"storage":"local","used":1983545344,"type":"dir","enabled":1},{"used_fraction":0,"active":1,"content":"images,rootdir","avail":4290772992,"shared":0,"type":"lvmthin","enabled":1,"used":0,"storage":"local-lvm","total":4290772992}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:40:07 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/nodes/pve/storage
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5EB5::VX8nZcDBdLagFD6/jWT/Ysds3vzjd3mXPaGCtdRe78KcCHeZzUo3YnfiXaXi8GxjdIx6Cz02biLkJzL5FbCHAK3TzzsmzrYxNGMVXUh5uucdprSZO5/zLc4Kus26YVg4axRsGzdmol9+qOBXzkM1G+a1eagOmvZbTuaEb4vh+g9kf7CMDlMTzT5j0a2Ndb2tzaBe9aP6ewHTRNkRVZlezuw04eON3y1GKYeumrbg8w9soZZf8M0rdSXJl7Ghms89hP1CN/Ccnwj4N7fVFs0jduFBjwmZ+3OEnazONaQqUu/ISNqdF2LyuSplO4O6gctkbF/cy5e4lbENzbcvk1SB+g==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:40:06 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '363'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:40:06 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"avail":691355648,"shared":0,"active":1,"used_fraction":0.698600099251001,"content":"vztmpl,iso,backup","used":1983545344,"storage":"local","total":2839314432,"type":"dir","enabled":1},{"used":0,"total":4290772992,"storage":"local-lvm","enabled":1,"type":"lvmthin","avail":4290772992,"shared":0,"used_fraction":0,"active":1,"content":"rootdir,images"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:40:08 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/nodes/pve/storage
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5EB5::VX8nZcDBdLagFD6/jWT/Ysds3vzjd3mXPaGCtdRe78KcCHeZzUo3YnfiXaXi8GxjdIx6Cz02biLkJzL5FbCHAK3TzzsmzrYxNGMVXUh5uucdprSZO5/zLc4Kus26YVg4axRsGzdmol9+qOBXzkM1G+a1eagOmvZbTuaEb4vh+g9kf7CMDlMTzT5j0a2Ndb2tzaBe9aP6ewHTRNkRVZlezuw04eON3y1GKYeumrbg8w9soZZf8M0rdSXJl7Ghms89hP1CN/Ccnwj4N7fVFs0jduFBjwmZ+3OEnazONaQqUu/ISNqdF2LyuSplO4O6gctkbF/cy5e4lbENzbcvk1SB+g==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:40:06 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '363'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:40:06 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"shared":0,"avail":691355648,"content":"backup,iso,vztmpl","active":1,"used_fraction":0.698600099251001,"total":2839314432,"storage":"local","used":1983545344,"enabled":1,"type":"dir"},{"used":0,"storage":"local-lvm","total":4290772992,"enabled":1,"type":"lvmthin","avail":4290772992,"shared":0,"used_fraction":0,"active":1,"content":"images,rootdir"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:40:08 GMT
+recorded_with: VCR 4.0.0

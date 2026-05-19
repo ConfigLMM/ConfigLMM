@@ -1,0 +1,304 @@
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -o conftest -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC conftest.c  -L. -L/usr/lib/x86_64-linux-gnu -L/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/lib -L/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/lib -L/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/lib -L. -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -fstack-protector-strong -rdynamic -Wl,-export-dynamic -Wl,--no-as-needed    /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/lib/libgpgme.a /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/lib/libassuan.a /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/lib/libgpg-error.a -lruby-3.2  -lm -lpthread  -lc"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: int main(int argc, char **argv)
+4: {
+5:   return !!argv[argc];
+6: }
+/* end */
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -o conftest -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC conftest.c  -L. -L/usr/lib/x86_64-linux-gnu -L/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/lib -L/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/lib -L/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/lib -L. -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -fstack-protector-strong -rdynamic -Wl,-export-dynamic -Wl,--no-as-needed    /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/lib/libgpgme.a /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/lib/libassuan.a /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/lib/libgpg-error.a -lruby-3.2 -Wl,-Bstatic -lgpgme -Wl,-Bdynamic -lm -lpthread  -lc"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: int main(void) { return 0; }
+/* end */
+
+have_header: checking for gpgme.h... -------------------- yes
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC   -c conftest.c"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: #include <gpgme.h>
+/* end */
+
+--------------------
+
+checking for gpgme >= 1.1.3... -------------------- yes
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -o conftest -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC conftest.c  -L. -L/usr/lib/x86_64-linux-gnu -L/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/lib -L/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/lib -L/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/lib -L. -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -fstack-protector-strong -rdynamic -Wl,-export-dynamic -Wl,--no-as-needed    /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/lib/libgpgme.a /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/lib/libassuan.a /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/lib/libgpg-error.a -lruby-3.2  -lm -lpthread  -lc"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: #include <gpgme.h>
+4: #include <stdlib.h>
+5: int main (void) {
+6:   return gpgme_check_version ("1.1.3") == NULL;
+7: }
+/* end */
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu ./conftest
+--------------------
+
+have_func: checking for gpgme_op_export_keys()... -------------------- yes
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -o conftest -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC conftest.c  -L. -L/usr/lib/x86_64-linux-gnu -L/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/lib -L/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/lib -L/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/lib -L. -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -fstack-protector-strong -rdynamic -Wl,-export-dynamic -Wl,--no-as-needed    /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/lib/libgpgme.a /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/lib/libassuan.a /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/lib/libgpg-error.a -lruby-3.2 /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/lib/libgpgme.a /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/lib/libassuan.a /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/lib/libgpg-error.a -lm -lpthread  -lc"
+conftest.c: In function ‘t’:
+conftest.c:14:57: error: ‘gpgme_op_export_keys’ undeclared (first use in this function)
+   14 | int t(void) { void ((*volatile p)()); p = (void ((*)()))gpgme_op_export_keys; return !p; }
+      |                                                         ^~~~~~~~~~~~~~~~~~~~
+conftest.c:14:57: note: each undeclared identifier is reported only once for each function it appears in
+checked program was:
+/* begin */
+ 1: #include "ruby.h"
+ 2: 
+ 3: /*top*/
+ 4: extern int t(void);
+ 5: int main(int argc, char **argv)
+ 6: {
+ 7:   if (argc > 1000000) {
+ 8:     int (* volatile tp)(void)=(int (*)(void))&t;
+ 9:     printf("%d", (*tp)());
+10:   }
+11: 
+12:   return !!argv[argc];
+13: }
+14: int t(void) { void ((*volatile p)()); p = (void ((*)()))gpgme_op_export_keys; return !p; }
+/* end */
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -o conftest -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC conftest.c  -L. -L/usr/lib/x86_64-linux-gnu -L/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/lib -L/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/lib -L/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/lib -L. -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -fstack-protector-strong -rdynamic -Wl,-export-dynamic -Wl,--no-as-needed    /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/lib/libgpgme.a /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/lib/libassuan.a /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/lib/libgpg-error.a -lruby-3.2 /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/lib/libgpgme.a /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/lib/libassuan.a /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/lib/libgpg-error.a -lm -lpthread  -lc"
+checked program was:
+/* begin */
+ 1: #include "ruby.h"
+ 2: 
+ 3: /*top*/
+ 4: extern int t(void);
+ 5: int main(int argc, char **argv)
+ 6: {
+ 7:   if (argc > 1000000) {
+ 8:     int (* volatile tp)(void)=(int (*)(void))&t;
+ 9:     printf("%d", (*tp)());
+10:   }
+11: 
+12:   return !!argv[argc];
+13: }
+14: extern void gpgme_op_export_keys();
+15: int t(void) { gpgme_op_export_keys(); return 0; }
+/* end */
+
+--------------------
+
+have_const: checking for GPGME_ENCRYPT_ALWAYS_TRUST in gpgme.h... -------------------- yes
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC   -c conftest.c"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: #include <gpgme.h>
+4: 
+5: /*top*/
+6: typedef int conftest_type;
+7: conftest_type conftestval = (int)GPGME_ENCRYPT_ALWAYS_TRUST;
+/* end */
+
+--------------------
+
+have_const: checking for GPGME_ENCRYPT_NO_ENCRYPT_TO in gpgme.h... -------------------- yes
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC   -c conftest.c"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: #include <gpgme.h>
+4: 
+5: /*top*/
+6: typedef int conftest_type;
+7: conftest_type conftestval = (int)GPGME_ENCRYPT_NO_ENCRYPT_TO;
+/* end */
+
+--------------------
+
+have_const: checking for GPGME_ENCRYPT_PREPARE in gpgme.h... -------------------- yes
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC   -c conftest.c"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: #include <gpgme.h>
+4: 
+5: /*top*/
+6: typedef int conftest_type;
+7: conftest_type conftestval = (int)GPGME_ENCRYPT_PREPARE;
+/* end */
+
+--------------------
+
+have_const: checking for GPGME_ENCRYPT_EXPECT_SIGN in gpgme.h... -------------------- yes
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC   -c conftest.c"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: #include <gpgme.h>
+4: 
+5: /*top*/
+6: typedef int conftest_type;
+7: conftest_type conftestval = (int)GPGME_ENCRYPT_EXPECT_SIGN;
+/* end */
+
+--------------------
+
+have_const: checking for GPGME_ENCRYPT_NO_COMPRESS in gpgme.h... -------------------- yes
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC   -c conftest.c"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: #include <gpgme.h>
+4: 
+5: /*top*/
+6: typedef int conftest_type;
+7: conftest_type conftestval = (int)GPGME_ENCRYPT_NO_COMPRESS;
+/* end */
+
+--------------------
+
+have_const: checking for GPGME_ENCRYPT_SYMMETRIC in gpgme.h... -------------------- yes
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC   -c conftest.c"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: #include <gpgme.h>
+4: 
+5: /*top*/
+6: typedef int conftest_type;
+7: conftest_type conftestval = (int)GPGME_ENCRYPT_SYMMETRIC;
+/* end */
+
+--------------------
+
+have_const: checking for GPGME_ENCRYPT_THROW_KEYIDS in gpgme.h... -------------------- yes
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC   -c conftest.c"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: #include <gpgme.h>
+4: 
+5: /*top*/
+6: typedef int conftest_type;
+7: conftest_type conftestval = (int)GPGME_ENCRYPT_THROW_KEYIDS;
+/* end */
+
+--------------------
+
+have_const: checking for GPGME_ENCRYPT_WRAP in gpgme.h... -------------------- yes
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC   -c conftest.c"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: #include <gpgme.h>
+4: 
+5: /*top*/
+6: typedef int conftest_type;
+7: conftest_type conftestval = (int)GPGME_ENCRYPT_WRAP;
+/* end */
+
+--------------------
+
+have_const: checking for GPGME_ENCRYPT_WANT_ADDRESS in gpgme.h... -------------------- yes
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC   -c conftest.c"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: #include <gpgme.h>
+4: 
+5: /*top*/
+6: typedef int conftest_type;
+7: conftest_type conftestval = (int)GPGME_ENCRYPT_WANT_ADDRESS;
+/* end */
+
+--------------------
+
+have_const: checking for GPGME_ENCRYPT_ARCHIVE in gpgme.h... -------------------- yes
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC   -c conftest.c"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: #include <gpgme.h>
+4: 
+5: /*top*/
+6: typedef int conftest_type;
+7: conftest_type conftestval = (int)GPGME_ENCRYPT_ARCHIVE;
+/* end */
+
+--------------------
+
+have_const: checking for GPGME_ENCRYPT_FILE in gpgme.h... -------------------- yes
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC   -c conftest.c"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: #include <gpgme.h>
+4: 
+5: /*top*/
+6: typedef int conftest_type;
+7: conftest_type conftestval = (int)GPGME_ENCRYPT_FILE;
+/* end */
+
+--------------------
+
+have_const: checking for GPGME_ENCRYPT_ADD_RECP in gpgme.h... -------------------- yes
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC   -c conftest.c"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: #include <gpgme.h>
+4: 
+5: /*top*/
+6: typedef int conftest_type;
+7: conftest_type conftestval = (int)GPGME_ENCRYPT_ADD_RECP;
+/* end */
+
+--------------------
+
+have_const: checking for GPGME_ENCRYPT_CHG_RECP in gpgme.h... -------------------- yes
+
+LD_LIBRARY_PATH=.:/usr/lib/x86_64-linux-gnu "x86_64-linux-gnu-gcc -I/usr/include/x86_64-linux-gnu/ruby-3.2.0 -I/usr/include/ruby-3.2.0/ruby/backward -I/usr/include/ruby-3.2.0 -I. -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2/include -I/home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55/include -Wdate-time -D_FORTIFY_SOURCE=3   -g -O2 -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer -ffile-prefix-map=BUILDDIR=. -fstack-protector-strong -fstack-clash-protection -Wformat -Werror=format-security -fcf-protection -fdebug-prefix-map=BUILDDIR=/usr/src/ruby3.2-3.2.3-1ubuntu0.24.04.7 -fPIC   -c conftest.c"
+checked program was:
+/* begin */
+1: #include "ruby.h"
+2: 
+3: #include <gpgme.h>
+4: 
+5: /*top*/
+6: typedef int conftest_type;
+7: conftest_type conftestval = (int)GPGME_ENCRYPT_CHG_RECP;
+/* end */
+
+--------------------
+

@@ -1,0 +1,946 @@
+---
+http_interactions:
+- request:
+    method: post
+    uri: https://192.168.56.101:8006/api2/json/pools
+    body:
+      encoding: US-ASCII
+      string: poolid=pool1
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+      Csrfpreventiontoken:
+      - 5FBE5C9E:LqNLX5YAQF2AsSPReLeDtBYINrF6B/gHIZsYM6uAhTI
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - close, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/pools
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '29'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"poolid":"pool1"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/pools/pool1
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '23'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"members":[]}}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/pools
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '29'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"poolid":"pool1"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/pools/pool1
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '23'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"members":[]}}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: post
+    uri: https://192.168.56.101:8006/api2/json/pools
+    body:
+      encoding: US-ASCII
+      string: poolid=pool1
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+      Csrfpreventiontoken:
+      - 5FBE5C9E:LqNLX5YAQF2AsSPReLeDtBYINrF6B/gHIZsYM6uAhTI
+  response:
+    status:
+      code: 500
+      message: 'create pool failed: error during cfs-locked ''file-user_cfg'' operation:
+        pool ''pool1'' already exists'
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - close
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: put
+    uri: https://192.168.56.101:8006/api2/json/pools/pool1
+    body:
+      encoding: US-ASCII
+      string: comment=Pool+1
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+      Csrfpreventiontoken:
+      - 5FBE5C9E:LqNLX5YAQF2AsSPReLeDtBYINrF6B/gHIZsYM6uAhTI
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/pools
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '48'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"comment":"Pool 1","poolid":"pool1"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/pools/pool1
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '42'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"comment":"Pool 1","members":[]}}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: put
+    uri: https://192.168.56.101:8006/api2/json/pools/pool1
+    body:
+      encoding: US-ASCII
+      string: comment=Pool+1&vms=100
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+      Csrfpreventiontoken:
+      - 5FBE5C9E:LqNLX5YAQF2AsSPReLeDtBYINrF6B/gHIZsYM6uAhTI
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/pools
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '48'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"comment":"Pool 1","poolid":"pool1"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/pools/pool1
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '42'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"members":[],"comment":"Pool 1"}}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: put
+    uri: https://192.168.56.101:8006/api2/json/pools/pool1
+    body:
+      encoding: US-ASCII
+      string: comment=Pool+1&storage=local-lvm
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+      Csrfpreventiontoken:
+      - 5FBE5C9E:LqNLX5YAQF2AsSPReLeDtBYINrF6B/gHIZsYM6uAhTI
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/pools
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '48'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"poolid":"pool1","comment":"Pool 1"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/pools/pool1
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '186'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"members":[{"status":"available","disk":0,"storage":"local-lvm","shared":0,"maxdisk":4290772992,"id":"storage/pve/local-lvm","type":"storage","node":"pve"}],"comment":"Pool
+        1"}}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/pools
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '48'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"poolid":"pool1","comment":"Pool 1"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/pools/pool1
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '186'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"comment":"Pool 1","members":[{"disk":0,"status":"available","shared":0,"storage":"local-lvm","id":"storage/pve/local-lvm","maxdisk":4290772992,"type":"storage","node":"pve"}]}}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: put
+    uri: https://192.168.56.101:8006/api2/json/pools/pool1
+    body:
+      encoding: US-ASCII
+      string: comment=Pool+1&vms=100&delete=1
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+      Csrfpreventiontoken:
+      - 5FBE5C9E:LqNLX5YAQF2AsSPReLeDtBYINrF6B/gHIZsYM6uAhTI
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/pools
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '48'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"poolid":"pool1","comment":"Pool 1"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/pools/pool1
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '186'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"comment":"Pool 1","members":[{"storage":"local-lvm","shared":0,"status":"available","disk":0,"node":"pve","type":"storage","maxdisk":4290772992,"id":"storage/pve/local-lvm"}]}}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: put
+    uri: https://192.168.56.101:8006/api2/json/pools/pool1
+    body:
+      encoding: US-ASCII
+      string: comment=Pool+1&storage=local-lvm&delete=1
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+      Csrfpreventiontoken:
+      - 5FBE5C9E:LqNLX5YAQF2AsSPReLeDtBYINrF6B/gHIZsYM6uAhTI
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/pools
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '48'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"comment":"Pool 1","poolid":"pool1"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/pools/pool1
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '42'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"comment":"Pool 1","members":[]}}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: delete
+    uri: https://192.168.56.101:8006/api2/json/pools/pool1
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+      Csrfpreventiontoken:
+      - 5FBE5C9E:LqNLX5YAQF2AsSPReLeDtBYINrF6B/gHIZsYM6uAhTI
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/pools
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '11'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+recorded_with: VCR 4.0.0

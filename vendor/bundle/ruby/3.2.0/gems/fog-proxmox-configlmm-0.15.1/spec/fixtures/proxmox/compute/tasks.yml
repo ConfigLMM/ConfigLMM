@@ -1,0 +1,465 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/nodes/pve/tasks/UPID:pve:000008D8:00009E0D:5FBE5DEC:vncproxy:100:root@pam:/status
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5DF6::CTGDUTtR0QzlSyEoY7oAlZFkk4ODylPYraN6TLlef3ynp26GcsYEIre8Eo8aPMcRDwloEhGZpegd8Vi7zcXxvaDlgyTjk8OQKzYDfxiAcl647J2R8+4BQxakTNmbK/Fd8F5aE8citDXFLUUrfwMQatqHBzZwK5OULJgs3v73dTpr2zo1D/cO0kXg0EVp/SxAPUx1vnU8hhNv4g3lLk8mTN5TOfPSmJCiJE7ZvoFFcmHgow1wS25YExBHtpw9wybuqyQj33+DjGNcqHKD/BFe6tm0yBBGjiRG3tvNnjbfWld5OekhoIr0G9a3bwbWcQvzXSHffah0QFJ9qzNKRSDwVw==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:36:54 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '242'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:36:54 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"node":"pve","pstart":40461,"exitstatus":"connection timed
+        out","id":"100","user":"root@pam","starttime":1606311404,"status":"stopped","type":"vncproxy","pid":2264,"upid":"UPID:pve:000008D8:00009E0D:5FBE5DEC:vncproxy:100:root@pam:"}}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:36:56 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/nodes/pve/tasks/UPID:pve:000008D8:00009E0D:5FBE5DEC:vncproxy:100:root@pam:/log
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5DF6::CTGDUTtR0QzlSyEoY7oAlZFkk4ODylPYraN6TLlef3ynp26GcsYEIre8Eo8aPMcRDwloEhGZpegd8Vi7zcXxvaDlgyTjk8OQKzYDfxiAcl647J2R8+4BQxakTNmbK/Fd8F5aE8citDXFLUUrfwMQatqHBzZwK5OULJgs3v73dTpr2zo1D/cO0kXg0EVp/SxAPUx1vnU8hhNv4g3lLk8mTN5TOfPSmJCiJE7ZvoFFcmHgow1wS25YExBHtpw9wybuqyQj33+DjGNcqHKD/BFe6tm0yBBGjiRG3tvNnjbfWld5OekhoIr0G9a3bwbWcQvzXSHffah0QFJ9qzNKRSDwVw==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:36:54 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '67'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:36:54 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"total":1,"data":[{"t":"TASK ERROR: connection timed out","n":1}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:36:56 GMT
+- request:
+    method: delete
+    uri: 'https://192.168.56.101:8006/api2/json/nodes/pve/tasks/UPID:pve:000008D8:00009E0D:5FBE5DEC:vncproxy:100:root@pam:'
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5DF6::CTGDUTtR0QzlSyEoY7oAlZFkk4ODylPYraN6TLlef3ynp26GcsYEIre8Eo8aPMcRDwloEhGZpegd8Vi7zcXxvaDlgyTjk8OQKzYDfxiAcl647J2R8+4BQxakTNmbK/Fd8F5aE8citDXFLUUrfwMQatqHBzZwK5OULJgs3v73dTpr2zo1D/cO0kXg0EVp/SxAPUx1vnU8hhNv4g3lLk8mTN5TOfPSmJCiJE7ZvoFFcmHgow1wS25YExBHtpw9wybuqyQj33+DjGNcqHKD/BFe6tm0yBBGjiRG3tvNnjbfWld5OekhoIr0G9a3bwbWcQvzXSHffah0QFJ9qzNKRSDwVw==
+      Csrfpreventiontoken:
+      - 5FBE5DF6:u53DWXQxOUIRXC61Xhvr3A905jpTsJMkLLg0E8cQ1vA
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:36:54 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:36:54 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:36:56 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/nodes/pve/tasks/UPID:pve:000008D8:00009E0D:5FBE5DEC:vncproxy:100:root@pam:/status
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5DF6::CTGDUTtR0QzlSyEoY7oAlZFkk4ODylPYraN6TLlef3ynp26GcsYEIre8Eo8aPMcRDwloEhGZpegd8Vi7zcXxvaDlgyTjk8OQKzYDfxiAcl647J2R8+4BQxakTNmbK/Fd8F5aE8citDXFLUUrfwMQatqHBzZwK5OULJgs3v73dTpr2zo1D/cO0kXg0EVp/SxAPUx1vnU8hhNv4g3lLk8mTN5TOfPSmJCiJE7ZvoFFcmHgow1wS25YExBHtpw9wybuqyQj33+DjGNcqHKD/BFe6tm0yBBGjiRG3tvNnjbfWld5OekhoIr0G9a3bwbWcQvzXSHffah0QFJ9qzNKRSDwVw==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:36:54 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '242'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:36:54 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"upid":"UPID:pve:000008D8:00009E0D:5FBE5DEC:vncproxy:100:root@pam:","status":"stopped","type":"vncproxy","pid":2264,"starttime":1606311404,"user":"root@pam","id":"100","exitstatus":"connection
+        timed out","pstart":40461,"node":"pve"}}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:36:56 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/nodes/pve/tasks/UPID:pve:000008D8:00009E0D:5FBE5DEC:vncproxy:100:root@pam:/log
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5DF6::CTGDUTtR0QzlSyEoY7oAlZFkk4ODylPYraN6TLlef3ynp26GcsYEIre8Eo8aPMcRDwloEhGZpegd8Vi7zcXxvaDlgyTjk8OQKzYDfxiAcl647J2R8+4BQxakTNmbK/Fd8F5aE8citDXFLUUrfwMQatqHBzZwK5OULJgs3v73dTpr2zo1D/cO0kXg0EVp/SxAPUx1vnU8hhNv4g3lLk8mTN5TOfPSmJCiJE7ZvoFFcmHgow1wS25YExBHtpw9wybuqyQj33+DjGNcqHKD/BFe6tm0yBBGjiRG3tvNnjbfWld5OekhoIr0G9a3bwbWcQvzXSHffah0QFJ9qzNKRSDwVw==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:36:54 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '67'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:36:54 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"total":1,"data":[{"t":"TASK ERROR: connection timed out","n":1}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:36:56 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/nodes
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5E5B::Bko1TZcBSat9YYVdqdSOyOvgIZwUy/Xa7LqWxAPHhfG4g4pLpC2jktTQDgQv8KyvSvmTZ2gbQ/r83bKu3wb6AimSYa4jvouYykdOu5K7g7RxVxDBcJyHA8jwJMoVijUUAFe2jhvouVC1T3TSvVftvxMh8ZYUv8c8l2oDiVEHIhY+L+kVzIqGHCrDkoXoO3venJqhlGQSimI24/kOcE3k2DoMIrqtkIplADb3dHyPmlNREE8YAq3yDJQwXczearIUS5mmlvz9AxWHQwMnEyyiKmDMG8jYNV63NpzxvXsdUaX0XU7e/GYYtBq1L9+gDFZzOlma0+3wyoLj6gCovoW1lA==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:38:36 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '325'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:38:36 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"disk":1983016960,"level":"","status":"online","uptime":508,"id":"node/pve","maxdisk":2839314432,"mem":852455424,"maxcpu":2,"cpu":0.00864688371523932,"node":"pve","maxmem":2083995648,"type":"node","ssl_fingerprint":"D2:93:56:38:4A:E7:83:67:9D:50:46:80:A5:DD:7E:69:7E:E3:3E:D1:CF:45:30:AB:CB:90:FA:76:4F:9D:52:4B"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:38:37 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/nodes/pve/tasks?limit=1
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5E5B::Bko1TZcBSat9YYVdqdSOyOvgIZwUy/Xa7LqWxAPHhfG4g4pLpC2jktTQDgQv8KyvSvmTZ2gbQ/r83bKu3wb6AimSYa4jvouYykdOu5K7g7RxVxDBcJyHA8jwJMoVijUUAFe2jhvouVC1T3TSvVftvxMh8ZYUv8c8l2oDiVEHIhY+L+kVzIqGHCrDkoXoO3venJqhlGQSimI24/kOcE3k2DoMIrqtkIplADb3dHyPmlNREE8YAq3yDJQwXczearIUS5mmlvz9AxWHQwMnEyyiKmDMG8jYNV63NpzxvXsdUaX0XU7e/GYYtBq1L9+gDFZzOlma0+3wyoLj6gCovoW1lA==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:38:36 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '375'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:38:36 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"total":105,"data":[{"status":"command ''/usr/bin/termproxy 5901 --path
+        /vms/100 --perm VM.Console -- /usr/sbin/qm terminal 100 -escape 0 -iface serial0''
+        failed: exit code 4","upid":"UPID:pve:0000091B:00009FE0:5FBE5DF0:vncproxy:100:root@pam:","pid":2331,"starttime":1606311408,"id":"100","pstart":40928,"type":"vncproxy","user":"root@pam","node":"pve","endtime":1606311419}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:38:37 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/nodes/pve/tasks/UPID:pve:0000091B:00009FE0:5FBE5DF0:vncproxy:100:root@pam:/status
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5E5B::Bko1TZcBSat9YYVdqdSOyOvgIZwUy/Xa7LqWxAPHhfG4g4pLpC2jktTQDgQv8KyvSvmTZ2gbQ/r83bKu3wb6AimSYa4jvouYykdOu5K7g7RxVxDBcJyHA8jwJMoVijUUAFe2jhvouVC1T3TSvVftvxMh8ZYUv8c8l2oDiVEHIhY+L+kVzIqGHCrDkoXoO3venJqhlGQSimI24/kOcE3k2DoMIrqtkIplADb3dHyPmlNREE8YAq3yDJQwXczearIUS5mmlvz9AxWHQwMnEyyiKmDMG8jYNV63NpzxvXsdUaX0XU7e/GYYtBq1L9+gDFZzOlma0+3wyoLj6gCovoW1lA==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:38:36 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '363'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:38:36 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"starttime":1606311408,"user":"root@pam","exitstatus":"command
+        ''/usr/bin/termproxy 5901 --path /vms/100 --perm VM.Console -- /usr/sbin/qm
+        terminal 100 -escape 0 -iface serial0'' failed: exit code 4","id":"100","node":"pve","pstart":40928,"upid":"UPID:pve:0000091B:00009FE0:5FBE5DF0:vncproxy:100:root@pam:","pid":2331,"status":"stopped","type":"vncproxy"}}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:38:37 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/nodes/pve/tasks/UPID:pve:0000091B:00009FE0:5FBE5DF0:vncproxy:100:root@pam:/log
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5E5B::Bko1TZcBSat9YYVdqdSOyOvgIZwUy/Xa7LqWxAPHhfG4g4pLpC2jktTQDgQv8KyvSvmTZ2gbQ/r83bKu3wb6AimSYa4jvouYykdOu5K7g7RxVxDBcJyHA8jwJMoVijUUAFe2jhvouVC1T3TSvVftvxMh8ZYUv8c8l2oDiVEHIhY+L+kVzIqGHCrDkoXoO3venJqhlGQSimI24/kOcE3k2DoMIrqtkIplADb3dHyPmlNREE8YAq3yDJQwXczearIUS5mmlvz9AxWHQwMnEyyiKmDMG8jYNV63NpzxvXsdUaX0XU7e/GYYtBq1L9+gDFZzOlma0+3wyoLj6gCovoW1lA==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:38:36 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '231'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:38:36 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"total":2,"data":[{"t":"timed out waiting for client","n":1},{"t":"TASK
+        ERROR: command ''/usr/bin/termproxy 5901 --path /vms/100 --perm VM.Console
+        -- /usr/sbin/qm terminal 100 -escape 0 -iface serial0'' failed: exit code
+        4","n":2}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:38:37 GMT
+- request:
+    method: delete
+    uri: 'https://192.168.56.101:8006/api2/json/nodes/pve/tasks/UPID:pve:0000091B:00009FE0:5FBE5DF0:vncproxy:100:root@pam:'
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5E5B::Bko1TZcBSat9YYVdqdSOyOvgIZwUy/Xa7LqWxAPHhfG4g4pLpC2jktTQDgQv8KyvSvmTZ2gbQ/r83bKu3wb6AimSYa4jvouYykdOu5K7g7RxVxDBcJyHA8jwJMoVijUUAFe2jhvouVC1T3TSvVftvxMh8ZYUv8c8l2oDiVEHIhY+L+kVzIqGHCrDkoXoO3venJqhlGQSimI24/kOcE3k2DoMIrqtkIplADb3dHyPmlNREE8YAq3yDJQwXczearIUS5mmlvz9AxWHQwMnEyyiKmDMG8jYNV63NpzxvXsdUaX0XU7e/GYYtBq1L9+gDFZzOlma0+3wyoLj6gCovoW1lA==
+      Csrfpreventiontoken:
+      - 5FBE5E5B:Ah6h4JRPGU4A4YuJVcUE6llkuBvquylRhRjKnyVnGvM
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:38:36 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:38:36 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:38:37 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/nodes/pve/tasks/UPID:pve:0000091B:00009FE0:5FBE5DF0:vncproxy:100:root@pam:/status
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5E5B::Bko1TZcBSat9YYVdqdSOyOvgIZwUy/Xa7LqWxAPHhfG4g4pLpC2jktTQDgQv8KyvSvmTZ2gbQ/r83bKu3wb6AimSYa4jvouYykdOu5K7g7RxVxDBcJyHA8jwJMoVijUUAFe2jhvouVC1T3TSvVftvxMh8ZYUv8c8l2oDiVEHIhY+L+kVzIqGHCrDkoXoO3venJqhlGQSimI24/kOcE3k2DoMIrqtkIplADb3dHyPmlNREE8YAq3yDJQwXczearIUS5mmlvz9AxWHQwMnEyyiKmDMG8jYNV63NpzxvXsdUaX0XU7e/GYYtBq1L9+gDFZzOlma0+3wyoLj6gCovoW1lA==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:38:36 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '363'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:38:36 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"id":"100","exitstatus":"command ''/usr/bin/termproxy 5901
+        --path /vms/100 --perm VM.Console -- /usr/sbin/qm terminal 100 -escape 0 -iface
+        serial0'' failed: exit code 4","starttime":1606311408,"user":"root@pam","pstart":40928,"node":"pve","upid":"UPID:pve:0000091B:00009FE0:5FBE5DF0:vncproxy:100:root@pam:","status":"stopped","pid":2331,"type":"vncproxy"}}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:38:37 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/nodes/pve/tasks/UPID:pve:0000091B:00009FE0:5FBE5DF0:vncproxy:100:root@pam:/log
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5E5B::Bko1TZcBSat9YYVdqdSOyOvgIZwUy/Xa7LqWxAPHhfG4g4pLpC2jktTQDgQv8KyvSvmTZ2gbQ/r83bKu3wb6AimSYa4jvouYykdOu5K7g7RxVxDBcJyHA8jwJMoVijUUAFe2jhvouVC1T3TSvVftvxMh8ZYUv8c8l2oDiVEHIhY+L+kVzIqGHCrDkoXoO3venJqhlGQSimI24/kOcE3k2DoMIrqtkIplADb3dHyPmlNREE8YAq3yDJQwXczearIUS5mmlvz9AxWHQwMnEyyiKmDMG8jYNV63NpzxvXsdUaX0XU7e/GYYtBq1L9+gDFZzOlma0+3wyoLj6gCovoW1lA==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:38:36 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '231'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:38:36 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"total":2,"data":[{"n":1,"t":"timed out waiting for client"},{"n":2,"t":"TASK
+        ERROR: command ''/usr/bin/termproxy 5901 --path /vms/100 --perm VM.Console
+        -- /usr/sbin/qm terminal 100 -escape 0 -iface serial0'' failed: exit code
+        4"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:38:37 GMT
+recorded_with: VCR 4.0.0

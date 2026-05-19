@@ -1,0 +1,665 @@
+---
+http_interactions:
+- request:
+    method: post
+    uri: https://192.168.56.101:8006/api2/json/access/domains
+    body:
+      encoding: US-ASCII
+      string: type=ldap&base_dn=ou%3DPeople%2Cdc%3Dldap-test%2Cdc%3Dcom&user_attr=LDAP&server1=localhost&port=389&default=0&secure=0&realm=LDAP
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5CA1::NIjZenTNJji1/kvngW1msoDJnS9qb8C7X0YJ/0budYl2Wr+KZY2y/qCFp23q9GYpjXQgWME0ArXwLKo26wQYpnCnPu1RfDVjBZYm+ynAlEU0f6GXUGWJo5SFXKcVRgG33PdlL79eQePF4E1hOpZvJ79r0EzGtBW3autHMOHtpAJMdgGO0HOxUhF1aEN4i3R/ysn8VQ1NVEMKKhRA/CYkExHRLi8yyMOxoVQ/YoBHMBEEZZz0BdASjk3sBFaDdm4tBMvjpY5kR7oH+X5878jmb6dXjpM6+iImacaR68ApPBSPPYYDlxpvqXaacjeVI8Ybu6485Mc90isfL3A0bfm+TA==
+      Csrfpreventiontoken:
+      - 5FBE5CA1:2wSP3B+yBkKcNAmclMMAg5dSN77eDCAsw6FKkloozig
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - close, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:13 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:13 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:15 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/domains
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5CA1::NIjZenTNJji1/kvngW1msoDJnS9qb8C7X0YJ/0budYl2Wr+KZY2y/qCFp23q9GYpjXQgWME0ArXwLKo26wQYpnCnPu1RfDVjBZYm+ynAlEU0f6GXUGWJo5SFXKcVRgG33PdlL79eQePF4E1hOpZvJ79r0EzGtBW3autHMOHtpAJMdgGO0HOxUhF1aEN4i3R/ysn8VQ1NVEMKKhRA/CYkExHRLi8yyMOxoVQ/YoBHMBEEZZz0BdASjk3sBFaDdm4tBMvjpY5kR7oH+X5878jmb6dXjpM6+iImacaR68ApPBSPPYYDlxpvqXaacjeVI8Ybu6485Mc90isfL3A0bfm+TA==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:13 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '190'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:13 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"realm":"LDAP","type":"ldap"},{"comment":"Linux PAM standard
+        authentication","realm":"pam","type":"pam"},{"comment":"Proxmox VE authentication
+        server","realm":"pve","type":"pve"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:15 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/domains
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5CA1::NIjZenTNJji1/kvngW1msoDJnS9qb8C7X0YJ/0budYl2Wr+KZY2y/qCFp23q9GYpjXQgWME0ArXwLKo26wQYpnCnPu1RfDVjBZYm+ynAlEU0f6GXUGWJo5SFXKcVRgG33PdlL79eQePF4E1hOpZvJ79r0EzGtBW3autHMOHtpAJMdgGO0HOxUhF1aEN4i3R/ysn8VQ1NVEMKKhRA/CYkExHRLi8yyMOxoVQ/YoBHMBEEZZz0BdASjk3sBFaDdm4tBMvjpY5kR7oH+X5878jmb6dXjpM6+iImacaR68ApPBSPPYYDlxpvqXaacjeVI8Ybu6485Mc90isfL3A0bfm+TA==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:13 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '190'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:13 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"comment":"Proxmox VE authentication server","realm":"pve","type":"pve"},{"type":"pam","realm":"pam","comment":"Linux
+        PAM standard authentication"},{"realm":"LDAP","type":"ldap"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:15 GMT
+- request:
+    method: post
+    uri: https://192.168.56.101:8006/api2/json/access/domains
+    body:
+      encoding: US-ASCII
+      string: type=ad&domain=proxmox.com&server1=localhost&port=389&default=0&secure=0&realm=ActiveDirectory
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5CA1::NIjZenTNJji1/kvngW1msoDJnS9qb8C7X0YJ/0budYl2Wr+KZY2y/qCFp23q9GYpjXQgWME0ArXwLKo26wQYpnCnPu1RfDVjBZYm+ynAlEU0f6GXUGWJo5SFXKcVRgG33PdlL79eQePF4E1hOpZvJ79r0EzGtBW3autHMOHtpAJMdgGO0HOxUhF1aEN4i3R/ysn8VQ1NVEMKKhRA/CYkExHRLi8yyMOxoVQ/YoBHMBEEZZz0BdASjk3sBFaDdm4tBMvjpY5kR7oH+X5878jmb6dXjpM6+iImacaR68ApPBSPPYYDlxpvqXaacjeVI8Ybu6485Mc90isfL3A0bfm+TA==
+      Csrfpreventiontoken:
+      - 5FBE5CA1:2wSP3B+yBkKcNAmclMMAg5dSN77eDCAsw6FKkloozig
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - close, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:13 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:13 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:15 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/domains
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5CA1::NIjZenTNJji1/kvngW1msoDJnS9qb8C7X0YJ/0budYl2Wr+KZY2y/qCFp23q9GYpjXQgWME0ArXwLKo26wQYpnCnPu1RfDVjBZYm+ynAlEU0f6GXUGWJo5SFXKcVRgG33PdlL79eQePF4E1hOpZvJ79r0EzGtBW3autHMOHtpAJMdgGO0HOxUhF1aEN4i3R/ysn8VQ1NVEMKKhRA/CYkExHRLi8yyMOxoVQ/YoBHMBEEZZz0BdASjk3sBFaDdm4tBMvjpY5kR7oH+X5878jmb6dXjpM6+iImacaR68ApPBSPPYYDlxpvqXaacjeVI8Ybu6485Mc90isfL3A0bfm+TA==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:13 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '230'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:13 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"type":"pam","realm":"pam","comment":"Linux PAM standard
+        authentication"},{"realm":"LDAP","type":"ldap"},{"type":"ad","realm":"ActiveDirectory"},{"type":"pve","realm":"pve","comment":"Proxmox
+        VE authentication server"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:15 GMT
+- request:
+    method: post
+    uri: https://192.168.56.101:8006/api2/json/access/domains
+    body:
+      encoding: US-ASCII
+      string: type=ldap&base_dn=ou%3DPeople%2Cdc%3Dldap-test%2Cdc%3Dcom&user_attr=LDAP&server1=localhost&port=389&default=0&secure=0&realm=LDAP
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5CA1::NIjZenTNJji1/kvngW1msoDJnS9qb8C7X0YJ/0budYl2Wr+KZY2y/qCFp23q9GYpjXQgWME0ArXwLKo26wQYpnCnPu1RfDVjBZYm+ynAlEU0f6GXUGWJo5SFXKcVRgG33PdlL79eQePF4E1hOpZvJ79r0EzGtBW3autHMOHtpAJMdgGO0HOxUhF1aEN4i3R/ysn8VQ1NVEMKKhRA/CYkExHRLi8yyMOxoVQ/YoBHMBEEZZz0BdASjk3sBFaDdm4tBMvjpY5kR7oH+X5878jmb6dXjpM6+iImacaR68ApPBSPPYYDlxpvqXaacjeVI8Ybu6485Mc90isfL3A0bfm+TA==
+      Csrfpreventiontoken:
+      - 5FBE5CA1:2wSP3B+yBkKcNAmclMMAg5dSN77eDCAsw6FKkloozig
+  response:
+    status:
+      code: 500
+      message: 'add auth server failed: error during cfs-locked ''file-domains_cfg''
+        operation: domain ''LDAP'' already exists'
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - close
+      Date:
+      - Wed, 25 Nov 2020 13:31:13 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:13 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:15 GMT
+- request:
+    method: post
+    uri: https://192.168.56.101:8006/api2/json/access/domains
+    body:
+      encoding: US-ASCII
+      string: type=ad&domain=proxmox.com&server1=localhost&port=389&default=0&secure=0&realm=ActiveDirectory
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5CA1::NIjZenTNJji1/kvngW1msoDJnS9qb8C7X0YJ/0budYl2Wr+KZY2y/qCFp23q9GYpjXQgWME0ArXwLKo26wQYpnCnPu1RfDVjBZYm+ynAlEU0f6GXUGWJo5SFXKcVRgG33PdlL79eQePF4E1hOpZvJ79r0EzGtBW3autHMOHtpAJMdgGO0HOxUhF1aEN4i3R/ysn8VQ1NVEMKKhRA/CYkExHRLi8yyMOxoVQ/YoBHMBEEZZz0BdASjk3sBFaDdm4tBMvjpY5kR7oH+X5878jmb6dXjpM6+iImacaR68ApPBSPPYYDlxpvqXaacjeVI8Ybu6485Mc90isfL3A0bfm+TA==
+      Csrfpreventiontoken:
+      - 5FBE5CA1:2wSP3B+yBkKcNAmclMMAg5dSN77eDCAsw6FKkloozig
+  response:
+    status:
+      code: 500
+      message: 'add auth server failed: error during cfs-locked ''file-domains_cfg''
+        operation: domain ''ActiveDirectory'' already exists'
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - close
+      Date:
+      - Wed, 25 Nov 2020 13:31:13 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:13 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:15 GMT
+- request:
+    method: put
+    uri: https://192.168.56.101:8006/api2/json/access/domains/LDAP
+    body:
+      encoding: US-ASCII
+      string: comment=Test+domain+LDAP&tfa=type%3Doath%2Cstep%3D30%2Cdigits%3D8
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5CA1::NIjZenTNJji1/kvngW1msoDJnS9qb8C7X0YJ/0budYl2Wr+KZY2y/qCFp23q9GYpjXQgWME0ArXwLKo26wQYpnCnPu1RfDVjBZYm+ynAlEU0f6GXUGWJo5SFXKcVRgG33PdlL79eQePF4E1hOpZvJ79r0EzGtBW3autHMOHtpAJMdgGO0HOxUhF1aEN4i3R/ysn8VQ1NVEMKKhRA/CYkExHRLi8yyMOxoVQ/YoBHMBEEZZz0BdASjk3sBFaDdm4tBMvjpY5kR7oH+X5878jmb6dXjpM6+iImacaR68ApPBSPPYYDlxpvqXaacjeVI8Ybu6485Mc90isfL3A0bfm+TA==
+      Csrfpreventiontoken:
+      - 5FBE5CA1:2wSP3B+yBkKcNAmclMMAg5dSN77eDCAsw6FKkloozig
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:15 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/domains
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5CA1::NIjZenTNJji1/kvngW1msoDJnS9qb8C7X0YJ/0budYl2Wr+KZY2y/qCFp23q9GYpjXQgWME0ArXwLKo26wQYpnCnPu1RfDVjBZYm+ynAlEU0f6GXUGWJo5SFXKcVRgG33PdlL79eQePF4E1hOpZvJ79r0EzGtBW3autHMOHtpAJMdgGO0HOxUhF1aEN4i3R/ysn8VQ1NVEMKKhRA/CYkExHRLi8yyMOxoVQ/YoBHMBEEZZz0BdASjk3sBFaDdm4tBMvjpY5kR7oH+X5878jmb6dXjpM6+iImacaR68ApPBSPPYYDlxpvqXaacjeVI8Ybu6485Mc90isfL3A0bfm+TA==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '272'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"type":"pam","comment":"Linux PAM standard authentication","realm":"pam"},{"comment":"Test
+        domain LDAP","tfa":"oath","realm":"LDAP","type":"ldap"},{"type":"pve","realm":"pve","comment":"Proxmox
+        VE authentication server"},{"realm":"ActiveDirectory","type":"ad"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:15 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/domains
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5CA1::NIjZenTNJji1/kvngW1msoDJnS9qb8C7X0YJ/0budYl2Wr+KZY2y/qCFp23q9GYpjXQgWME0ArXwLKo26wQYpnCnPu1RfDVjBZYm+ynAlEU0f6GXUGWJo5SFXKcVRgG33PdlL79eQePF4E1hOpZvJ79r0EzGtBW3autHMOHtpAJMdgGO0HOxUhF1aEN4i3R/ysn8VQ1NVEMKKhRA/CYkExHRLi8yyMOxoVQ/YoBHMBEEZZz0BdASjk3sBFaDdm4tBMvjpY5kR7oH+X5878jmb6dXjpM6+iImacaR68ApPBSPPYYDlxpvqXaacjeVI8Ybu6485Mc90isfL3A0bfm+TA==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '272'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"type":"ad","realm":"ActiveDirectory"},{"type":"pve","realm":"pve","comment":"Proxmox
+        VE authentication server"},{"type":"ldap","comment":"Test domain LDAP","realm":"LDAP","tfa":"oath"},{"type":"pam","realm":"pam","comment":"Linux
+        PAM standard authentication"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:15 GMT
+- request:
+    method: put
+    uri: https://192.168.56.101:8006/api2/json/access/domains/ActiveDirectory
+    body:
+      encoding: US-ASCII
+      string: tfa=type%3Dyubico%2Cid%3D1%2Ckey%3D2%2Curl%3Dhttp%3A%2F%2Flocalhost
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5CA1::NIjZenTNJji1/kvngW1msoDJnS9qb8C7X0YJ/0budYl2Wr+KZY2y/qCFp23q9GYpjXQgWME0ArXwLKo26wQYpnCnPu1RfDVjBZYm+ynAlEU0f6GXUGWJo5SFXKcVRgG33PdlL79eQePF4E1hOpZvJ79r0EzGtBW3autHMOHtpAJMdgGO0HOxUhF1aEN4i3R/ysn8VQ1NVEMKKhRA/CYkExHRLi8yyMOxoVQ/YoBHMBEEZZz0BdASjk3sBFaDdm4tBMvjpY5kR7oH+X5878jmb6dXjpM6+iImacaR68ApPBSPPYYDlxpvqXaacjeVI8Ybu6485Mc90isfL3A0bfm+TA==
+      Csrfpreventiontoken:
+      - 5FBE5CA1:2wSP3B+yBkKcNAmclMMAg5dSN77eDCAsw6FKkloozig
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:15 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/domains
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5CA1::NIjZenTNJji1/kvngW1msoDJnS9qb8C7X0YJ/0budYl2Wr+KZY2y/qCFp23q9GYpjXQgWME0ArXwLKo26wQYpnCnPu1RfDVjBZYm+ynAlEU0f6GXUGWJo5SFXKcVRgG33PdlL79eQePF4E1hOpZvJ79r0EzGtBW3autHMOHtpAJMdgGO0HOxUhF1aEN4i3R/ysn8VQ1NVEMKKhRA/CYkExHRLi8yyMOxoVQ/YoBHMBEEZZz0BdASjk3sBFaDdm4tBMvjpY5kR7oH+X5878jmb6dXjpM6+iImacaR68ApPBSPPYYDlxpvqXaacjeVI8Ybu6485Mc90isfL3A0bfm+TA==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '287'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"comment":"Linux PAM standard authentication","realm":"pam","type":"pam"},{"type":"ldap","realm":"LDAP","tfa":"oath","comment":"Test
+        domain LDAP"},{"type":"pve","realm":"pve","comment":"Proxmox VE authentication
+        server"},{"realm":"ActiveDirectory","tfa":"yubico","type":"ad"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:15 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/domains
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5CA1::NIjZenTNJji1/kvngW1msoDJnS9qb8C7X0YJ/0budYl2Wr+KZY2y/qCFp23q9GYpjXQgWME0ArXwLKo26wQYpnCnPu1RfDVjBZYm+ynAlEU0f6GXUGWJo5SFXKcVRgG33PdlL79eQePF4E1hOpZvJ79r0EzGtBW3autHMOHtpAJMdgGO0HOxUhF1aEN4i3R/ysn8VQ1NVEMKKhRA/CYkExHRLi8yyMOxoVQ/YoBHMBEEZZz0BdASjk3sBFaDdm4tBMvjpY5kR7oH+X5878jmb6dXjpM6+iImacaR68ApPBSPPYYDlxpvqXaacjeVI8Ybu6485Mc90isfL3A0bfm+TA==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '287'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"realm":"pam","comment":"Linux PAM standard authentication","type":"pam"},{"tfa":"oath","realm":"LDAP","comment":"Test
+        domain LDAP","type":"ldap"},{"realm":"pve","comment":"Proxmox VE authentication
+        server","type":"pve"},{"tfa":"yubico","realm":"ActiveDirectory","type":"ad"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:15 GMT
+- request:
+    method: delete
+    uri: https://192.168.56.101:8006/api2/json/access/domains/LDAP
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5CA1::NIjZenTNJji1/kvngW1msoDJnS9qb8C7X0YJ/0budYl2Wr+KZY2y/qCFp23q9GYpjXQgWME0ArXwLKo26wQYpnCnPu1RfDVjBZYm+ynAlEU0f6GXUGWJo5SFXKcVRgG33PdlL79eQePF4E1hOpZvJ79r0EzGtBW3autHMOHtpAJMdgGO0HOxUhF1aEN4i3R/ysn8VQ1NVEMKKhRA/CYkExHRLi8yyMOxoVQ/YoBHMBEEZZz0BdASjk3sBFaDdm4tBMvjpY5kR7oH+X5878jmb6dXjpM6+iImacaR68ApPBSPPYYDlxpvqXaacjeVI8Ybu6485Mc90isfL3A0bfm+TA==
+      Csrfpreventiontoken:
+      - 5FBE5CA1:2wSP3B+yBkKcNAmclMMAg5dSN77eDCAsw6FKkloozig
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:15 GMT
+- request:
+    method: delete
+    uri: https://192.168.56.101:8006/api2/json/access/domains/ActiveDirectory
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5CA1::NIjZenTNJji1/kvngW1msoDJnS9qb8C7X0YJ/0budYl2Wr+KZY2y/qCFp23q9GYpjXQgWME0ArXwLKo26wQYpnCnPu1RfDVjBZYm+ynAlEU0f6GXUGWJo5SFXKcVRgG33PdlL79eQePF4E1hOpZvJ79r0EzGtBW3autHMOHtpAJMdgGO0HOxUhF1aEN4i3R/ysn8VQ1NVEMKKhRA/CYkExHRLi8yyMOxoVQ/YoBHMBEEZZz0BdASjk3sBFaDdm4tBMvjpY5kR7oH+X5878jmb6dXjpM6+iImacaR68ApPBSPPYYDlxpvqXaacjeVI8Ybu6485Mc90isfL3A0bfm+TA==
+      Csrfpreventiontoken:
+      - 5FBE5CA1:2wSP3B+yBkKcNAmclMMAg5dSN77eDCAsw6FKkloozig
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '13'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":null}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:15 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/domains
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5CA1::NIjZenTNJji1/kvngW1msoDJnS9qb8C7X0YJ/0budYl2Wr+KZY2y/qCFp23q9GYpjXQgWME0ArXwLKo26wQYpnCnPu1RfDVjBZYm+ynAlEU0f6GXUGWJo5SFXKcVRgG33PdlL79eQePF4E1hOpZvJ79r0EzGtBW3autHMOHtpAJMdgGO0HOxUhF1aEN4i3R/ysn8VQ1NVEMKKhRA/CYkExHRLi8yyMOxoVQ/YoBHMBEEZZz0BdASjk3sBFaDdm4tBMvjpY5kR7oH+X5878jmb6dXjpM6+iImacaR68ApPBSPPYYDlxpvqXaacjeVI8Ybu6485Mc90isfL3A0bfm+TA==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '159'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"comment":"Linux PAM standard authentication","realm":"pam","type":"pam"},{"type":"pve","comment":"Proxmox
+        VE authentication server","realm":"pve"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:15 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/domains
+    body:
+      encoding: US-ASCII
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5CA1::NIjZenTNJji1/kvngW1msoDJnS9qb8C7X0YJ/0budYl2Wr+KZY2y/qCFp23q9GYpjXQgWME0ArXwLKo26wQYpnCnPu1RfDVjBZYm+ynAlEU0f6GXUGWJo5SFXKcVRgG33PdlL79eQePF4E1hOpZvJ79r0EzGtBW3autHMOHtpAJMdgGO0HOxUhF1aEN4i3R/ysn8VQ1NVEMKKhRA/CYkExHRLi8yyMOxoVQ/YoBHMBEEZZz0BdASjk3sBFaDdm4tBMvjpY5kR7oH+X5878jmb6dXjpM6+iImacaR68ApPBSPPYYDlxpvqXaacjeVI8Ybu6485Mc90isfL3A0bfm+TA==
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '159'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:14 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":[{"comment":"Proxmox VE authentication server","realm":"pve","type":"pve"},{"comment":"Linux
+        PAM standard authentication","realm":"pam","type":"pam"}]}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:15 GMT
+recorded_with: VCR 4.0.0

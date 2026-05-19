@@ -1,0 +1,51 @@
+*1.3.3
+
+* Add support for DHCP Subnet Selection Option 0x76 (https://github.com/mjtko/net-dhcp-ruby/pull/12) [elibus]
+
+*1.3.2
+
+* Fix MAC address sniffing under (at least) CentOS and RHEL 7 (also OS X and possibly FreeBSD)
+  (https://github.com/mjtko/net-dhcp-ruby/pull/11) [psschroeter]
+
+*1.3.1
+
+* Fix HostNameOption to use correct type (https://github.com/mjtko/net-dhcp-ruby/pull/9) [mordocai]
+
+*1.3.0
+
+* Add Windows support to DHCP requests (https://github.com/mjtko/net-dhcp-ruby/pull/10) [rightscale]
+
+*1.2.1
+
+* Fix net-dhcp example to allow use of the socket if already in use (mikerodrigues)
+* Fix net-dhcp example script to bail with useful errors if dependencies haven't been installed (mjtko)
+
+*1.2.0
+
+* Fix Array handling for message payloads [presto53]
+* Use a raise syntax that isn't archaic [presto53]
+* Depend on simplecov rather than rcov for Ruby 1.9+ compat [mjtko]
+
+*1.1.1
+
+* Replace incorrect equality check with assignment in Message#from_udp_payload to correct behaviour when an unrecognised option or message is encountered [mjtko]
+* Allow callers to disable the debug output emitted in Message#from_udp_payload for unrecognised options or messages [mjtko]
+* Added rake test task [mjtko]
+* Correct test_from_udp_payload test assertion [mjtko]
+* Default to 00:00:00:00:00:00 in Message#initialize if local MAC address can't be read [mjtko]
+
+*1.1.0
+
+* Added BroadcastAddressOption and cleaned up the output for some options to make them more readable [rakshasa]
+
+*1.0.2
+
+* Ensure chaddr is packed to the correct size (https://github.com/mjtko/net-dhcp-ruby/pull/1) [rakshasa]
+
+*1.0.1
+
+* Look in correct place for VERSION constant (gemification patch) [mjtko]
+
+*1.0.0
+
+* Initial release to rubygems - originally authored by etd, migrated to github by syonbori, gemified by mjtko. [mjtko]

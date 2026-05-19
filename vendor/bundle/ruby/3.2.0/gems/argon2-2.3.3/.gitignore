@@ -1,0 +1,14 @@
+/.bundle/
+/.yardoc
+/Gemfile.lock
+/_yardoc/
+/coverage/
+/doc/
+/pkg/
+/spec/reports/
+/tmp/
+/vendor
+/ext/argon2_wrap/libargon2_wrap.so
+/ext/argon2_wrap/tests
+/ext/argon2_wrap/libargon2_wrap.bundle*
+argon2-0.0.2.gem

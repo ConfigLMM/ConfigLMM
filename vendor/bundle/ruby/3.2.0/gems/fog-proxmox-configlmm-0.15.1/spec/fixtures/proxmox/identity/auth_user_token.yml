@@ -1,0 +1,77 @@
+---
+http_interactions:
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/users/root@pam/token/root1
+    body:
+      encoding: UTF-8
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Authorization:
+      - PVEAPIToken=root@pam!root1=ed6402b4-641d-46b1-b20a-33ba9ba12f54
+      Accept:
+      - application/json
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '33'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"privsep":0,"expire":0}}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+- request:
+    method: get
+    uri: https://192.168.56.101:8006/api2/json/access/users/root@pam/token/root1
+    body:
+      encoding: UTF-8
+      string: ''
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Authorization:
+      - PVEAPIToken=root@pam!root1=wrong_token
+      Accept:
+      - application/json
+  response:
+    status:
+      code: 401
+      message: invalid token value!
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - close
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: ''
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:15 GMT
+recorded_with: VCR 4.0.0

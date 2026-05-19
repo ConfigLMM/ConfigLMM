@@ -1,0 +1,20 @@
+current directory: /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/argon2-2.3.3/ext/argon2_wrap
+/usr/bin/ruby3.2 -I/usr/lib/ruby/vendor_ruby extconf.rb
+
+current directory: /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/argon2-2.3.3/ext/argon2_wrap
+make DESTDIR\= sitearchdir\=./.gem.20260519-4500-kkhpcz sitelibdir\=./.gem.20260519-4500-kkhpcz clean
+rm -f tests libargon2_wrap.so
+
+current directory: /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/argon2-2.3.3/ext/argon2_wrap
+make DESTDIR\= sitearchdir\=./.gem.20260519-4500-kkhpcz sitelibdir\=./.gem.20260519-4500-kkhpcz
+cc -pthread -O3 -Wall -g -I../phc-winner-argon2/include -I../phc-winner-argon2/src -shared -fPIC ../phc-winner-argon2/src/argon2.c ../phc-winner-argon2/src/core.c ../phc-winner-argon2/src/blake2/blake2b.c ../phc-winner-argon2/src/thread.c ../phc-winner-argon2/src/encoding.c argon_wrap.c ../phc-winner-argon2/src/ref.c -o libargon2_wrap.so
+cp libargon2_wrap.so ../../lib
+
+current directory: /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/argon2-2.3.3/ext/argon2_wrap
+make DESTDIR\= sitearchdir\=./.gem.20260519-4500-kkhpcz sitelibdir\=./.gem.20260519-4500-kkhpcz install
+echo none
+none
+
+current directory: /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/argon2-2.3.3/ext/argon2_wrap
+make DESTDIR\= sitearchdir\=./.gem.20260519-4500-kkhpcz sitelibdir\=./.gem.20260519-4500-kkhpcz clean
+rm -f tests libargon2_wrap.so

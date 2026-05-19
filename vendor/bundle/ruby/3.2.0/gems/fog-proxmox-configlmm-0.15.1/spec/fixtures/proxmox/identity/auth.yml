@@ -1,0 +1,42 @@
+---
+http_interactions:
+- request:
+    method: post
+    uri: https://192.168.56.101:8006/api2/json/access/ticket
+    body:
+      encoding: US-ASCII
+      string: username=root%40pam&password=proxmox01&privs=User.Modify&path=access&otp=proxmox01
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Cookie:
+      - PVEAuthCookie=PVE:root@pam:5FBE5C9E::EhfVyMNwMTFijsEKxKntnYvXA0p6/xlCxG0hFU86+DdyenhV9kPrUvThmw7jAySfY0gdVEc1Jit2I8Ud3AEiJgLYMKLfQy2ruKslJXJb+WLct+JkkX9Yc6N4nHvVD0HsTkKPRgw8LSKAfaJRbfJ217GvOXO710IdLauP5QlZLBSatXwOY5AU4YmBN8D5TBAKzFZhzvOl5VwvRqzYlSWpcWVZ0XeNRlC+E9c42ivzQYbhRIZwhH1SlheJPejMzeiy8WsKJXLjbwKgpUUDGTf+RAzufTfss/mbEztqbUMVBQshvD/78my1eDF3x4YN+cuG4hFcCt+/piOMiS/fBCV1xg==
+      Csrfpreventiontoken:
+      - 5FBE5C9E:LqNLX5YAQF2AsSPReLeDtBYINrF6B/gHIZsYM6uAhTI
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - close, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '711'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:31:10 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"username":"root@pam","cap":{"access":{"Group.Allocate":1,"Permissions.Modify":1,"User.Modify":1},"nodes":{"Sys.Audit":1,"Permissions.Modify":1,"Sys.Syslog":1,"Sys.Modify":1,"Sys.PowerMgmt":1,"Sys.Console":1},"dc":{"Sys.Audit":1},"vms":{"VM.Config.Disk":1,"VM.Config.Memory":1,"VM.Config.HWType":1,"VM.Migrate":1,"VM.Snapshot.Rollback":1,"VM.Config.Network":1,"Permissions.Modify":1,"VM.Clone":1,"VM.Allocate":1,"VM.Config.CPU":1,"VM.Console":1,"VM.Snapshot":1,"VM.Config.Options":1,"VM.Monitor":1,"VM.PowerMgmt":1,"VM.Backup":1,"VM.Audit":1,"VM.Config.CDROM":1},"storage":{"Datastore.AllocateTemplate":1,"Datastore.AllocateSpace":1,"Datastore.Audit":1,"Permissions.Modify":1,"Datastore.Allocate":1}}}}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:31:12 GMT
+recorded_with: VCR 4.0.0

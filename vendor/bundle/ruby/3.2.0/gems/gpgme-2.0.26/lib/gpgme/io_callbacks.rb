@@ -1,0 +1,26 @@
+module GPGME
+  class IOCallbacks
+    def initialize(io)
+      @io = io
+    end
+
+    def read(hook, length)
+      @io.read(length)
+    end
+
+    def write(hook, buffer, length)
+      data = buffer[0 .. length]
+      # Handle encoding conversion if the IO has a different encoding
+      if @io.respond_to?(:external_encoding) && @io.external_encoding
+        data = data.encode(@io.external_encoding, invalid: :replace, undef: :replace)
+      end
+      @io.write(data)
+    end
+
+    def seek(hook, offset, whence)
+      return @io.pos if offset == 0 && whence == IO::SEEK_CUR
+      @io.seek(offset, whence)
+      @io.pos
+    end
+  end
+end

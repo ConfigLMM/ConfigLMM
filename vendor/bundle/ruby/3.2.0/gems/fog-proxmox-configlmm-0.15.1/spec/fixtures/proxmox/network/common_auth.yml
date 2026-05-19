@@ -1,0 +1,40 @@
+---
+http_interactions:
+- request:
+    method: post
+    uri: https://192.168.56.101:8006/api2/json/access/ticket
+    body:
+      encoding: US-ASCII
+      string: username=root%40pam&password=proxmox01
+    headers:
+      User-Agent:
+      - fog-core/2.2.3
+      Accept:
+      - application/json
+  response:
+    status:
+      code: 200
+      message: OK
+    headers:
+      Cache-Control:
+      - max-age=0
+      Connection:
+      - close, Keep-Alive
+      Date:
+      - Wed, 25 Nov 2020 13:43:47 GMT
+      Pragma:
+      - no-cache
+      Server:
+      - pve-api-daemon/3.0
+      Content-Length:
+      - '1167'
+      Content-Type:
+      - application/json;charset=UTF-8
+      Expires:
+      - Wed, 25 Nov 2020 13:43:47 GMT
+    body:
+      encoding: ASCII-8BIT
+      string: '{"data":{"CSRFPreventionToken":"5FBE5F93:tNCo7nHYIIdA46RVo8yPQg9ZcbtzibFl3lhAwDPkSqc","ticket":"PVE:root@pam:5FBE5F93::J4UGO/cW6NJLxU0fQy8AnxuJhKDkIa+ZLBLUIxlXYO3Nb1ocZ15jqoPl0EEOQpI2sohhmtGYo9bptqaPPH48rmaNKzIUtHjDAg/c425GgbhkSo2jYVeCWcTTEC+nDskOiMkjdE4HIiFLpk71IMEP93hGWJ4+mnUxOLfHsRDodWdJXoGoBlxiUBu0zirFLXR60i6WCK2oX82nPYXRJbsl4VRLYcOkYXnnfaUxYgOL0veZhKRcAWlVRKQ7/lkdG1iu3XlOvEeynqcT2xHs+Z158zALA+ZzAEQ6GYdvFFKr/xR57Kd8hfOhRumKx5EaDfdeYkZP/8ZVH48tEbTXrOEQHg==","cap":{"nodes":{"Sys.Console":1,"Sys.Audit":1,"Sys.PowerMgmt":1,"Permissions.Modify":1,"Sys.Modify":1,"Sys.Syslog":1},"access":{"Group.Allocate":1,"Permissions.Modify":1,"User.Modify":1},"dc":{"Sys.Audit":1},"vms":{"VM.Config.HWType":1,"VM.Migrate":1,"VM.Snapshot.Rollback":1,"VM.Config.Memory":1,"VM.Config.Disk":1,"VM.PowerMgmt":1,"VM.Monitor":1,"VM.Backup":1,"VM.Audit":1,"VM.Config.CDROM":1,"VM.Config.Network":1,"Permissions.Modify":1,"VM.Clone":1,"VM.Allocate":1,"VM.Config.CPU":1,"VM.Console":1,"VM.Config.Options":1,"VM.Snapshot":1},"storage":{"Datastore.Allocate":1,"Permissions.Modify":1,"Datastore.Audit":1,"Datastore.AllocateSpace":1,"Datastore.AllocateTemplate":1}},"username":"root@pam"}}'
+    http_version:
+  recorded_at: Wed, 25 Nov 2020 13:43:48 GMT
+recorded_with: VCR 4.0.0

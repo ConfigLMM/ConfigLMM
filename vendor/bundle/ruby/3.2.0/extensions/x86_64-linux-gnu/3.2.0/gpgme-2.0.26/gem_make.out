@@ -1,0 +1,65 @@
+current directory: /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ext/gpgme
+/usr/bin/ruby3.2 -I/usr/lib/ruby/vendor_ruby extconf.rb
+************************************************************************
+IMPORTANT!  gpgme gem uses locally built versions of required C libraries,
+namely libgpg-error, libassuan, and gpgme.
+
+If this is a concern for you and you want to use the system library
+instead, abort this installation process and reinstall gpgme gem as
+follows:
+
+    gem install gpgme -- --use-system-libraries
+
+************************************************************************
+Extracting libgpg-error-1.55.tar.bz2 into tmp/x86_64-linux-gnu/ports/libgpg-error/1.55... OK
+Running 'configure' for libgpg-error 1.55... OK
+Running 'compile' for libgpg-error 1.55... OK
+Running 'install' for libgpg-error 1.55... OK
+Activating libgpg-error 1.55 (from /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libgpg-error/1.55)...
+Extracting libassuan-3.0.2.tar.bz2 into tmp/x86_64-linux-gnu/ports/libassuan/3.0.2... OK
+Running 'configure' for libassuan 3.0.2... OK
+Running 'compile' for libassuan 3.0.2... OK
+Running 'install' for libassuan 3.0.2... OK
+Activating libassuan 3.0.2 (from /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/libassuan/3.0.2)...
+Extracting gpgme-2.0.0.tar.bz2 into tmp/x86_64-linux-gnu/ports/gpgme/2.0.0... OK
+Running 'configure' for gpgme 2.0.0... OK
+Running 'compile' for gpgme 2.0.0... OK
+Running 'install' for gpgme 2.0.0... OK
+Activating gpgme 2.0.0 (from /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports/x86_64-linux-gnu/gpgme/2.0.0)...
+checking for linker flags for static linking... -Wl,-Bstatic
+checking for gpgme.h... yes
+checking for gpgme >= 1.1.3... yes
+checking for gpgme_op_export_keys()... yes
+checking for GPGME_ENCRYPT_ALWAYS_TRUST in gpgme.h... yes
+checking for GPGME_ENCRYPT_NO_ENCRYPT_TO in gpgme.h... yes
+checking for GPGME_ENCRYPT_PREPARE in gpgme.h... yes
+checking for GPGME_ENCRYPT_EXPECT_SIGN in gpgme.h... yes
+checking for GPGME_ENCRYPT_NO_COMPRESS in gpgme.h... yes
+checking for GPGME_ENCRYPT_SYMMETRIC in gpgme.h... yes
+checking for GPGME_ENCRYPT_THROW_KEYIDS in gpgme.h... yes
+checking for GPGME_ENCRYPT_WRAP in gpgme.h... yes
+checking for GPGME_ENCRYPT_WANT_ADDRESS in gpgme.h... yes
+checking for GPGME_ENCRYPT_ARCHIVE in gpgme.h... yes
+checking for GPGME_ENCRYPT_FILE in gpgme.h... yes
+checking for GPGME_ENCRYPT_ADD_RECP in gpgme.h... yes
+checking for GPGME_ENCRYPT_CHG_RECP in gpgme.h... yes
+creating Makefile
+
+current directory: /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ext/gpgme
+make DESTDIR\= sitearchdir\=./.gem.20260519-4500-2jdw17 sitelibdir\=./.gem.20260519-4500-2jdw17 clean
+
+current directory: /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ext/gpgme
+make DESTDIR\= sitearchdir\=./.gem.20260519-4500-2jdw17 sitelibdir\=./.gem.20260519-4500-2jdw17
+compiling gpgme_n.c
+linking shared-object gpgme_n.so
+Cleaning files only used during build.
+rm -rf /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ext/gpgme/tmp/x86_64-linux-gnu/ports
+rmdir -p /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ext/gpgme/tmp/x86_64-linux-gnu
+rm -rf /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ports
+
+current directory: /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ext/gpgme
+make DESTDIR\= sitearchdir\=./.gem.20260519-4500-2jdw17 sitelibdir\=./.gem.20260519-4500-2jdw17 install
+/usr/bin/install -c -m 0755 gpgme_n.so ./.gem.20260519-4500-2jdw17
+
+current directory: /home/runner/work/ConfigLMM/ConfigLMM/vendor/bundle/ruby/3.2.0/gems/gpgme-2.0.26/ext/gpgme
+make DESTDIR\= sitearchdir\=./.gem.20260519-4500-2jdw17 sitelibdir\=./.gem.20260519-4500-2jdw17 clean

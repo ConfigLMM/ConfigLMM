@@ -1,0 +1,299 @@
+:toc: macro
+:toclevels: 5
+:figure-caption!:
+
+= XDG
+
+Provides a Ruby implementation of the link:https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html[XDG Base Directory
+Specification] for managing common configurations without polluting your dotfiles. XDG is great for command line interfaces or any application that needs a common configuration, cache, data, state, or runtime.
+
+💡 If you write a lot of Command Line Interfaces and would like additional/advanced syntactic sugar that includes what is found in this gem, make sure to check out the
+link:https://alchemists.io/projects/runcom[Runcom] gem too.
+
+toc::[]
+
+== Features
+
+* Provides a `XDG` object that adheres to the _XDG Base Directory Specification_ with access to the following environment settings:
+** `$XDG_CACHE_HOME`
+** `$XDG_CONFIG_HOME`
+** `$XDG_CONFIG_DIRS`
+** `$XDG_DATA_HOME`
+** `$XDG_DATA_DIRS`
+** `$XDG_STATE_HOME`
+
+== Requirements
+
+. https://www.ruby-lang.org[Ruby]
+
+== Setup
+
+To install _with_ security, run:
+
+[source,bash]
+----
+# 💡 Skip this line if you already have the public certificate installed.
+gem cert --add <(curl --compressed --location https://alchemists.io/gems.pem)
+gem install xdg --trust-policy HighSecurity
+----
+
+To install _without_ security, run:
+
+[source,bash]
+----
+gem install xdg
+----
+
+You can also add the gem directly to your project:
+
+[source,bash]
+----
+bundle add xdg
+----
+
+Once the gem is installed, you only need to require it:
+
+[source,ruby]
+----
+require "xdg"
+----
+
+== Usage
+
+The following describes how to use this implementation.
+
+=== Objects
+
+To get up and running quickly, use `XDG.new` as follows:
+
+[source,ruby]
+----
+xdg = XDG.new
+xdg.cache_home   # Answers computed `$XDG_CACHE_HOME` value.
+xdg.config_home  # Answers computed `$XDG_CONFIG_HOME` value.
+xdg.config_dirs  # Answers computed `$XDG_CONFIG_DIRS` value.
+xdg.data_home    # Answers computed `$XDG_DATA_HOME` value.
+xdg.data_dirs    # Answers computed `$XDG_DATA_DIRS` value.
+xdg.state_home   # Answers computed `$XDG_STATE_HOME` value.
+----
+
+Behinds the scenes, use of `XDG.new` provides a convenient wrapper of `XDG::Environment.new` which, in turn, provides a unified API to the following objects:
+
+[source,ruby]
+----
+cache = XDG::Cache.new
+config = XDG::Config.new
+data = XDG::Data.new
+state = XDG::State.new
+----
+
+Generally, use of `XDG.new` is all you need but knowing you can create a specialized instance of any aspect of the XDG specification can be handy for specific use cases. Additionally, the `cache`, `config`, `data`, and `state` objects share the same API which means you can send the following messages:
+
+* `#home` - Answers the home directory as computed via the `$XDG_*_HOME` key.
+* `#directories` - Answers an array directories as computed via the `$XDG_*_DIRS` key.
+* `#all` - Answers an array of _all_ directories as computed from the combined `$XDG_*_HOME` and
+  `$XDG_*_DIRS` values (with `$XDG_*_HOME` prefixed at the start of the array).
+
+The _computed_ value of each method is either the user-defined value of the key or the default value, per specification, when the key is not defined or empty. For more on this, scroll down to the _Variable Defaults_ section to learn more.
+
+=== Examples
+
+The following are examples of what you would see when playing around with the XDG objects within an
+IRB console (taken from my own environment):
+
+[source,ruby]
+----
+require "xdg"
+
+# Initialization
+xdg = XDG.new
+cache = XDG::Cache.new
+config = XDG::Config.new
+data = XDG::Data.new
+state = XDG::State.new
+
+# Inspection
+xdg.inspect         # "XDG_CACHE_HOME=/Users/demo/.cache XDG_CONFIG_HOME=/Users/demo/.config XDG_CONFIG_DIRS=/etc/xdg XDG_DATA_HOME=/Users/demo/.local/share XDG_DATA_DIRS=/usr/local/share:/usr/share XDG_STATE_HOME=/Users/demo/.local/state"
+cache.inspect       # "XDG_CACHE_HOME=/Users/demo/.cache"
+config.inspect      # "XDG_CONFIG_HOME=/Users/demo/.config XDG_CONFIG_DIRS=/etc/xdg"
+data.inspect        # "XDG_DATA_HOME=/Users/demo/.local/share XDG_DATA_DIRS=/usr/local/share:/usr/share"
+state.inspect       # "XDG_STATE_HOME=/Users/demo/.local/state"
+
+# Paths
+xdg.cache_home      # #<Pathname:/Users/demo/.cache>
+xdg.config_home     # #<Pathname:/Users/demo/.config>
+xdg.config_dirs     # [#<Pathname:/etc/xdg>]
+xdg.data_home       # #<Pathname:/Users/demo/.local/share>
+xdg.data_dirs       # [#<Pathname:/usr/local/share>, #<Pathname:/usr/share>]
+xdg.state_home      # #<Pathname:/Users/demo/.local/state>
+
+cache.home          # #<Pathname:/Users/demo/.cache>
+cache.directories   # []
+cache.all           # [#<Pathname:/Users/demo/.cache>]
+
+config.home         # #<Pathname:/Users/demo/.config>
+config.directories  # [#<Pathname:/etc/xdg>]
+config.all          # [#<Pathname:/Users/demo/.config>, #<Pathname:/etc/xdg>]
+
+data.home           # #<Pathname:/Users/demo/.local/share>
+data.directories    # [#<Pathname:/usr/local/share>, #<Pathname:/usr/share>]
+data.all            # [#<Pathname:/Users/demo/.local/share>, #<Pathname:/usr/local/share>, #<Pathname:/usr/share>]
+
+state.home          # #<Pathname:/Users/demo/.local/state>
+state.directories   # []
+state.all           # [#<Pathname:/Users/demo/.local/state>]
+----
+
+As you can see from above, each XDG object answers back a `Pathname` which means you have the full
+`Pathname` API at your fingertips to build upon the output of these objects as needed.
+
+=== Variable Defaults
+
+The _XDG Base Directory Specification_ defines environment variables and associated default values
+when not defined or empty. The following defaults, per specification, are implemented by the `XDG`
+objects:
+
+* `$XDG_CACHE_HOME="$HOME/.cache"`
+* `$XDG_CONFIG_HOME="$HOME/.config"`
+* `$XDG_CONFIG_DIRS="/etc/xdg"`
+* `$XDG_DATA_HOME="$HOME/.local/share"`
+* `$XDG_DATA_DIRS="/usr/local/share/:/usr/share/"`
+* `$XDG_RUNTIME_DIR`
+* `$XDG_STATE_HOME="$HOME/.local/state"`
+
+The `$XDG_RUNTIME_DIR` deserves special mention as it’s not, _currently_, implemented as part of
+this gem because it is more user/environment specific. Here is how the `$XDG_RUNTIME_DIR` is meant
+to be used should you choose to use it:
+
+* _Must_ reference user-specific non-essential runtime files and other file objects (such as
+sockets, named pipes, etc.)
+* _Must_ be owned by the user with _only_ the user having read and write access to it.
+* _Must_ have a Unix access mode of `0700`.
+* _Must_ be bound to the user when logging in.
+* _Must_ be removed when the user logs out.
+* _Must_ be pointed to the same directory when the user logs in more than once.
+* _Must_ exist from first login to last logout on the system and not removed in between.
+* _Must_ not allow files in the directory to survive reboot or a full logout/login cycle.
+* _Must_ keep the directory on the local file system and not shared with any other file systems.
+* _Must_ keep the directory fully-featured by the standards of the operating system. Specifically,
+on Unix-like operating systems AF_UNIX sockets, symbolic links, hard links, proper permissions, file
+locking, sparse files, memory mapping, file change notifications, a reliable hard link count must be
+supported, and no restrictions on the file name character set should be imposed. Files in this
+directory _may_ be subjected to periodic clean-up. To ensure files are not removed, they should have
+their access time timestamp modified at least once every 6 hours of monotonic time or the '`sticky`'
+bit should be set on the file.
+* When not set, applications should fall back to a replacement directory with similar capabilities
+and print a warning message. Applications should use this directory for communication and
+synchronization purposes and should not place larger files in it, since it might reside in runtime
+memory and cannot necessarily be swapped out to disk.
+
+=== Variable Behavior
+
+The behavior of most XDG environment variables can be lumped into two categories:
+
+* `$XDG_*_DIRS`
+* `$XDG_*_HOME`
+
+Each is described in detail below.
+
+==== Directories
+
+These variables are used to define a colon (`:`) delimited list of directories. Order is important
+as the first directory defined will take precedent over the following directory and so forth. For
+example, here is a situation where the `XDG_CONFIG_DIRS` key has a custom value:
+
+[source,bash]
+----
+XDG_CONFIG_DIRS="/example/one/.config:/example/two/.settings:/example/three/.configuration"
+----
+
+Yields the following, colon delimited, array:
+
+[source,ruby]
+----
+[
+  "/example/one/.config",
+  "/example/two/.settings",
+  "/example/three/.configuration"
+]
+----
+
+In the above example, the `"/example/one/.config"` path takes _highest_ priority since it was
+defined first.
+
+==== Homes
+
+These variables take precedence over the corresponding `$XDG_*_DIRS` environment variables. Using
+a modified version of the `$XDG_*_DIRS` example, shown above, we could have the following setup:
+
+[source,bash]
+----
+XDG_CONFIG_HOME="/example/priority"
+XDG_CONFIG_DIRS="/example/one/.config:/example/two/.settings"
+----
+
+Yields the following, colon delimited, array:
+
+[source,ruby]
+----
+[
+  "/example/priority",
+  "/example/one/.config",
+  "/example/two/.settings"
+]
+----
+
+Due to `XDG_CONFIG_HOME` taking precedence over the `XDG_CONFIG_DIRS`, the path with the
+_highest_ priority in this example is: `"/example/priority"`.
+
+=== Variable Priority
+
+Path precedence is determined in the following order (with the first taking highest priority):
+
+. `$XDG_*_HOME` - Will be used if defined. Otherwise, falls back to specification default.
+. `$XDG_*_DIRS` - Iterates through directories in order defined (with first taking highest
+  priority). Otherwise, falls back to specification default.
+
+== Development
+
+To contribute, run:
+
+[source,bash]
+----
+git clone https://github.com/demo/xdg
+cd xdg
+bin/setup
+----
+
+You can also use the IRB console for direct access to all objects:
+
+[source,bash]
+----
+bin/console
+----
+
+== Tests
+
+To test, run:
+
+[source,bash]
+----
+bin/rake
+----
+
+== link:https://alchemists.io/policies/license[License]
+
+== link:https://alchemists.io/policies/security[Security]
+
+== link:https://alchemists.io/policies/code_of_conduct[Code of Conduct]
+
+== link:https://alchemists.io/policies/contributions[Contributions]
+
+== link:https://alchemists.io/projects/xdg/versions[Versions]
+
+== link:https://alchemists.io/community[Community]
+
+== Credits
+
+* Built with link:https://alchemists.io/projects/gemsmith[Gemsmith].
+* Engineered by link:https://alchemists.io/team/brooke_kuhlmann[Brooke Kuhlmann].
