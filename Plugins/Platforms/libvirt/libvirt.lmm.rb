@@ -95,6 +95,7 @@ module ConfigLMM
             def getVolumes(compute, baseName, volumeInfos)
                 volumes = []
                 volumeInfos.each_with_index do |volumeInfo, i|
+                    next unless volumeInfo.key?('Size')
                     if volumeInfo['Name']
                         volumeName = volumeInfo['Name'] + '.img'
                     else
