@@ -358,6 +358,13 @@ module ConfigLMM
                    result.include?('packages have been kept back')
                     prompt.warn('Manual upgrade required!')
                 end
+                notices = result.each_line.grep(/(warning|error|failed):/i)
+                unless notices.empty?
+                    prompt.warn('ATTENTION: System update produced warnings! Please investigate, reboot might not be safe')
+                    notices.each do |notice|
+                        prompt.warn('    ' + notice.strip)
+                    end
+                end
 
                 needReboot = false
                 autoRestart = true
@@ -419,12 +426,12 @@ module ConfigLMM
                             end
                         end
                     else
-                        prompt.warn('Some processes need to be restarted!')
+                        prompt.warn('ATTENTION: Some processes need to be restarted!')
                     end
                 end
 
                 if needReboot
-                    prompt.warn('System reboot required!')
+                    prompt.warn('ATTENTION: System reboot required!')
                     if result.include?('grub2') && connection.filePresent?('/boot/efi/EFI/opensuse/sealed.tpm', options)
                         prompt.warn('grub2 was updated, after reboot disk encryption password might be asked!')
                         prompt.warn('You might need to run `fdectl tpm-authorize`')
