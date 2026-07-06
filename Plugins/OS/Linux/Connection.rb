@@ -100,6 +100,15 @@ module ConfigLMM
                 connection.downloadStream(*args)
             end
 
+            def listFolder(path, options = {})
+                connection.exec("ls --almost-all --classify -1 #{escapePath(path)}", false, options) if options['dry']
+                connection.exec("ls --almost-all --classify -1 #{escapePath(path)}", false, { **options, 'dry' => false }).split("\n")
+            end
+
+            def downloadFolder(target, source, options = {})
+                downloadStream('tar --create --sparse --acls --selinux --xattrs --format=posix --directory=' + escapePath(source) + ' .', '| tar --extract --acls --selinux --xattrs --directory=' + escapePath(target), options)
+            end
+
             def updateFile(*args, &block)
                 connection.updateFile(*args, &block)
             end

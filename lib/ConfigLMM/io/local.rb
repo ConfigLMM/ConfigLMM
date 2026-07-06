@@ -157,6 +157,10 @@ module ConfigLMM
                 self.exec(command, false, options)
             end
 
+            def downloadFolder(target, source, options = {})
+                copy(source, target, options[:dry])
+            end
+
             def upload(source, target, options = {})
                 copy(source, target, options[:dry])
             end
