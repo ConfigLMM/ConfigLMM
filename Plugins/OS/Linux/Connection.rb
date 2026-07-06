@@ -71,8 +71,13 @@ module ConfigLMM
                 end
             end
 
-            def rm(*args)
-                connection.rm(*args)
+            def rm(path, dry_or_options)
+                if [true, false].include?(dry_or_options)
+                    options = { 'dry' => dry_or_options }
+                else
+                    options = dry_or_options
+                end
+                connection.exec("rm -rf #{escapePath(path)}", false, options)
             end
 
             def filePresent?(*args)
@@ -217,7 +222,7 @@ module ConfigLMM
                     @HasNC = self.hasBinaries?('nc', options)
                 end
                 raise Framework::PluginProcessError.new("`nc` missing!") unless @HasNC
-                result = connection.exec("nc -z -w 1 #{hostname.shellescape} #{port.to_i.to_s} && echo OK", true, options).to_s.strip
+                result = connection.exec("nc -z -w 1 #{hostname.shellescape} #{port.to_i.to_s} && echo OK", true, options).to_s.lines.last.strip
                 result == 'OK'
             end
 

@@ -18,11 +18,12 @@ module ConfigLMM
                 @ssh = ssh
             end
 
+            # DEPRECATED
             def rm(path, dry)
                 if dry
                     prompt.say("Would remove ssh://#{ssh.transport.host}:#{ssh.transport.port}" + path)
                 else
-                    self.class.exec!(ssh, "rm -rf #{path}", false, {}, self.prompt, self.logger)
+                    self.class.exec!(ssh, "rm -rf #{path.shellescape}", false, {}, self.prompt, self.logger)
                 end
             end
 
@@ -37,7 +38,7 @@ module ConfigLMM
             def updateFile(file, options, atTop = false, comment = '#', &block)
                 localFile = options['output'] + '/' + SecureRandom.alphanumeric(10)
                 File.write(localFile, '')
-                self.exec("touch #{file}", false, options)
+                self.exec("touch #{file.shellescape}", false, options)
                 self.download(file, localFile, options)
                 Local.new(self.prompt, self.logger).updateFile(localFile, options, atTop, comment, &block)
                 self.upload(localFile, file, options)
@@ -54,7 +55,12 @@ module ConfigLMM
             def downloadStream(command, target, local, options = {})
                 uri = "ssh://#{ssh.transport.options[:user]}@#{ssh.transport.host}:#{ssh.transport.port}/"
                 cmd = self.class.cmd(uri)
-                command = cmd + ' ' + command.shellescape + ' > ' + target
+                command = cmd + ' ' + command.shellescape
+                if target.start_with?('|')
+                    command += ' ' + target
+                else
+                    command += ' > ' + target
+                end
                 local.exec(command, false, options)
             end
 
