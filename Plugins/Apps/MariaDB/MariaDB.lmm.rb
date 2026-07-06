@@ -51,7 +51,7 @@ module ConfigLMM
                 withConnection(target['Location'], target) do |connection|
                     Linux.withConnection(connection) do |linuxConnection|
                         filename = options['output'] + '/mariadb_all.sql.gz'
-                        result = linuxConnection.downloadStream('mysqldump --all-databases --all-tablespaces --events --routines --flush-privileges | gzip', filename, options)
+                        result = linuxConnection.downloadStream('mariadb-dump --all-databases --all-tablespaces --events --routines --flush-privileges | gzip', filename, options)
                         if result.downcase.include?('error')
                             prompt.error(result)
                             raise result
