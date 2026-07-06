@@ -35,6 +35,7 @@ module ConfigLMM
                 end
 
                 def byName(name)
+                    raise Framework::PluginProcessError.new("Operating system name not provided!") unless name
                     info = @OS.find { |id, info| info['Name'] == name }
                     info = info.last if info.is_a?(Array)
                     raise Framework::PluginProcessError.new("Unknown operating system: #{name}!") if info.nil?

@@ -683,6 +683,7 @@ module ConfigLMM
             end
 
             def buildAutoInstall(id, target, options)
+                return unless target['OS']
                 osInfo = OS.info.byName(target['OS'])
                 config = prepareAutoInstallConfig(target, osInfo)
                 if osInfo['Id'] == OS::PROXMOXVE_ID
