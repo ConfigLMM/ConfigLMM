@@ -46,7 +46,7 @@ Proxmox:
     Type: Linux
     Location: pxe://
     AlternativeLocation: ssh://proxmox/
-    Distro: Debian
+    OS: Debian
     Flavour: Proxmox VE
     Firmware: UEFI
     Domain: ${VAR:ProxmoxDomain}
@@ -88,7 +88,7 @@ Ingress:
     Type: Linux
     Location: proxmox://${VAR:ProxmoxDomain}/?insecure
     AlternativeLocation: ssh://ingress/
-    Distro: openSUSE Leap
+    OS: openSUSE Leap
     Domain: ${VAR:IngressDomain}
     LXC: no
     CPU: 12
@@ -191,7 +191,7 @@ Services:
     Type: Linux
     Location: proxmox://${VAR:ProxmoxDomain}/?insecure
     AlternativeLocation: proxmox+xterm://${VAR:ProxmoxDomain}/?insecure
-    Distro: openSUSE Leap
+    OS: openSUSE Leap
     LXC:
         - idmap: u 0 100000 165536
         - idmap: g 0 100000 165536

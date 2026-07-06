@@ -1,6 +1,6 @@
 Linux:
     Type: Linux
-    Distro: ArchLinux
+    OS: ArchLinux
     Apps:
         - fish
         - vim
