@@ -12,7 +12,6 @@ module ConfigLMM
             NAMESPACE = 'moe.configlm'
             SYSTEM_CONTAINERS_PATH = '/etc/containers/systemd'
             USER_CONTAINERS_PATH = '~/.config/containers/systemd'
-            HOST_IP = '10.0.2.2'
             HOST_LOOPBACK_IP = '10.0.2.2'
             HOST_LOOPBACK = 'host.loopback.internal'
             HOST_IP = '169.254.1.2'
