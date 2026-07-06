@@ -12,7 +12,8 @@ module ConfigLMM
 
                 TRUSTED_KEYS = [
                     'DF9B9C49EAA9298432589D76DA87E80D6294BE9B', # Debian CD signing key <debian-cd@lists.debian.org>
-                    'AD485664E901B867051AB15F35A2F86E29B700A4'  # openSUSE Project Signing Key <opensuse@opensuse.org>
+                    'AD485664E901B867051AB15F35A2F86E29B700A4', # openSUSE Project Signing Key <opensuse@opensuse.org>
+                    '3E80CA1A8B89F69CBA57D98A76A5EF9054449A5C'  # Pierre Schmitz <pierre@archlinux.org>
                 ]
 
                 def prepareConfig(target, context)
