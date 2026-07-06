@@ -449,8 +449,8 @@ module ConfigLMM
                             connection.exec('echo "deb [arch=amd64] http://download.proxmox.com/debian/pve bookworm pve-no-subscription" > /etc/apt/sources.list.d/pve-install-repo.list', false, options)
                             File.write(options['output'] + 'proxmox-release-bookworm.gpg', HTTP.follow.get('https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg').body)
                             connection.upload(options['output'] + 'proxmox-release-bookworm.gpg', '/etc/apt/trusted.gpg.d/proxmox-release-bookworm.gpg', options)
-                            connection.exec('apt update && apt full-upgrade --assume-yes', false, options)
-                            connection.exec('apt install --assume-yes proxmox-default-kernel', false, options)
+                            connection.exec('DEBIAN_FRONTEND=noninteractive apt-get update && apt-get full-upgrade --assume-yes', false, options)
+                            connection.exec('DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes proxmox-default-kernel', false, options)
                             connection.exec('systemctl reboot', false, options)
                         end
                         target['Network'] = {} unless target['Network'].is_a?(Hash)

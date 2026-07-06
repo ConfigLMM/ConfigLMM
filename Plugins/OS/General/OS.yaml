@@ -79,7 +79,7 @@ debian:
     InstallPackage: DEBIAN_FRONTEND=noninteractive apt-get install --assume-yes
     RemovePackage: apt-get remove --assume-yes
     ListPackages: dpkg-query --list --no-pager
-    UpdatePackages: apt-get update --yes && apt-get upgrade --with-new-pkgs --yes
+    UpdatePackages: DEBIAN_FRONTEND=noninteractive apt-get update --yes && apt-get upgrade --with-new-pkgs --yes
     ListUpdates: apt-get update --yes && apt-get upgrade --with-new-pkgs --just-print
 
 almalinux:
