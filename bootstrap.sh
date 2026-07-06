@@ -2,7 +2,9 @@
 
 distro=$(cat /etc/os-release | grep ^ID= |  cut -d '=' -f 2 | cut -d '"' -f 2)
 
-function admin {
+EUID="$(id -u)"
+
+admin () {
     if [ "$EUID" -eq "0" ]; then
         "$@"
     else
@@ -10,8 +12,8 @@ function admin {
     fi
 }
 
-if [ "$EUID" -ne "0" ]; then
-    if ! command -v sudo &> /dev/null; then
+#if [ "$EUID" -ne "0" ]; then
+    if ! command -v sudo >/dev/null 2>&1; then
         case $distro in
 
         opensuse-leap)
@@ -21,7 +23,12 @@ if [ "$EUID" -ne "0" ]; then
 
         arch)
             echo "You don't have sudo! Enter root password to install it"
-            admin pacman -S --noconfirm --needed sudo
+            su root -c "pacman -S --noconfirm --needed sudo"
+            ;;
+
+        debian)
+            echo "You don't have sudo! Enter root password to install it"
+            su root -c "apt-get install --yes sudo"
             ;;
 
         *)
@@ -32,7 +39,7 @@ if [ "$EUID" -ne "0" ]; then
             ;;
         esac
     fi
-fi
+#fi
 
 case $distro in
 
@@ -44,9 +51,12 @@ arch)
     admin pacman -S --noconfirm --needed ruby rubygems
     ;;
 
+debian)
+    admin apt-get install --yes ruby ruby-dev ruby-libvirt
+    ;;
+
 *)
-    if ! command -v ruby &> /dev/null
-    then
+    if ! command -v ruby >/dev/null 2>&1; then
         echo "Ruby not found!" >&2
         echo "Don't know how to install it for your $distro distribution!" >&2
         echo "Submit a PR :)" >&2
@@ -55,7 +65,7 @@ arch)
     ;;
 esac
 
-if ! command -v gem &> /dev/null; then
+if ! command -v gem >/dev/null 2>&1; then
     echo "RubyGems not found!" >&2
     exit 2
 fi
@@ -78,15 +88,20 @@ if [ "$rubyTooOld" -eq "1" ]; then
         sed -i "/rvm default/d" ~/.config/fish/config.fish
         echo "rvm default" >> ~/.config/fish/config.fish
     fi
+
+    if [ "$EUID" -eq "0" ]; then
+        # This shouldn't be needed but without it doesn't work
+        export PATH=/usr/local/rvm/gems/ruby-3.3.4/bin:/usr/local/rvm/rubies/ruby-3.3.4/bin:$PATH
+        export GEM_HOME=/usr/local/rvm/gems/ruby-3.3.4
+        export GEM_PATH=/usr/local/rvm/gems/ruby-3.3.4
+    fi
+
+    bash -lc 'gem install ConfigLMM'
+
+    echo "You need to close and reopen your shell" >&2
+else
+    gem install ConfigLMM
 fi
 
-if [ "$EUID" -eq "0" ]; then
-    # This shouldn't be needed but without it doesn't work
-    export PATH=/usr/local/rvm/gems/ruby-3.3.4/bin:/usr/local/rvm/rubies/ruby-3.3.4/bin:$PATH
-    export GEM_HOME=/usr/local/rvm/gems/ruby-3.3.4
-    export GEM_PATH=/usr/local/rvm/gems/ruby-3.3.4
-fi
+echo "Done! Now you should be able to use \`configlmm\`" >&2
 
-bash -lc 'gem install ConfigLMM'
-
-echo "You need to close and reopen your shell" >&2
