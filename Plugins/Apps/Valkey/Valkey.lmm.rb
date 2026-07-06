@@ -1,11 +1,14 @@
 require 'uri'
 
+require_relative 'Connection'
+
 module ConfigLMM
     module LMM
         class Valkey < Framework::LinuxApp
             PACKAGE_NAME = 'Valkey'
             CONFIG_FILE = '/etc/valkey/valkey.conf'
             DEFAULT_DIR = '/var/lib/valkey/'
+            DEFAULT_PORT = 6379
 
             REDIS_CONFIG_FILE = '/etc/redis/redis.conf'
             REDIS_DEFAULT_DIR = '/var/lib/redis/'
@@ -93,6 +96,10 @@ module ConfigLMM
                 withConnection(target['Location'], target) do |connection|
                     Linux.withConnection(connection) do |linuxConnection|
                         cmd = activeState[:Valkey] ? 'valkey-cli' : 'redis-cli'
+                        if target['Settings']['bind']
+                            host = target['Settings']['bind'].split(' ').first
+                            cmd += ' -h ' + host
+                        end
                         cmd += ' SAVE'
                         hide = false
                         if target['Settings']['requirepass']
@@ -136,21 +143,57 @@ module ConfigLMM
                 end
             end
 
-            def self.connectionURL(params)
-                args = { scheme: 'redis', host: params[:host].to_s, path: '/' }
-                args[:scheme] += 's' if params[:ssl]
-                args[:path] += params[:db] if params[:db]
-
-                if args[:host].include?(':')
-                    args[:host], args[:port] = args[:host].split(':')
+            def self.withConnection(settings, linuxConnection, options = {})
+                settings['HostName'] = 'localhost' unless settings['HostName']
+                hostname = settings['HostName']
+                port = settings['Port'] ? settings['Port'] : DEFAULT_PORT
+                if linuxConnection.ping?(hostname, port, options)
+                    yield(ValkeyConnection.new(linuxConnection, settings))
+                else
+                    IO::Connection.tunnel("ssh://#{hostname}/", {}, {}, {}, linuxConnection.prompt, linuxConnection.logger) do |connection|
+                        Linux.withConnection(connection) do |linuxConnection|
+                            yield(ValkeyConnection.new(linuxConnection, settings))
+                        end
+                    end
                 end
+            end
+
+            def self.buildSettings(host, password = nil)
+                settings = {}
+                if host.include?(':')
+                    settings['HostName'], settings['Port'] = host.split(':')
+                elsif host
+                    settings['HostName'] = host
+                end
+
+                settings['Password'] = password if password
+                settings
+            end
+
+            def self.connectionURL(params)
+                params = params.transform_keys(&:to_sym)
+                if params[:Host]
+                    if params[:Host].include?(':')
+                        params[:HostName], params[:Port] = params[:Host].split(':')
+                    else
+                        params[:HostName] = params[:Host]
+                    end
+                end
+
+                args = { scheme: 'redis', host: params[:HostName].to_s, path: '/' }
+                args[:scheme] += 's' if params[:SSL]
+                args[:port] = params[:Port] if params[:Port]
+                args[:path] += params[:Database] if params[:Database]
 
                 userinfo = ''
-                if params[:username]
-                    userinfo = URI.encode_uri_component(params[:username])
+                if params[:Username]
+                    userinfo = URI.encode_uri_component(params[:Username])
                 end
-                if params.key?(:password) && !params[:password].nil?
-                    userinfo += ':' + URI.encode_uri_component(params[:password])
+                if params.key?(:Password) && !params[:Password].nil?
+                    if !params[:Username]
+                        userinfo += 'default'
+                    end
+                    userinfo += ':' + URI.encode_uri_component(params[:Password])
                 end
                 args[:userinfo] = userinfo unless userinfo.empty?
 

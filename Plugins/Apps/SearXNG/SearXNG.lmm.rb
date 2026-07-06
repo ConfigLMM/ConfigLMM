@@ -40,7 +40,7 @@ module ConfigLMM
                             if target['Valkey']['SecretId']
                                 valkeyPassword = context.secrets.load(target['Valkey']['SecretId'], 'VALKEY_PASSWORD')
                             end
-                            redisURL = Valkey.connectionURL({ host: host, password: valkeyPassword })
+                            redisURL = Valkey.connectionURL({ Host: host, Password: valkeyPassword })
                             linuxConnection.fileAppend("#{path}/SearXNG.env", "SEARXNG_REDIS_URL=#{redisURL}", { **options, hide: true })
                         end
 
