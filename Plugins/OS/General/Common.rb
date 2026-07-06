@@ -120,13 +120,13 @@ module ConfigLMM
                     if checksumUrl
                         if checksumUrl.start_with?('https://')
                             checksumPath = local.remoteDownload(checksumUrl, IMAGE_LOCATION)
-                            checksumContent = File.read(checksumPath)
-                            checksum = checksumContent.split(' ').first
+                            signedContent = File.read(checksumPath)
+                            checksum = signedContent.split(' ').first
                         else
-                            checksumContent = checksumUrl
+                            checksum = checksumUrl
                             checksumUrl = nil
                             checksumPath = nil
-                            checksum = checksumContent
+                            signedContent = checksum
                         end
                         if checksum.length == 256 / 8 * 2 # 256 bits, 2 digits per byte
                             sha256 = Digest::SHA256.file(image)
@@ -154,9 +154,12 @@ module ConfigLMM
                                     raise "Imported key #{File.basename(signatureKeyPath)} (#{importResult.imports.first.fingerprint}) is untrusted!"
                                 end
                             end
-                            result = crypto.verify(signature, :signed_text => checksumContent) do |signature|
+                            signedContent = File.open(image) if File.basename(signatureUrl, ".*") != File.basename(checksumUrl)
+                            result = crypto.verify(signature, :signed_text => signedContent) do |signature|
                                 if !signature.valid?
                                     logger.error("Signature validation failed for #{checksumPath ? File.basename(checksumPath) : ''} with #{File.basename(signaturePath)}")
+                                    # If error is "gpgme/ctx.rb:389:in `get_key': EOFError (EOFError)"
+                                    # that means we're missing signature's public key
                                     raise signature.to_s
                                 end
                             end
