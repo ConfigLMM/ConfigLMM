@@ -580,7 +580,7 @@ module ConfigLMM
                 iso = installationISO(osInfo)
                 iso = buildAutoInstallISO(osInfo, id, iso, target, options)
                 if plugins[:Libvirt].createVM(target['Name'], target, uri, iso, activeState, context, options)
-                    context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users']['root'].key?('Password')
+                    context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users'].to_h['root'].key?('Password')
                 end
             end
 
@@ -588,13 +588,13 @@ module ConfigLMM
                 osInfo = OS.info.byName(target['OS'])
                 if target['LXC']
                     if plugins[:Proxmox].createContainer(target, uri, osInfo, activeState, context, options)
-                        context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users']['root'].key?('Password')
+                        context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users'].to_h['root'].key?('Password')
                     end
                 else
                     iso = installationISO(osInfo)
                     iso = buildAutoInstallISO(osInfo, id, iso, target, options)
                     if plugins[:Proxmox].createVM(target['Name'], target, uri, iso, activeState, context, options)
-                        context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users']['root'].key?('Password')
+                        context.secrets.print('Root password', target['Users']['root']['Password']) if target['Users'].to_h['root'].key?('Password')
                     end
                 end
             end
